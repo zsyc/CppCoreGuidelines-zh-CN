@@ -550,6 +550,43 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * 范围错误 - 使用 `span`
 * 窄化转换 - 尽可能减少其使用，必须使用时则使用 `narrow` 或者 `narrow_cast`
 
+### <a name="Rp-compile-time"></a>P.5: 编译期检查优先于运行时检查
+
+##### 理由
+
+为了代码清晰性和性能。对于编译期捕获的错误是不需要编写错误处理的。
+
+##### 示例
+
+    void initializer(Int x)
+    // Int 被用作整数的别名
+    {
+        static_assert(sizeof(Int) >= 4);    // do: 编译期检查
+
+        int bits = 0;         // don't: avoidable code
+        for (Int i = 1; i; i <<= 1)
+            ++bits;
+        if (bits < 32)
+            cerr << "Int too small\n";
+
+        // ...
+    }
+
+##### 示例：请避免
+
+    void read(int* p, int n);   // 读取至多 n 个整数到 *p 之中
+
+##### 示例
+
+    void read(span<int> r); // 读取到整数区域范围 r 之中
+
+**替代形式**: 不要把可以在编译期搞定的事推后到运行时进行。
+
+##### 强制实施
+
+* 查找指针参数。
+* 查找运行时进行的范围违反检查。
+
 
 
 
