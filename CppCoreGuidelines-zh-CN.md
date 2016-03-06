@@ -1545,6 +1545,38 @@ C++11 所引入的 `std::chrono::duration` 类型可以让时间段的单位明�
 * 【简单】 当任何代码路径上遗漏了对 `owner` 指针的 `reset` 或者显式的 `delete` 时就发出警告。
 * 【简单】 当把 `new` 或者返回值为指针类型的函数的返回值赋值给原始指针时就发出警告。
 
+### <a name="Ri-nullptr"></a>I.12: 把不能为空的指针声明为 `not_null`
+
+##### 理由
+
+帮助避免对 `nullptr` 解引用的错误。通过避免多余的 `nullptr` 检查来提高性能。
+
+##### 示例
+
+    int length(const char* p);            // 不清楚 length(nullptr) 是否有效
+
+    length(nullptr);                      // OK?
+
+    int length(not_null<const char*> p);  // 有改善：可以假定 p 不可能为 nullptr
+
+    int length(const char* p);            // 只好假定 p 可以为 nullptr
+
+通过在源代码中说明意图，实现者和工具就可以提供更好的诊断能力，比如通过静态分析来找出某些种类的错误，还可以实施优化，比如移除分支和空值测试。
+
+##### 注解
+
+指向 `char` 的指针将指向 C 风格的字符串（以零终结的字符的连续串）这一点仍然是潜规则，并且也是混乱和错误的潜在来源。请使用 `zstring` 来代替 `const char*`。
+
+    int length(not_null<zstring> p);   // 可以假定 p 不能为 nullptr
+                                       // 可以假定 p 指向以零终结的字符数组
+
+注意： `length()` 显然是经过伪装的 `std::strlen()`。
+
+##### 强制实施
+
+* 【简单】【基础】 如果有函数在所有控制流路径上访问指针参数之前检查它是否是 `nullptr`，则给出警告称其应当被声明为 `not_null`。
+* 【复杂】 如果有指针返回值的函数在所有返回路径上都保证其不是 `nullptr`，则给出警告称返回类型应当被声明为 `not_null`。
+
 
 
 
