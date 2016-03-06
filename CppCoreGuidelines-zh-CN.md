@@ -1406,6 +1406,33 @@ C++11 所引入的 `std::chrono::duration` 类型可以让时间段的单位明�
 
 【无法强制实施】 要把各种对后条件进行断言的方式都找出来是不可行的。对那些易于识别的（如 `assert()`）实例给出警告的做法，其意义在缺少语言设施的前提下是有问题的。
 
+### <a name="Ri-concepts"></a>I.9: 当接口是模板时，用概念来文档化其参数
+
+##### 理由
+
+更严谨地说明接口，并使其在（不远的）将来可以在编译时进行检查。
+
+##### 示例
+
+使用 ISO Concepts TS 风格的必要条件说明。例如：
+
+    template<typename Iter, typename Val>
+    // requires InputIterator<Iter> && EqualityComparable<ValueType<Iter>>, Val>
+    Iter find(Iter first, Iter last, Val v)
+    {
+        // ...
+    }
+
+##### 注解
+
+很快（可能是 2016 年），大多数编译期就有能力检查删除了 `//` 之后的 `requires` 子句了。
+
+**参见**: 另见[泛型编程](#SS-GP)和[概念](#SS-t-concepts)。
+
+##### 强制实施
+
+【还无法强制实施】 当前正在对一种语言设施进行规范化。一旦这种语言设施出现，就可以对未被概念所约束（在其声明之中或者在一个 `requires` 子句中所给出）的并非可变数量的模板形参作出警告了。
+
 
 
 
