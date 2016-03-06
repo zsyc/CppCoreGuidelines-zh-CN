@@ -1115,6 +1115,101 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * 查找只创建一个对象的类（通过对对象计数或者检查其构造函数）。
 * 如果某个类 X 具有公开的静态函数，并且它包含具有该类 X 类型的函数级局部静态变量并返回指向它的指针或者引用，就禁止它。
 
+### <a name="Ri-typed"></a>I.4: 使接口严格和强类型化
+
+##### 理由
+
+类型是最简单和最好的文档，它们有定义明确的含义，并且保证在编译期进行检查。
+而且，严格类型化的代码通常也能更好地进行优化。
+
+##### 示例，请勿这样做
+
+考虑：
+
+    void pass(void* data);    // void* 是有问题的
+
+被调用方必须得把数据指针强制转换（回）正确的类型以能使用它。这样做易于犯错，而且通常是多余的。
+请避免 `void*`，尤其是在接口中。
+请考虑使用 `variant` 或指向基类的指针来代替它。（前景注记：考虑使用指向概念的指针。）
+
+**替代方案**: 通常，利用模板形参可以把 `void*` 排除而改为 `T*` 或者 `T&`。
+
+##### 示例，不好
+
+考虑：
+
+    void draw_rect(int, int, int, int);   // 很大的犯错机会
+
+    draw_rect(p.x, p.y, 10, 20);          // 10, 20 是什么意思？
+
+`int` 可以携带任何形式的信息，因此我们必须猜测这四个 `int` 的含义。
+前两个最可能的是坐标对 `x`,`y`，但后两个是什么呢？
+注释和参数的名字可以有所帮助，但我们可以直截了当：
+
+    void draw_rectangle(Point top_left, Point bottom_right);
+    void draw_rectangle(Point top_left, Size height_width);
+
+    draw_rectangle(p, Point{10, 20});  // 两个角点
+    draw_rectangle(p, Size{10, 20});   // 一个角和一对 (height, width)
+
+显然，我们是无法利用静态类型系统捕获所有的错误的，
+例如，假定第一个参数是左上角这一点就依赖于约定（命名或者注释）。
+
+##### 示例，不好
+
+下例中，接口中并未明确给出 `time_to_blink` 的含义：按秒还是按毫秒算？
+
+    void blink_led(int time_to_blink) // 不好 - 在单位上含糊
+    {
+        // ...
+        // 对 time_to_blink 做一些事
+        // ...
+    }
+
+    void use()
+    {
+        blink_led(2);
+    }
+
+##### 示例，好
+
+C++11 所引入的 `std::chrono::duration` 类型可以让时间段的单位明确下来。
+
+    void blink_led(milliseconds time_to_blink) // 好 - 单位明确
+    {
+        // ...
+        // 对 time_to_blink 做一些事
+        // ...
+    }
+
+    void use()
+    {
+        blink_led(1500ms);
+    }
+
+这个函数还可以写成使其接受任何时间段单位的形式。
+
+    template<class rep, class period>
+    void blink_led(duration<rep, period> time_to_blink) // 好 - 接受任何单位
+    {
+        // 假设最小的有意义单位是毫秒
+        auto milliseconds_to_blink = duration_cast<milliseconds>(time_to_blink);
+        // ...
+        // 对 milliseconds_to_blink 做一些事
+        // ...
+    }
+
+    void use()
+    {
+        blink_led(2s);
+        blink_led(1500ms);
+    }
+
+##### 强制实施
+
+* 【简单】 报告将 `void*` 用作参数或返回类型的情况
+* 【难于做好】 查找带有许多内建类型的参数的成员函数。
+
 
 
 
