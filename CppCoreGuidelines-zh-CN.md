@@ -1759,6 +1759,43 @@ C++11 所引入的 `std::chrono::duration` 类型可以让时间段的单位明�
 
 【简单】 当两个连续的参数具有相同的类型时就给出警告。
 
+### <a name="Ri-abstract"></a>I.25: 优先以抽象类作为类层次的接口
+
+##### 理由
+
+抽象类要比带有状态的基类更倾向于保持稳定。
+
+##### 示例，不好
+
+你知道 `Shape` 总会冒出来的 :-)
+
+    class Shape {  // 不好: 接口类中加载了数据
+    public:
+        Point center() const { return c; }
+        virtual void draw() const;
+        virtual void rotate(int);
+        // ...
+    private:
+        Point c;
+        vector<Point> outline;
+        Color col;
+    };
+
+这将强制性要求每个派生类都要计算出一个中心点——即使这并不容易，而且这个中心点从不会被用到。相似地说，不是每个 `Shape` 都有一个 `Color`，而许多 `Shape` 也最好别用一个定义成一系列 `Point` 的轮廓来进行表示。抽象类就是为了防止人们编写这样的类而创造出来的：
+
+    class Shape {    // 有改进: Shape 是一个纯接口
+    public:
+        virtual Point center() const = 0;   // 纯虚函数
+        virtual void draw() const = 0;
+        virtual void rotate(int) = 0;
+        // ...
+        // ... 没有数据成员 ...
+    };
+
+##### 强制实施
+
+【简单】 如果指向 `C` 类的指针被赋值给一个指向 `C` 的基类的指针，而这个基类包含数据成员时，就给出警告。
+
 
 
 
