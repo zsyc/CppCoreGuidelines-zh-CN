@@ -967,7 +967,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * [I.12: 把不能为空的指针声明为 `not_null`](#Ri-nullptr)
 * [I.13: 不要只用一个指针来传递数组](#Ri-array)
 * [I.22: 避免全局对象之间进行复杂的初始化](#Ri-global-init)
-* [I.23: 保持低水平的函数参数数量](#Ri-nargs)
+* [I.23: 保持较少的函数参数数量](#Ri-nargs)
 * [I.24: 避免出现相邻而无关的相同类型的参数](#Ri-unrelated)
 * [I.25: 优先以抽象类作为类层次的接口](#Ri-abstract)
 * [I.26: 当想要跨编译器的 ABI 时，使用一个 C 风格的语言子集](#Ri-abi)
@@ -1665,6 +1665,51 @@ C++11 所引入的 `std::chrono::duration` 类型可以让时间段的单位明�
 
 * 标记调用了非 `constexpr` 函数的全局初始化式
 * 标记访问了 `extern` 对象的全局初始化式
+
+### <a name="Ri-nargs"></a>I.23: 保持较少的函数参数数量
+
+##### 理由
+
+大量参数会带来更大的出现混乱的机会。大量传递参数与其他替代方案相比也通常是代价比较大的。
+
+##### 示例
+
+标准库的 `merge()` 函数达到了我们可以自如处理的界限
+
+    template<class InputIterator1, class InputIterator2, class OutputIterator, class Compare>
+    OutputIterator merge(InputIterator1 first1, InputIterator1 last1,
+                         InputIterator2 first2, InputIterator2 last2,
+                         OutputIterator result, Compare comp);
+
+其中有四个模板参数和留个函数参数。
+为简化最常用和最简单的用法，比较器参数可以缺省使用 `<`：
+
+    template<class InputIterator1, class InputIterator2, class OutputIterator>
+    OutputIterator merge(InputIterator1 first1, InputIterator1 last1,
+                         InputIterator2 first2, InputIterator2 last2,
+                         OutputIterator result);
+
+这实际上不会减低其整体复杂性，但它减少了对于许多使用者的表面复杂性。
+为了真正地减少参数的数量，我们得把参数归拢到更高层的抽象之中：
+
+    template<class InputRange1, class InputRange2, class OutputIterator>
+    OutputIterator merge(InputRange1 r1, InputRange2 r2, OutputIterator result);
+
+把参数成“批”进行组合是减少参数数量和增加进行检查的机会的一般性技巧。
+
+##### 注解
+
+多少参数算很多？四个已经不少了。
+有些函数确实最好表现为四个独立的参数，但这样的函数并不多。
+
+**替代方案**: 把参数归集为由意义的对象，然后（按值或按引用）传递这些对象。
+
+**替代方案**: 利用默认实参或者重载来让最常见的调用方式可以用比较少的实参来进行。
+
+##### 强制实施
+
+* 当函数声明了两个类型相同的迭代器（也包括指针）而不是一个范围或视图，就给出警告。
+* 【无法强制实施】 这是一条理念性的指导方针，进行直接的检查是不可行的。
 
 
 
