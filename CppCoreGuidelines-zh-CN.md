@@ -1826,7 +1826,7 @@ C++11 所引入的 `std::chrono::duration` 类型可以让时间段的单位明�
 函数定义式的规则：
 
 * [F.1: 把有意义的操作“打包”成为精心命名的函数](#Rf-package)
-* [F.2: 一个函数应当实施一项逻辑操作](#Rf-logical)
+* [F.2: 一个函数应当实施单一一项逻辑操作](#Rf-logical)
 * [F.3: 保持函数短小简洁](#Rf-single)
 * [F.4: 如果函数必须在编译期进行求值，就将其声明为 `constexpr`](#Rf-constexpr)
 * [F.5: 如果函数非常小，并且是时间敏感的，就将其声明为内联的](#Rf-inline)
@@ -1927,6 +1927,66 @@ C++11 所引入的 `std::chrono::duration` 类型可以让时间段的单位明�
 
 * 参见“[保持函数短小简洁](#Rf-single)”
 * 把不同地方所用的同样和非常相似的 lambda 标记出来。
+
+### <a name="Rf-logical"></a>F.2: 一个函数应当实施单一一项逻辑操作
+
+##### 理由
+
+仅实施单一操作的函数易于理解，测试和重用。
+
+##### 示例
+
+考虑：
+
+    void read_and_print()    // 不好
+    {
+        int x;
+        cin >> x;
+        // 检查错误
+        cout << x << "\n";
+    }
+
+这是一整块被绑定到一个特定的输入的代码，而且无法为其找到另一种（不同的）用途。作为代替，我们把函数分解为合适的逻辑部分并进行参数化：
+
+    int read(istream& is)    // 有改进
+    {
+        int x;
+        is >> x;
+        // 检查错误
+        return x;
+    }
+
+    void print(ostream& os, int x)
+    {
+        os << x << "\n";
+    }
+
+这样的话，就可以在需要时进行组合：
+
+    void read_and_print()
+    {
+        auto x = read(cin);
+        print(cout, x);
+    }
+
+如果有需要，我们还可以进一步把 `read()` 和 `print()` 针对数据类型，I/O 机制，以及对错误的反应等等方面进行模板化。例如：
+
+    auto read = [](auto& input, auto& value)    // 有改善
+    {
+        input >> value;
+        // 检查错误
+    };
+
+    auto print(auto& output, const auto& value)
+    {
+        output << value << "\n";
+    }
+
+##### 强制实施
+
+* 把具有多个“输出”参数的函数当作有问题的。使用返回值来代替，包括以 `tuple` 用作多个返回值。
+* 把无法装入编辑器的一屏之内的“大型”函数当作有问题的。考虑把这种函数分解为较小的恰当命名的子操作。
+* 把有七个或更多参数的函数当作有问题的。
 
 
 
