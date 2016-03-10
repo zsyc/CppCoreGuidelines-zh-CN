@@ -2069,6 +2069,71 @@ C++11 所引入的 `std::chrono::duration` 类型可以让时间段的单位明�
 * 标记过于复杂的函数。多复杂算是过于复杂呢？
   应当用圈复杂度来度量。可以试试“多于 10 个逻辑路径”。一个简单的开关算作一条路径。
 
+### <a name="Rf-constexpr"></a>F.4: 如果函数必须在编译期进行求值，就将其声明为 `constexpr`
+
+##### 理由
+
+需要用 `constexpr` 来告诉编译器允许对其进行编译期求值。
+
+##### 示例
+
+（不）著名的阶乘例子：
+
+    constexpr int fac(int n)
+    {
+        constexpr int max_exp = 17;      // constexpr 让其可以在 Expects 中使用
+        Expects(0 <= n && n < max_exp);  // 防止犯糊涂和发生溢出
+        int x = 1;
+        for (int i = 2; i <= n; ++i) x *= i;
+        return x;
+    }
+
+这个是 C++14。对于 C++11，请使用递归形态的 `fac()`。
+
+##### 注解
+
+`constexpr` 并不会保证发生编译期求值；
+它只能保证函数可以在当程序员需要或者编译器为优化而决定时，对常量表达式实参进行编译期求值。
+
+    constexpr int min(int x, int y) { return x < y ? x : y; }
+
+    void test(int v)
+    {
+        int m1 = min(-1, 2);            // 可能进行编译期求值
+        constexpr int m2 = min(-1, 2);  // 编译期求值
+        int m3 = min(-1, v);            // 运行期求值
+        constexpr int m4 = min(-1, v);  // 错误: 无法在编译期求值
+    }
+
+##### 注解
+
+`constexpr` 函数都是纯函数：它们不能有副作用。
+
+    int dcount = 0;
+    constexpr int double(int v)
+    {
+        ++dcount;   // 错误：试图在 constexpr 函数中产生副作用
+        return v + v;
+    }
+
+通常这样是很棒的。
+
+##### 注解
+
+不要试图让所有函数都变成 `constexpr`。大多数计算都最好在运行时进行。
+
+##### 注解
+
+任何可能最终将依赖于高层次的运行时配置或者
+业务逻辑的API，都不应当是 `constexpr` 的。这种定制化是无法
+由编译期来求值的，并且依赖于这种 API 的任何 `constexpr` 函数
+也都应当进行重构，或者抛弃掉 `constexpr`。
+
+##### 强制实施
+
+不可能也不必要。
+当在要求常量的地方调用了非 `constexpr` 函数时，编译器会报告错误。
+
 
 
 
