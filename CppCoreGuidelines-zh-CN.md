@@ -1988,6 +1988,87 @@ C++11 所引入的 `std::chrono::duration` 类型可以让时间段的单位明�
 * 把无法装入编辑器的一屏之内的“大型”函数当作有问题的。考虑把这种函数分解为较小的恰当命名的子操作。
 * 把有七个或更多参数的函数当作有问题的。
 
+### <a name="Rf-single"></a>F.3: 保持函数短小简洁
+
+##### 理由
+
+大型函数难于阅读，更有可能包含复杂的代码，而且更有可能含有其作用域超过最低限度的变量。
+带有复杂的控制结构的函数更有可能变长，也更有可能隐藏逻辑错误于其中。
+
+##### 示例
+
+考虑：
+
+    double simpleFunc(double val, int flag1, int flag2)
+        // simpleFunc: 接受一个值并计算所需的 ASIC 值，依赖于两个模式标记。
+    {
+
+        double intermediate;
+        if (flag1 > 0) {
+            intermediate = func1(val);
+            if (flag2 % 2)
+                 intermediate = sqrt(intermediate);
+        }
+        else if (flag1 == -1) {
+            intermediate = func1(-val);
+            if (flag2 % 2)
+                 intermediate = sqrt(-intermediate);
+            flag1 = -flag1;
+        }
+        if (abs(flag2) > 10) {
+            intermediate = func2(intermediate);
+        }
+        switch (flag2 / 10) {
+            case 1: if (flag1 == -1) return finalize(intermediate, 1.171); break;
+            case 2: return finalize(intermediate, 13.1);
+            default: ;
+        }
+        return finalize(intermediate, 0.);
+    }
+
+这个函数过于复杂了（也相当长）。
+要如何判断是否所有的可能性都被正确处理了呢？
+当然，它也同样违反了别的规则。
+
+我们可以进行重构：
+
+    double func1_muon(double val, int flag)
+    {
+        // ???
+    }
+
+    double funct1_tau(double val, int flag1, int flag2)
+    {
+        // ???
+    }
+
+    double simpleFunc(double val, int flag1, int flag2)
+        // simpleFunc: 接受一个值并计算所需的 ASIC 值，依赖于两个模式标记。
+    {
+        if (flag1 > 0)
+            return func1_muon(val, flag2);
+        if (flag1 == -1)
+            return func1_tau(-val, flag1, flag2);    // 由 func1_tau 来处理: flag1 = -flag1;
+        return 0.;
+    }
+
+##### 注解
+
+“无法放入一屏显示”通常是对“太长了”的一种不错的实际定义方式。
+一行到五行大小的函数应当被当作是常态。
+
+##### 注解
+
+把大型函数分解成较小的紧致的有名字的函数。
+小型的简单函数在函数调用的代价比较明显时很容易被内联。
+
+##### 强制实施
+
+* 标记无法“放入一屏”的函数。
+  一屏有多大？可以试试 60 行，每行 140 个字符；这大致上就是书本页面能够适于阅读的最大值了。
+* 标记过于复杂的函数。多复杂算是过于复杂呢？
+  应当用圈复杂度来度量。可以试试“多于 10 个逻辑路径”。一个简单的开关算作一条路径。
+
 
 
 
