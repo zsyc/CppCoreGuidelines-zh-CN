@@ -2501,6 +2501,64 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
 * 标记 `const` 返回值。修正方法：移除 `const` 使其变为返回非 `const` 值。
 
 
+### <a name="Rf-out-multi"></a>F.21: 要返回多个“输出”值，优先返回元组（tuple）或结构体
+
+##### 理由
+
+返回值是自我说明为“仅输出”值的。
+而且，C++ 是支持多返回值的，按约定使用的是 `tuple`，并在调用点可以使用特别方便的 `tie`。
+
+##### 示例
+
+    int f(const string& input, /*output only*/ string& output_data) // 不好: 在代码注释作用说明仅作输出的参数
+    {
+        // ...
+        output_data = something();
+        return status;
+    }
+
+    tuple<int, string> f(const string& input) // 好: 自我说明的
+    {
+        // ...
+        return make_tuple(status, something());
+    }
+
+事实上，C++98 的标准库已经使用这种方便的功能了，因为 `pair` 就像一种两个元素的 `tuple` 一样。
+例如，给定一个 `set<string> myset`，请考虑：
+
+    // C++98
+    result = myset.insert("Hello");
+    if (result.second) do_something_with(result.first);    // 变通方案
+
+在 C++11 中我们可以这样写，将结果直接放入现存的局部变量中：
+
+    Sometype iter;                                          // 如果我们还未因为别的目的而使用
+    Someothertype success;                                  // 这些变量，则进行默认初始化
+
+    tie(iter, success) = myset.insert("Hello");         // 普通的返回值
+    if (success) do_something_with(iter);
+
+而在 C++17 中，我们可能可以写成这样，它同时对变量进行了声明：
+
+    auto { iter, success } = myset.insert("Hello");
+    if (success) do_something_with(iter);
+
+**例外**: 对于像 `string` 和 `vector` 这样附带额外容量的类型来说，有时候使用“调用方分配的输出”模式来将它当作输入/输出参数会很有好处，
+这是把一个仅作输出的对象按指代非 `const` 的引用来传递，使被调用方向对象写入时可以重用它已经包含的容量或者其他的资源。
+对于重复调用其他函数来获得字符串值的循环来说，通过为整个循环使用单一一个字符串对象，这种技术可以显著地减少进行分配的次数。
+
+    ??? example ???
+
+##### 注解
+
+一些情况下，返回某种像 `variant<T,error_code>` 这样的，用户定义的某个专门的 `Value_or_error` 类型，而不使用通用的 `tuple` 是有好处的。
+
+##### 强制实施
+
+* 输出参数应当被替换为返回值。
+  输出参数时由函数写入的，调用了非 `const` 成员函数的，或者将它作为非 `const` 参数继续传递的参数。
+
+
 
 
 
