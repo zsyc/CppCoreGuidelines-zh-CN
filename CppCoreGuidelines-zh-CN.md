@@ -2728,6 +2728,40 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 【简单】 当函数返回了局部分配了的原始指针时就给出警告。建议改为使用 `unique_ptr` 或 `shared_ptr`。
 
+### <a name="Rf-shared_ptr"></a>F.27: 用 `shared_ptr<T>` 来共享所有权
+
+##### 理由
+
+使用 `std::shared_ptr` 是表示共享所有权的标准方式。其含义是，最后一个拥有者负责删除对象。
+
+##### 示例
+
+    shared_ptr<const Image> im { read_image(somewhere) };
+
+    std::thread t0 {shade, args0, top_left, im};
+    std::thread t1 {shade, args1, top_right, im};
+    std::thread t2 {shade, args2, bottom_left, im};
+    std::thread t3 {shade, args3, bottom_right, im};
+
+    // 分离各线程
+    // 最后执行完的线程会删除这个图像
+
+##### 注解
+
+如果同时不可能超过一个所有者的话，优先采用 `unique_ptr` 而不是 `shared_ptr`。
+`shared_ptr` 的作用是共享所有权。
+
+注意，过于普遍的使用 `shared_ptr` 是有成本的（`shared_ptr` 的引用计数上的原子性操作会产生可测量的总体花费）。
+
+##### 替代方案
+
+让单个对象来拥有这个共享对象（比如一个有作用域的对象），并当其所有使用方都完成工作后（最好隐含地）销毁它。
+
+##### 强制实施
+
+【无法强制实施】 这种模式过于复杂，无法可靠地进行检测。
+
+
 
 
 
