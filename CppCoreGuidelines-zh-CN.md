@@ -2674,6 +2674,32 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
 
 【复杂】 当对指针参数的访问是以其他整型类型的参数为边界限定时，就给出警告并建议改用 `span`。
 
+### <a name="Rf-string"></a>F.25: 用 `zstring` 或者 `not_null<zstring>` 来代表 C 风格的字符串
+
+##### 理由
+
+C 风格的字符串非常普遍。它们是按一种约定方式定义的：就是以零结尾的字符数组。
+我们必须把 C 风格的字符串从指向单个字符的指针或者指向字符数组的老式的指针当中区分出来。
+
+##### 示例
+
+考虑：
+
+    int length(const char* p);
+
+当调用 `length(s)` 时，我应该先测试 `s == nullptr` 吗？是不是应当由 `length()` 的实现来测试 `p == nullptr`？
+
+    int length(zstring p);            // length() 的实现者必须假定可能出现 p == nullptr
+
+    int length(not_null<zstring> p);  // it is the caller's job to make sure p != nullptr
+
+##### 注解
+
+`zstring` 不含有所有权。
+
+**参见**: [支持程序库](#S-gsl)。
+
+
 
 
 
