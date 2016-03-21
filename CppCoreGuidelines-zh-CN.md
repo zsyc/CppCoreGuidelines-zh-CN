@@ -2700,6 +2700,34 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 **参见**: [支持程序库](#S-gsl)。
 
 
+### <a name="Rf-unique_ptr"></a>F.26: 当需要指针时，用 `unique_ptr<T>` 来传递所有权
+
+##### 理由
+
+使用 `unique_ptr` 是安全地传递指针的最廉价的方式。
+
+##### 示例
+
+    unique_ptr<Shape> get_shape(istream& is)  // 从输入流中装配一个形状
+    {
+        auto kind = read_header(is); // 从输入中读取头部并识别下一个形状
+        switch (kind) {
+        case kCircle:
+            return make_unique<Circle>(is);
+        case kTriangle:
+            return make_unique<Triangle>(is);
+        // ...
+        }
+    }
+
+##### 注解
+
+当要传递的对象属于某个类层次，且将要通过接口（基类）来使用它时，你需要传递一个指针而不是对象。
+
+##### 强制实施
+
+【简单】 当函数返回了局部分配了的原始指针时就给出警告。建议改为使用 `unique_ptr` 或 `shared_ptr`。
+
 
 
 
