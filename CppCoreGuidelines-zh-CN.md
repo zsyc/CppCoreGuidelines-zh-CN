@@ -3104,6 +3104,41 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 * 有名字的非泛型 lambda（比如 `auto x = [](int i){ /*...*/; };`），而其并未发生捕获并且出现于全局作用域，对它们给出警告。代之以编写常规的函数。
 
 
+### <a name="Rf-default-args"></a>F.51: 如果需要作出选择，采用默认实参应当优先于进行重载
+
+##### 理由
+
+默认实参本就是为一个单一实现提供替代的接口的。
+无法保证一组重载函数全部都实现相同的语义。
+使用默认实参可以避免出现代码重复。
+
+##### 注解
+
+当变化来自相同类型的一组参数时，需要在默认实参和重载两种方案之间进行选择。
+例如：
+
+    void print(const string& s, format f = {});
+
+相对的则是
+
+    void print(const string& s);  // 使用默认的 format
+    void print(const string& s, format f);
+    
+如果要为一组不同类型来实现语义上等价的操作，就不需要进行选择了。例如：
+
+    void print(const char&);
+    void print(int);
+    void print(zstring);
+    
+##### 参见
+
+    [虚函数的默认实参](#Rf-virtual-default-arg}
+    
+##### 强制实施
+
+    ???
+
+
 
 
 
