@@ -3221,6 +3221,31 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 * 对指定了默认俘获的 lambda 俘获列表并且还（无论显式还是通过默认俘获）俘获了 `this` 的情况进行标识。
 
 
+# <a name="S-class"></a>C: 类和类层次
+
+类是一种自定义类型，程序员可以定义它的表示，操作和接口。
+类层次用于把相关的类组织到层次化的结构当中。
+
+类的规则概览：
+
+* [C.1: 把相关的数据组织到结构中（`struct` 或 `class`）](#Rc-org)
+* [C.2: 当类具有不变式时使用 `class`；当数据成员可以独立进行变动时使用 `struct`](#Rc-struct)
+* [C.3: 用类来表示接口和实现之间的区别](#Rc-interface)
+* [C.4: 仅当函数直接访问类的表示时才让函数作为其成员](#Rc-member)
+* [C.5: 把辅助函数放在其所支持的类相同的命名空间之中](#Rc-helper)
+* [C.7: 不要在同一个语句中同时定义类或枚举并声明该类型的变量](#Rc-standalone)
+* [C.8: 当有任何非公用成员时使用 `class` 而不是 `struct`](#Rc-class)
+* [C.9: 让成员的暴露最小化](#Rc-private)
+
+子章节：
+
+* [C.concrete: 具体类型](#SS-concrete)
+* [C.ctor: 构造函数，赋值和析构函数](#S-ctor)
+* [C.con: 容器和其他资源包装](#SS-containers)
+* [C.lambdas: 函数对象和 lambda](#SS-lambdas)
+* [C.hier: 类层次（OOP）](#SS-hier)
+* [C.over: 重载和运算符重载](#SS-overload)
+* [C.union: 联合体](#SS-union)
 
 
 
