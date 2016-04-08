@@ -3551,5 +3551,32 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 ???
 
+### <a name="Rc-regular"></a>C.11: 使具体类型正规化
+
+##### 理由
+
+正规类型比不正规的类型更易于理解和进行推导（不正规性会导致理解和使用上花费更多的精力）。
+
+##### 示例
+
+    struct Bundle {
+        string name;
+        vector<Record> vr;
+    };
+
+    bool operator==(const Bundle& a, const Bundle& b) { return a.name == b.name && a.vr == b.vr; }
+
+    Bundle b1 { "my bundle", {r1, r2, r3}};
+    Bundle b2 = b1;
+    if (!(b1 == b2)) error("impossible!");
+    b2.name = "the other bundle";
+    if (b1 == b2) error("No!");
+
+特别是，当具体类型带有赋值操作时，也应当为之提供相等运算符，以使得 `a=b` 蕴含 `a == b`。
+
+##### 强制实施
+
+???
+
 
 
