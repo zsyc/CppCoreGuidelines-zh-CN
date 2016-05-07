@@ -4167,5 +4167,67 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 【简单】 析构函数应当声明为 `noexcept`。
 
+## <a name="SS-ctor"></a>C.ctor: 构造函数
+
+构造函数定义对象如何进行初始化（构造）。
+
+### <a name="Rc-ctor"></a>C.40: 如果类具有不变式，请为其定义构造函数
+
+##### 理由
+
+这正是构造函数的用途。
+
+##### 示例
+
+    class Date {  // Date 表示从 1900/1/1 到 2100/12/31 范围中
+                  // 的一个有效日期
+        Date(int dd, int mm, int yy)
+            :d{dd}, m{mm}, y{yy}
+        {
+            if (!is_valid(d, m, y)) throw Bad_date{};  // 不变式的实施
+        }
+        // ...
+    private:
+        int d, m, y;
+    };
+
+把不变式表达为构造函数上的一个 `Ensures` 通常是一种好做法。
+
+##### 注解
+
+即便类并没有不变式，也可以用构造函数来简化代码。例如：
+
+    struct Rec {
+        string s;
+        int i {0};
+        Rec(const string& ss) : s{ss} {}
+        Rec(int ii) :i{ii} {}
+    };
+
+    Rec r1 {7};
+    Rec r2 {"Foo bar"};
+
+##### 注解
+
+C++11 的初始化式列表规则免除了对许多构造函数的需求。例如：
+
+    struct Rec2{
+        string s;
+        int i;
+        Rec2(const string& ss, int ii = 0) :s{ss}, i{ii} {}   // 多余的
+    };
+
+    Rec r1 {"Foo", 7};
+    Rec r2 {"Bar"};
+
+`Rec2` 的构造函数是多余的。
+同样的，`int` 的默认值最好用[成员初始化式](#Rc-in-class-initializer)来给出。
+
+**参见**: [构造有效对象](#Rc-complete)和[构造函数抛出异常](#Rc-throw)。
+
+##### 强制实施
+
+* 对带有自定义的复制操作但没有构造函数的类进行标记（自定义的复制操作是类是否带有不变式的良好指示器）
+
 
 
