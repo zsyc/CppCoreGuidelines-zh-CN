@@ -3620,7 +3620,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 * [C.41: 构造函数应当创建经过完整初始化的对象](#Rc-complete)
 * [C.42: 当构造函数无法构造有效对象时，应当抛出异常](#Rc-throw)
 * [C.43: 保证类带有默认构造函数](#Rc-default0)
-* [C.44: 尽量让默认构造函数简单而且不会抛出异常](#Rc-default00)
+* [C.44: 尽量让默认构造函数简单且不抛出异常](#Rc-default00)
 * [C.45: 不要定义仅对数据成员进行初始化的默认构造函数；应当使用成员初始化式](#Rc-default)
 * [C.46: 默认情况下，把单参数的构造函数声明为 `explicit`](#Rc-explicit)
 * [C.47: 按成员声明的顺序对成员变量进行定义和初始化](#Rc-order)
@@ -4430,6 +4430,51 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 ##### 强制实施
 
 * 标记没有默认构造函数的类。
+
+### <a name="Rc-default00"></a>C.44: 尽量让默认构造函数简单且不抛出异常
+
+##### 理由
+
+如果可以设置一个“默认”值同时又不会涉及可能失败的操作的话，就可以简化错误处理以及对移动操作的推理。
+
+##### 示例，有问题的
+
+    template<typename T>
+    class Vector0 {   // elem 指向以 new 分配的 space-elem 个元素
+    public:
+        Vector0() :Vector0{0} {}
+        Vector0(int n) :elem{new T[n]}, space{elem + n}, last{elem} {}
+        // ...
+    private:
+        own<T*> elem;
+        T* space;
+        T* last;
+    };
+
+这段代码很不错而且通用，不过在发生错误之后把一个 `Vector0` 进行置空会涉及一次分配，而它是可能失败的。
+而且把默认的 `Vector` 表示为 `{new T[0], 0, 0}` 也比较浪费。
+比如说，`Vector0 v(100)` 会耗费 100 次分配操作。
+
+##### 示例
+
+    template<typename T>
+    class Vector1 {   // elem 为 nullptr，否则 elem 指向以 new 分配的 space-elem 个元素
+    public:
+        Vector1() noexcept {}   // 设置表示为 {nullptr, nullptr, nullptr}; 不会抛出异常
+        Vector1(int n) :elem{new T[n]}, space{elem + n}, last{elem} {}
+        // ...
+    private:
+        own<T*> elem = nullptr;
+        T* space = nullptr;
+        T* last = nullptr;
+    };
+
+表示为 `{nullptr, nullptr, nullptr}` 的 `Vector1{}` 很廉价，但这是一种特殊情况并且隐含了运行时检查。
+在检测到错误后可以很容易地把 `Vector1` 置空。
+
+##### 强制实施
+
+* 标记会抛出的默认构造函数
 
 
 
