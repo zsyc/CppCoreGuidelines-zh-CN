@@ -4706,5 +4706,52 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 **参见**: [讨论](#Sd-factory)
 
+### <a name="Rc-delegating"></a>C.51: 用委派构造函数来表示类中所有构造函数的共同行为
+
+##### 理由
+
+以避免代码重复和意外出现的差异。
+
+##### 示例，不好
+
+    class Date {   // 不好: 有重复
+        int d;
+        Month m;
+        int y;
+    public:
+        Date(int ii, Month mm, year yy)
+            :i{ii}, m{mm} y{yy}
+            { if (!valid(i, m, y)) throw Bad_date{}; }
+
+        Date(int ii, Month mm)
+            :i{ii}, m{mm} y{current_year()}
+            { if (!valid(i, m, y)) throw Bad_date{}; }
+        // ...
+    };
+
+写这些共同行为很啰嗦，而且可能意外出现不一致。
+
+##### 示例
+
+    class Date2 {
+        int d;
+        Month m;
+        int y;
+    public:
+        Date2(int ii, Month mm, year yy)
+            :i{ii}, m{mm} y{yy}
+            { if (!valid(i, m, y)) throw Bad_date{}; }
+
+        Date2(int ii, Month mm)
+            :Date2{ii, mm, current_year()} {}
+        // ...
+    };
+
+**参见**: 当“重复行为”是简单的初始化时，考虑使用[类内部的成员初始化式](#Rc-in-class-initializer)。
+
+##### 强制实施
+
+【中等】 查找相似的构造函数体。
+
 
 
