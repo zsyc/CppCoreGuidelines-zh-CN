@@ -3639,7 +3639,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 * [C.64: 移动操作应当进行移动，并使原对象处于有效状态](#Rc-move-semantic)
 * [C.65: 使移动赋值可以安全进行自赋值](#Rc-copy-self)
 * [C.66: 使移动操作 `noexcept`](#Rc-move-noexcept)
-* [C.67: 基类应当抑制赋值操作，并在需要复制能力时提供一个虚的 `clone` 函数](#Rc-copy-virtual)
+* [C.67: 基类应当抑制复制操作，并在需要复制能力时提供一个虚的 `clone` 函数](#Rc-copy-virtual)
 
 其他的默认操作规则：
 
@@ -5154,6 +5154,57 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 ##### 强制实施
 
 【简单】 移动操作应当被标为 `noexcept`。
+
+### <a name="Rc-copy-virtual"></a>C.67: 基类应当抑制复制操作，并在需要复制能力时提供一个虚的 `clone` 函数
+
+##### 理由
+
+以防止发生切片，这是由于普通的复制操作只会复制派生类对象的基类部分。
+
+##### 示例，不好
+
+    class B { // 不好: 基类并未抑制复制操作
+        int data;
+        // ... 没有提供复制操作，使用预置实现 ...
+    };
+
+    class D : public B {
+        string moredata; // 添加一个数据成员
+        // ...
+    };
+
+    auto d = make_unique<D>();
+    auto b = make_unique<B>(d); // 啊呀，对象切片了；仅获得了 d.data 而丢失了 d.moredata
+
+##### 示例
+
+    class B { // 好: 基类抑制了复制操作
+        B(const B&) =delete;
+        B& operator=(const B&) =delete;
+        virtual unique_ptr<B> clone() { return /* B 对象 */; }
+        // ...
+    };
+
+    class D : public B {
+        string moredata; // add a data member
+        unique_ptr<B> clone() override { return /* D 对象 */; }
+        // ...
+    };
+
+    auto d = make_unique<D>();
+    auto b = d.clone(); // ok, 深克隆
+
+##### 注解
+
+返回智能指针是一种好做法，不过和原始指针不同，这种返回类型无法协变（比如说，`D::clone` 不能返回 `unique_ptr<D>`）。请勿据此被诱骗为返回带所有权的原始指针；这相对于由带所有权的智能指针所提供的主要的健壮性优势来说，只不过是次要的小缺点。
+
+##### 例外
+
+如果想要协变返回类型的话，请返回 `owner<derived*>`。参见 [C.130](#Rh-copy)。
+
+##### 强制实施
+
+带有虚函数的类不应当带有复制构造函数或复制赋值运算符（无论是编译器生成的还是手写的）。
 
 
 
