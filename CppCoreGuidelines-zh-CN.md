@@ -5114,5 +5114,46 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 * 【中级】 在自赋值的情况中，移动赋值运算符不应当使持有已经被 `delete` 或设为 `nullptr` 的指针成员。
 * 【无法强制实施】 查看标准库容器类型（包括 `string`）的使用方式，在普通（非性命攸关）使用中将它们当作是安全的。
 
+### <a name="Rc-move-noexcept"></a>C.66: 使移动操作 `noexcept`
+
+##### 理由
+
+能够抛出异常的移动操作将违反大多数人的合理假设。
+不会抛出异常的移动操作可以更高效地被标准库和语言设施所利用。
+
+##### 示例
+
+    template<typename T>
+    class Vector {
+        // ...
+        Vector(Vector&& a) noexcept :elem{a.elem}, sz{a.sz} { a.sz = 0; a.elem = nullptr; }
+        Vector& operator=(Vector&& a) noexcept { elem = a.elem; sz = a.sz; a.sz = 0; a.elem = nullptr; }
+        // ...
+    public:
+        T* elem;
+        int sz;
+    };
+
+这些复制操作不会抛出异常。
+
+##### 示例，不好
+
+    template<typename T>
+    class Vector2 {
+        // ...
+        Vector2(Vector2&& a) { *this = a; }             // 直接利用复制操作
+        Vector2& operator=(Vector2&& a) { *this = a; }  // 直接利用复制操作
+        // ...
+    public:
+        T* elem;
+        int sz;
+    };
+
+`Vector2` 不仅低效，而且由于向量的复制需要分配内存而使其可能抛出异常。
+
+##### 强制实施
+
+【简单】 移动操作应当被标为 `noexcept`。
+
 
 
