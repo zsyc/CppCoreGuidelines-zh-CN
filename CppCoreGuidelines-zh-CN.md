@@ -4862,5 +4862,76 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 * 【中等】 赋值运算符应当（隐式或者显式）调用所有的基类和成员的赋值运算符。
   检查析构函数以分辨类型具有指针语义还是值语义。
 
+### <a name="Rc-copy-semantic"></a>C.61: 复制操作应当进行复制
+
+##### 理由
+
+这正是一般假定所具有的语义。执行 `x=y` 之后，应当有 `x == y`。
+进行复制之后，`x` 和 `y` 可以是各自独立的对象（值语义，非指针的内建类型和标准库类型的工作方式），也可以代表某个共享的对象（指针语义，就是指针的工作方式）。
+
+##### 示例
+
+    class X {   // OK: 值语义
+    public:
+        X();
+        X(const X&);     // 复制 X
+        void modify();   // 改变 X 的值
+        // ...
+        ~X() { delete[] p; }
+    private:
+        T* p;
+        int sz;
+    };
+
+    bool operator==(const X& a, const X& b)
+    {
+        return a.sz == b.sz && equal(a.p, a.p + a.sz, b.p, b.p + b.sz);
+    }
+
+    X::X(const X& a)
+        :p{new T[a.sz]}, sz{a.sz}
+    {
+        copy(a.p, a.p + sz, a.p);
+    }
+
+    X x;
+    X y = x;
+    if (x != y) throw Bad{};
+    x.modify();
+    if (x == y) throw Bad{};   // 假定具有值语义
+
+##### 示例
+
+    class X2 {  // OK: 指针语义
+    public:
+        X2();
+        X2(const X&) = default; // 浅拷贝
+        ~X2() = default;
+        void modify();          // 改变 X 的值
+        // ...
+    private:
+        T* p;
+        int sz;
+    };
+
+    bool operator==(const X2& a, const X2& b)
+    {
+        return a.sz == b.sz && a.p == b.p;
+    }
+
+    X2 x;
+    X2 y = x;
+    if (x != y) throw Bad{};
+    x.modify();
+    if (x != y) throw Bad{};  // 假定具有指针语义
+
+##### 注解
+
+应当优先采用复制语义，除非你要构建某种“智能指针”。值语义是最容易进行推理的，而且也是被标准库设施所期望的。
+
+##### 强制实施
+
+【无法强制实施】
+
 
 
