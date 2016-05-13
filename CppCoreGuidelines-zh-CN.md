@@ -4787,5 +4787,80 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 确保派生类的每个成员都被初始化。
 
+## <a name="SS-copy"></a>C.copy: 复制和移动
+
+值类型一般都应当是可以复制的，而类层次中的接口则不应如此。
+资源包装可以复制也可以不能复制。
+我们可以基于逻辑因素，也可以为性能原因而将类型定义为可移动的。
+
+### <a name="Rc-copy-assignment"></a>C.60: 使复制赋值非 `virtual`，接受 `const&` 的参数，并返回非 `const` 的引用
+
+##### 理由
+
+这样做简单且高效。如果想对右值进行优化，则可以提供一个接受 `&&` 的重载（参见 [F.24](#Rf-pass-ref-ref)）。
+
+##### 示例
+
+    class Foo {
+    public:
+        Foo& operator=(const Foo& x)
+        {
+            auto tmp = x;   // 好: 不需要检查自赋值的情况（除非为性能考虑）
+            std::swap(*this, tmp);
+            return *this;
+        }
+        // ...
+    };
+
+    Foo a;
+    Foo b;
+    Foo f();
+
+    a = b;    // 用左值赋值：复制
+    a = f();  // 用右值赋值：可能进行移动
+
+##### 注解
+
+`swap` 实现技巧可以提供[强保证](???)。
+
+##### 示例
+
+如果不产生临时副本能够得到明显好得多的性能的话应当怎么办呢？考虑一个简单的 `Vector` 类，其所使用的领域中常常要对大型的、大小相同的 `Vector` 进行赋值。这种情况下，`swap` 实现技巧中所蕴含的元素复制操作将导致运行成本按数量级增长。
+
+    template<typename T>
+    class Vector {
+    public:
+        Vector& operator=(const Vector&);
+        // ...
+    private:
+        T* elem;
+        int sz;
+    };
+
+    Vector& Vector::operator=(const Vector& a)
+    {
+        if (a.sz > sz) {
+            // ... 使用 swap 技巧，没有更好的方式了 ...
+            return *this
+        }
+        // ... 从 *a.elem 复制 sz 个元素给 elem ...
+        if (a.sz < sz) {
+            // ... 销毁 *this* 中过剩的元素并调整大小 ...
+        }
+        return *this;
+    }
+
+直接向目标元素中进行写入的话，我们得到的是[基本保证](#???)而不是 `swap` 技巧所提供的强保证。还要当心[自赋值](#Rc-copy-self)。
+
+**替代方案**: 如果你想要 `virtual` 的赋值运算符，并了解为何这样做很有问题的话，请不要使其为 `operator=`。请使用一个命名函数，如 `virtual void assign(const Foo&)`。
+参见[复制构造函数 vs. `clone()`](#Rc-copy-virtual)。
+
+##### 强制实施
+
+* 【简单】 赋值运算符不能为 `virtual`。有怪兽出没！
+* 【简单】 赋值运算符应当返回 `T&` 以支持调用链，不要改为如 `const T&` 等类型，这样会影响可组合性以及把对象放入容器的能力。
+* 【中等】 赋值运算符应当（隐式或者显式）调用所有的基类和成员的赋值运算符。
+  检查析构函数以分辨类型具有指针语义还是值语义。
+
 
 
