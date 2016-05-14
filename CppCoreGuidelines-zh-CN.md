@@ -5254,5 +5254,55 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 【中级】 特殊操作的函数体不应当和编译器生成的版本具有同样的访问性和语义，因为这样做是多余的。
 
+### <a name="Rc-delete"></a>C.81: 当需要关闭缺省行为（且不需要替代的行为）时，使用 `=delete`
+
+##### 理由
+
+少数情况下是不需要提供默认操作的。
+
+##### 示例
+
+    class Immortal {
+    public:
+        ~Immortal() = delete;   // 不允许进行销毁
+        // ...
+    };
+
+    void use()
+    {
+        Immortal ugh;   // 错误: ugh 无法销毁
+        Immortal* p = new Immortal{};
+        delete p;       // 错误: 无法销毁 *p
+    }
+
+##### 示例
+
+`unique_ptr` 可以移动但不能复制。为达成这点，其复制操作是被弃置的。为了避免发生复制，需要将其从左值进行复制的操作定义为 `=delete`：
+
+    template <class T, class D = default_delete<T>> class unique_ptr {
+    public:
+        // ...
+        constexpr unique_ptr() noexcept;
+        explicit unique_ptr(pointer p) noexcept;
+        // ...
+        unique_ptr(unique_ptr&& u) noexcept;   // 移动构造函数
+        // ...
+        unique_ptr(const unique_ptr&) = delete; // 关闭从左值进行的复制
+        // ...
+    };
+
+    unique_ptr<int> make();   // 创建“某个对象”并以移动方式返回
+
+    void f()
+    {
+        unique_ptr<int> pi {};
+        auto pi2 {pi};      // 错误: 不存在从左值进行的移动构造函数
+        auto pi3 {make()};  // OK，进行移动: make() 的结果为右值
+    }
+
+##### 强制实施
+
+消除一个默认操作，是（应当是）基于类所要达成的语义考虑的。应当对这样的类保持怀疑，但可以维护一个“确认列表”，由人工断言其语义是正确的。
+
 
 
