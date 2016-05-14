@@ -5206,5 +5206,53 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 带有虚函数的类不应当带有复制构造函数或复制赋值运算符（无论是编译器生成的还是手写的）。
 
+## C.other: 默认操作的其他规则
+
+除了语言为之提供默认实现的操作之外，
+还有一些操作也是非常基础的，需要对它们的定义进行规范：
+比较，`swap`，以及 `hash`。
+
+### <a name="Rc-default"></a>C.80: 当需要明确使用缺省语义时，使用 `=default`
+
+##### 理由
+
+编译器能更正确地实现缺省语义，你所实现的这些函数也不会比编译器更好。
+
+##### 示例
+
+    class Tracer {
+        string message;
+    public:
+        Tracer(const string& m) : message{m} { cerr << "entering " << message << '\n'; }
+        ~Tracer() { cerr << "exiting " << message << '\n'; }
+
+        Tracer(const Tracer&) = default;
+        Tracer& operator=(const Tracer&) = default;
+        Tracer(Tracer&&) = default;
+        Tracer& operator=(Tracer&&) = default;
+    };
+
+由于定义了析构函数，所以也得定义它的复制和移动操作。最佳且最简单的做法就是 `=default`。
+
+##### 示例，不好
+
+    class Tracer2 {
+        string message;
+    public:
+        Tracer2(const string& m) : message{m} { cerr << "entering " << message << '\n'; }
+        ~Tracer2() { cerr << "exiting " << message << '\n'; }
+
+        Tracer2(const Tracer2& a) : message{a.message} {}
+        Tracer2& operator=(const Tracer2& a) { message = a.message; }
+        Tracer2(Tracer2&& a) :message{a.message} {}
+        Tracer2& operator=(Tracer2&& a) { message = a.message; }
+    };
+
+把复制和移动操作的函数体写明的做法，既啰嗦又乏味，而且易于出错。编译器则能干得更好。
+
+##### 强制实施
+
+【中级】 特殊操作的函数体不应当和编译器生成的版本具有同样的访问性和语义，因为这样做是多余的。
+
 
 
