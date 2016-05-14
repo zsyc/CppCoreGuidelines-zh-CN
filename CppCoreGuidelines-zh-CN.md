@@ -5405,5 +5405,16 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 【简单】 当类带有 `swap` 成员函数时，它应当被声明为 `noexcept`。
 
+### <a name="Rc-swap-noexcept"></a>C.85: 使 `swap` 函数 `noexcept`
+
+##### 理由
+
+[`swap` 不应当失败](#Rc-swap-fail)。
+如果 `swap` 试图用异常来退出的话，这就是严重的设计错误，程序最好理解终止 terminate。
+
+##### 强制实施
+
+【简单】 当类带有 `swap` 成员函数时，它应当被声明为 `noexcept`。
+
 
 
