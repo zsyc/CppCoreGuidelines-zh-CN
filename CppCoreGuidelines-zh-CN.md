@@ -5703,5 +5703,39 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 * 对任何含有数据成员同时带有可被覆盖（非 `final`）的虚函数的类给出警告。
 
+### <a name="Rh-separation"></a>C.122: 当需要完全区分接口和实现时，应当用抽象类作为接口
+
+##### 理由
+
+诸如在 ABI（连接）边界这种地方。
+
+##### 示例
+
+    struct Device {
+        virtual void write(span<const char> outbuf) = 0;
+        virtual void read(span<char> inbuf) = 0;
+    };
+    
+    class D1 : public Device {
+        // ... 数据 ...
+        
+        void write(span<const char> outbuf) override;
+        void read(span<char> inbuf) override;
+    };
+    
+    class D2 : public Device {
+        // ... 不同的数据 ...
+        
+        void write(span<const char> outbuf) override;
+        void read(span<char> inbuf) override;
+    };
+    
+使用者可以通过由 `Device` 所提供的接口来互换地使用 `D1` 和 `D2`。
+而且，只要其访问一直是通过 `Device` 进行的话，也可以以与老版本二进制不兼容的方式来更新 `D1` 和 `D2`。
+
+##### 强制实施
+
+    ???
+
 
 
