@@ -5661,5 +5661,47 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * 寻找带有许多不干别的只会抛出异常的成员的类。
 * 对非公用基类 `B` 的每次使用进行标记，其中派生类 `D` 并未覆盖 `B` 的某个虚函数，或访问某个受保护成员，而 `B` 并非以下情况：为空，为 `D` 的模板参数或参数包组，或者为以 `D` 所特化的类模板。
 
+### <a name="Rh-abstract"></a>C.121: 如果基类被用作接口的话，应使其成为纯抽象类
+
+##### 理由
+
+不包含数据的类更加稳定（更不脆弱易变）。
+接口通常都应当全部由公开的纯虚函数和一个预置的或为空的虚析构函数组成。
+
+##### 示例
+
+    class my_interface {
+    public:
+        // ... 只有一个纯虚函数 ...
+        virtual ~my_interface() {}   // 或者 =default
+    };
+    
+##### 示例，不好
+
+    class Goof {
+    public:
+        // ... 只有一个纯虚函数 ...
+        // 没有虚析构函数
+    };
+    
+    class Derived : public Goof {
+        string s;
+        // ...
+    };
+    
+    void use()
+    {
+        unique_ptr<Goof> p {new Derived{"here we go"}};
+        f(p.get()); // 通过 Goof 接口使用 Derived
+        g(p.get()); // 通过 Goof 接口使用 Derived
+     } // 泄漏
+
+`Derived` 是通过其 `Goof` 接口而被 `delete` 的，而它的 `string` 则泄漏了。
+为 `Goof` 提供虚析构函数就能使其都正常工作。 
+
+##### 强制实施
+
+* 对任何含有数据成员同时带有可被覆盖（非 `final`）的虚函数的类给出警告。
+
 
 
