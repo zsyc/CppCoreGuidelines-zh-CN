@@ -5575,5 +5575,46 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * [F.53: 在不被局部范围内使用（包括存储在堆上，或传递给其他线程）的 lambda 中避免按引用捕捉](#Rf-value-capture)
 * [ES.28: 针对复杂的初始化（尤其是 `const` 变量）使用 lambda](#Res-lambda-init)
 
+## <a name="SS-hier"></a>C.hier: 类层次（OOP）
+
+构建类层次（仅）用于表达一组按层次组织的概念。
+基类通常都表现为接口。
+类层次有两种主要的用法，它们通常被叫做实现继承和接口继承。
+
+类层次规则概览：
+
+* [C.120: 使用类层次来表达具有天然层次化结构的概念](#Rh-domain)
+* [C.121: 如果基类被用作接口的话，应使其成为纯抽象类](#Rh-abstract)
+* [C.122: 当需要完全区分接口和实现时，应当用抽象类作为接口](#Rh-separation)
+
+类层次的设计规则概览：
+
+* [C.126: 抽象类通常并不需要构造函数](#Rh-abstract-ctor)
+* [C.127: 带有虚函数的类应当带有虚的或受保护的析构函数](#Rh-dtor)
+* [C.128: 使用 `override` 来明确大型类层次中发生的覆盖](#Rh-override)
+* [C.129: 当设计类层次时，应区分实现继承和接口继承](#Rh-kind)
+* [C.130: 重新定义或禁止基类的复制操作；优先代之以一个虚 `clone` 函数](#Rh-copy)
+* [C.131: 避免无价值的取值和设值函数](#Rh-get)
+* [C.132: 请勿无理由地使函数 `virtual`](#Rh-virtual)
+* [C.133: 避免 `protected` 数据](#Rh-protected)
+* [C.134: 确保所有非 `const` 数据成员有相同的访问级别](#Rh-public)
+* [C.135: 用多继承来表达多个不同的接口](#Rh-mi-interface)
+* [C.136: 用多继承来表达一些实现特性的合并](#Rh-mi-implementation)
+* [C.137: 用 `virtual` 基类以避免过于通用的基类](#Rh-vbase)
+* [C.138: 用 `using` 来为派生类和其基类建立重载集合](#Rh-using)
+* [C.139: `final` 的运用应当保守](#Rh-final)
+* [C.140: 不要在虚函数和其覆盖函数上提供不同的默认参数](#Rh-virtual-default-arg)
+
+对类层次中的对象进行访问的规则概览：
+
+* [C.145: 通过指针和引用来访问多态对象](#Rh-poly)
+* [C.146: 当无法避免在类层次上进行导航时应使用 `dynamic_cast`](#Rh-dynamic_cast)
+* [C.147: 当查找所需类的失败被当做一种错误时，应当对引用类型使用 `dynamic_cast`](#Rh-ptr-cast)
+* [C.148: 当查找所需类的失败被当做一种有效的可能情况时，应当对指针类型使用 `dynamic_cast`](#Rh-ref-cast)
+* [C.149: 用 `unique_ptr` 或 `shared_ptr` 来避免忘记对以 `new` 所创建的对象进行 `delete` 的情况](#Rh-smart)
+* [C.150: 用 `make_unique()` 来构建由 `unique_ptr` 所拥有的对象](#Rh-make_unique)
+* [C.151: 用 `make_shared()` 来构建由 `shared_ptr` 所拥有的对象](#Rh-make_shared)
+* [C.152: 禁止把指向派生类对象的数组的指针赋值给指向基类的指针](#Rh-array)
+
 
 
