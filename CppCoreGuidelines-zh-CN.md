@@ -5562,5 +5562,18 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 **参见**: [资源](#S-resource)
 
+## <a name="SS-lambdas"></a>C.lambdas: 函数对象和 lambda
+
+函数对象是提供了重载的 `()` 的对象，因此可以进行调用。
+Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数对象的写法。
+函数对象应当可廉价地复制（因此可以[按值传递](#Rf-in)）。
+
+概要：
+
+* [F.50: 无法用函数达成（捕捉局部变量，或者编写局部函数）时，应使用 lambda](#Rf-capture-vs-overload)
+* [F.52: 在将被局部范围内使用（包括将之传递给算法）的 lambda 中优先按引用捕捉](#Rf-reference-capture)
+* [F.53: 在不被局部范围内使用（包括存储在堆上，或传递给其他线程）的 lambda 中避免按引用捕捉](#Rf-value-capture)
+* [ES.28: 针对复杂的初始化（尤其是 `const` 变量）使用 lambda](#Res-lambda-init)
+
 
 
