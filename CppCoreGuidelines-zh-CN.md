@@ -5871,5 +5871,40 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * 对基类对象（有派生类的类对象）的赋值操作进行标记。
 
 
+### <a name="Rh-get"></a>C.131: 避免无价值的取值和设值函数
+
+##### 理由
+
+无价值的取值和设值函数没有提供语义价值；让数据项自己 `public` 是一样的。
+
+##### Example
+
+    class point {
+        int x;
+        int y;
+    public:
+        point(int xx, int yy) : x{xx}, y{yy} { }
+        int get_x() { return x; }
+        void set_x(int xx) { x = xx; }
+        int get_y() { return y; }
+        void set_y(int yy) { y = yy; }
+        // 没有有行为的成员函数
+    };
+
+应当考虑把这个类变为 `struct`——就是一组没有行为的变量，全部都是公开数据而没有成员函数。
+
+    struct point {
+        int x = 0;
+        int y = 0;
+    };
+
+##### 注解
+
+把内部类型转换成某个接口类型的取值或设值函数并非是无意义的（它提供了一种信息隐藏形式）。
+
+##### 强制实施
+
+对大量仅提供单纯的成员访问而没有其他语义的 `get` 和 `set` 成员函数进行标记。
+
 
 
