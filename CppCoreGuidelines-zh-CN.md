@@ -5840,5 +5840,36 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ???
 
+### <a name="Rh-copy"></a>C.130: 重新定义或禁止基类的复制操作；优先代之以一个虚 `clone` 函数
+
+##### 理由
+
+基类的复制通常会发生切片。如果确实需要复制语义的话，应当进行深复制：提供一个虚 `clone` 函数，它复制的是真正的最终派生类型，并返回指向新对象的具有所有权的指针，而且在派生类中它返回的也是派生类型（利用协变返回类型）。
+
+##### 示例
+
+    class base {
+    public:
+        virtual owner<base*> clone() = 0;
+        virtual ~base() = 0;
+
+        base(const base&) = delete;
+        base& operator=(const base&) = delete;
+    };
+
+    class derived : public base {
+    public:
+        owner<derived*> clone() override;
+        virtual ~derived() override;
+    };
+
+注意，根据语言规则，协变返回类型不能是智能指针。参见 [C.67](#Rc-copy-virtual)。
+
+##### 强制实施
+
+* 对带有虚函数和非用户定义的复制操作的类进行标记。
+* 对基类对象（有派生类的类对象）的赋值操作进行标记。
+
+
 
 
