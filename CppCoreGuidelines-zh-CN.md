@@ -5791,5 +5791,40 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * 带有任何虚函数的类的析构函数应当要么是 `public` 和 `virtual`，要么是 `protected` 和非 `virtual` 的。
 * 把对带有虚函数但没有虚析构函数的类的 `delete` 标记出来。
 
+### <a name="Rh-override"></a>C.128: 虚函数应当指明 `virtual`、`override`、`final` 三者之一
+
+##### 理由
+
+可读性。检测错误。明确写下的 `virtual`、`override` 或 `final` 是自说明的，并使编译器可以检查到基类和派生类之间的类型和/或名字的不匹配。不过写出超过一个则不仅多余而且是潜在的错误来源。
+
+声明新的虚函数时仅使用 `virtual`。声明覆盖函数时仅使用 `override`。声明最终覆盖函数时仅使用 `final`。
+
+##### 示例，不好
+
+    struct B {
+        void f1(int);
+        virtual void f2(int) const;
+        virtual void f3(int);
+        // ...
+    };
+
+    struct D : B {
+        void f1(int);      // 警告: D::f1() 隐藏了 B::f1()
+        void f2(int) const;      // 警告: 没有明确 override
+        void f3(double);   // 警告: D::f3() 隐藏了 B::f3()
+        // ...
+    };
+    
+    struct D2 : B {
+        virtual void f2(int) final;  // 不好；陷阱，D2::f 并未覆盖 B::f
+    };
+
+##### 强制实施
+
+* 比较鸡肋和派生类中的名字，并对并未进行覆盖的相同名字的使用进行标记。
+* 对既没有 `override` 也没有 `final` 的覆盖函数进行标记。
+* 对函数声明中使用 `virtual`、`override` 和 `final` 中超过一个的情况进行标记。
+
+
 
 
