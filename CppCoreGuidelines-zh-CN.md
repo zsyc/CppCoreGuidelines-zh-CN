@@ -6059,5 +6059,66 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
     ???
 
 
+### <a name="Rh-final"></a>C.139: `final` 的运用应当保守
+
+##### 理由
+
+用 `final` 来把类层次封闭很少是由于逻辑上的原因而必须的，并可能破坏掉类层次的可扩展性。
+用 `final` 来把单个的虚函数封印则是易错的，因为在定义和覆盖一组函数时，`final` 是很容易被忽视的。
+
+##### 示例，不好
+
+    class Widget { /* ... */ };
+
+    class My_widget final : public Widget { /* ... */ };    // 没有人会想要改进 My_widget（你可能这么觉得）
+
+    class My_improved_widget : public My_widget { /* ... */ };  // 错误: 办不到了
+
+##### 示例，不好
+
+    struct Interface {
+        virtual int f() = 0;
+        virtual int g() = 0;
+    };
+
+    class My_implementation : public Interface {
+        int f() override;
+        int g() final;  // 我想让 g() 跑得很快！
+        // ...
+    };
+
+    class Better_implementation : public My_implementation {
+        int f();
+        int g();
+        // ...
+    };
+
+    void use(Interface* p)
+    {
+        int x = p->f();    // Better_implementation::f()
+        int y = p->g();    // My_implementation::g() 感觉意外吗？
+    }
+
+    // ...
+
+    use(new Better_interface{});
+
+在小例子中是很容易看出问题的，但在具有许多虚函数的大型层次中，则需要工具来可靠地识别出这些问题。
+保持一贯地使用 `override` 应该能解决这种问题。
+
+##### 注解
+
+有关 `final` 带来的性能提升的断言是需要证实的。
+非常常见的是，这种断言都是基于推测或者在其他语言上的经验而来的。
+
+有一些例子中的 `final` 对于逻辑和性能因素来说可能都是重要的。
+一个例子是编译器和语言分析工具中的性能关键的 AST 层次结构。
+其中并非每年都会添加新的派生类，而且只有程序库的实现者会做这种事。
+不过，误用（或者至少曾经的误用）的情况远远比这常见。
+
+##### 强制实施
+
+标记出 `final` 的所有使用。
+
 
 
