@@ -6316,5 +6316,26 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ???
 
+### <a name="Rh-smart"></a>C.149: 用 `unique_ptr` 或 `shared_ptr` 来避免忘记对以 `new` 所创建的对象进行 `delete` 的情况
+
+##### 理由
+
+避免资源泄漏。
+
+##### 示例
+
+    void use(int i)
+    {
+        auto p = new int {7};           // 不好: 用 new 来初始化局部指针
+        auto q = make_unique<int>(9);   // ok: 保证了为 9 所分配的内存会被回收
+        if (0 < i) return;              // 可能会返回并泄漏
+        delete p;                       // 太晚了
+    }
+
+##### 强制实施
+
+* 标记用 `new` 的结果来对裸指针所进行的初始化。
+* 标记对局部变量的 `delete`。
+
 
 
