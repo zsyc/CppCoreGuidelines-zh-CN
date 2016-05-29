@@ -6337,5 +6337,36 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 * 标记用 `new` 的结果来对裸指针所进行的初始化。
 * 标记对局部变量的 `delete`。
 
+### <a name="Rh-make_unique"></a>C.150: 用 `make_unique()` 来构建由 `unique_ptr` 所拥有的对象
+
+##### 理由
+
+`make_unique` 为构造提供了更精炼的语句。
+它也保证了复杂表达式中的异常安全性。
+
+##### 示例
+
+    unique_ptr<Foo> p {new<Foo>{7}};   // OK: 不过有重复
+
+    auto q = make_unique<Foo>(7);      // 有改善: 并未重复 Foo
+
+    // 非异常安全: 编译器可能如下交错进行各参数的计算:
+    //
+    // 1. 为 Foo 分配内存
+    // 2. 构造 Foo
+    // 3. 调用 bar
+    // 4. 构造 unique_ptr<Foo>
+    //
+    // 如果 bar 抛出了异常，Foo 就不会被销毁，而为其所分配的内存则会泄漏。
+    f(unique_ptr<Foo>(new Foo()), bar());
+
+    // 异常安全: 各函数调用无法互相交错。
+    f(make_unique<Foo>(), bar());
+
+##### 强制实施
+
+* 标记模板特化列表 `<Foo>` 的重复使用。
+* 标记声明为 `unique_ptr<Foo>` 的变量。
+
 
 
