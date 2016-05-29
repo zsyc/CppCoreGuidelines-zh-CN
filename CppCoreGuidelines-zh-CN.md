@@ -6368,5 +6368,23 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 * 标记模板特化列表 `<Foo>` 的重复使用。
 * 标记声明为 `unique_ptr<Foo>` 的变量。
 
+### <a name="Rh-make_shared"></a>C.151: 用 `make_shared()` 来构建由 `shared_ptr` 所拥有的对象
+
+##### 理由
+
+`make_shared` 为构造提供了更精炼的语句。
+它也提供了一个机会，通过把 `shared_ptr` 的使用计数和对象相邻放置，来消除为引用计数进行独立的内存分配操作。
+
+##### 示例
+
+    shared_ptr<Foo> p {new<Foo>{7}};   // OK: 但出现重复；而且为这个 Foo 和 shared_ptr 的使用计数分别进行了分配
+
+    auto q = make_shared<Foo>(7);   // 有改善: 并未重复 Foo；只有一个对象
+
+##### 强制实施
+
+* 标记模板特化列表 `<Foo>` 的重复使用。
+* 标记声明为 `shared_ptr<Foo>` 的变量。
+
 
 
