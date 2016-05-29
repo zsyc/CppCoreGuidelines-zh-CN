@@ -6190,5 +6190,102 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 对所有切片都进行标记。
 
+### <a name="Rh-dynamic_cast"></a>C.146: 当无法避免在类层次上进行导航时应使用 `dynamic_cast`
+
+##### 理由
+
+`dynamic_cast` 是运行时检查。
+
+##### 示例
+
+    struct B {   // 接口
+        virtual void f();
+        virtual void g();
+    };
+
+    struct D : B {   // 更宽的接口
+        void f() override;
+        virtual void h();
+    };
+
+    void user(B* pb)
+    {
+        if (D* pd = dynamic_cast<D*>(pb)) {
+            // ... 使用 D 的接口 ...
+        }
+        else {
+            // ... 通过 B 的接口做事 ...
+        }
+    }
+
+##### 注解
+
+和其他强制转换一样，`dynamic_cast` 被过度使用了。
+[优先使用虚函数而不是强制转换](#???)。
+如果可行（无须运行时决议）并且相当便利的话，优先使用[静态多态](#???)而不是继承层次的导航。
+
+##### 注解
+
+一些人会在 `typeid` 更合适的时候使用 `dynamic_cast`；
+`dynamic_cast` 是一个通用的“是一个”操作，用以发现对象上的最佳接口，
+而 `typeid` 是“报告对象的精确类型”操作，用以发现对象的真实类型。
+后者本质上就是更简单的操作，因而应当更快一些。
+后者（`typeid`）是可以在需要时进行手工模仿的（比如说，当工作在 RTTI 因为某种原因被禁用的系统上），
+而前者（`dynamic_cast`）要正确地实现则要困难得多。
+
+考虑：
+
+    struct B {
+        const char * name {"B"};
+        virtual const char* id() const { return name; }
+        // ...
+    };
+
+    struct D : B {
+        const char * name {"D"};
+        const char* id() const override { return name; }
+        // ...
+    };
+
+    void use()
+    {
+        B* pb1 = new B;
+        B* pb2 = new D;
+
+        cout << pb1->id(); // "B"
+        cout << pb2->id(); // "D"
+
+        if (pb1->id() == pb2->id()) // *pb1 和 *pb2 类型相同
+        if (pb2 == "D") {         // 貌似没问题
+                D* pd = static_cast<D*>(pb1);
+                // ...
+        }
+        // ...
+    }
+
+`pb2 == "D"` 的结果实际上是由实现定义的。
+我们加上这个是为了警告自造的 RTTI 中的危险之处。
+这个代码可能可以多年正常工作，但只在不会对字符字面量进行唯一化的新机器，新编译器，或者新的连接器上失败。
+
+当实现你自己的 RTTI 时，请当心这一点。
+
+##### 例外
+
+如果你所用的实现提供的 `dynamic_cast` 确实很慢的话，你可能只得使用一种替代方案了。
+不过，所有无法静态决议的替代方案都设计显式的强制转换（通常为 `static_cast`），而且易于出错。
+你基本上都将会创建自己的特殊目的 `dynamic_cast`。
+因此，首先应当确定你的 `dynamic_cast` 确实和你想的一样慢（其实有相当多的并不被支持的流言），
+而且你使用的 `dynamic_cast` 确实是性能十分关键的。
+
+我们的观点是，当前的实现中的 `dynamic_cast` 并非很慢。
+比如说，在合适的条件下，是可以以[快速常量时间](http://www.stroustrup.com/fast_dynamic_casting.pdf)来实施 `dynamic_cast` 的。
+但是，兼容性问题使得作出改变很难，虽然大家都同意对优化付出的努力是值得的。
+
+在很罕见的情况下，如果你以及测量出 `dynamic_cast` 的开销确实有影响，你也有其他的方式来静态地保证向下转换的成功（比如说小心地应用 CRTP 时），而且其中并不涉及虚继承的话，可以考虑战术性地使用 `static_cast` 并带上显著的代码注释和免责声明，概述这个段落，而且由于类型系统无法验证其正确性而在维护中需要人工的关切。即便是这样，以我们的经验来说，这种“我知道我在干什么”的情况仍然是一种已知的 BUG 来源。
+
+##### 强制实施
+
+对所有用 `static_cast` 来进行向下转换进行标记，其中也包括实施 `static_cast` 的 C 风格的强制转换。
+
 
 
