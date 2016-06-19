@@ -6652,6 +6652,71 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 比较微妙。如果用户定义了 `&` 而并未同时为其结果类型定义 `->`，则进行警告。
 
+### <a name="Ro-namespace"></a>C.168: 应当在操作数所在的命名空间中定义重载运算符
+
+##### 理由
+
+可读性。
+通过 ADL 寻找运算符的能力。
+避免不同命名空间中的定义之间不一致。
+
+##### 示例
+
+    struct S { };
+    bool operator==(S,S);   // OK: 和 S 在相同的命名空间，甚至紧跟着 S
+    S s;
+
+    bool s==s;
+    
+如果有默认的 == 的话，这正是默认的 == 所做的。
+
+##### 示例
+
+    namespace N {
+        struct S { };
+        bool operator==(S,S);   // OK: 和 S 在相同的命名空间，甚至紧跟着 S
+    }
+    
+    N::S s;
+
+    bool s==s;  // 通过 ADL 找到了 N::operator==()
+
+##### 示例，不好
+
+    struct S { };
+    S s;
+
+    namespace N {
+        S::operator!(S a) { return true; }
+        S not_s = !s;
+    }
+    
+    namespace M {
+        S::operator!(S a) { return false; }
+        S not_s = !s;
+    }
+
+这里的 `!s` 的含义在 `N` 和 `M` 中是不同的。
+这可能是最易混淆的一点。
+移除 `namespace M` 的定义之后，混乱就被一种犯错的机会所代替。
+
+##### 注解
+
+当为定义于不同命名空间的两个类型定义一个二元运算符时，无法遵循这条规则。
+例如：
+   
+    Vec::Vector operator*(const Vec::Vector&, const Mat::Matrix&);
+
+也许最好避免这种情形。
+
+##### 参见
+
+这是这条规则的一种特殊情况：[辅助函数应当定义于它们的类相同的命名空间之中](#Rc-helper)。
+
+##### 强制实施
+
+* 对并非处于其操作数的命名空间中的运算符的定义进行标记。
+
 
 
 
