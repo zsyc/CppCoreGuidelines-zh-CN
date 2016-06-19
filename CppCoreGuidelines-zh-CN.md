@@ -6428,5 +6428,37 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 * [C.168: 应当在操作数所在的命名空间中定义重载运算符](#Ro-namespace)
 * [C.170: 当想要重载 lambda 时，应当使用泛型 lambda](#Ro-lambda)
 
+### <a name="Ro-conventional"></a>C.160: 定义运算符应当主要用于模仿传统用法
+
+##### 理由
+
+最小化意外情况。
+
+##### 示例
+
+    class X {
+    public:
+        // ...
+        X& operator=(const X&); // 定义赋值的成员函数
+        friend bool operator==(const X&, const X&); // == 需要访问其内部表示
+                                                    // 执行 a=b 之后将有 a==b
+        // ...
+    };
+    
+这里维持了传统的语义：[副本之间相等](#SS-copy)。
+
+##### 示例，不好
+
+    X operator+(X a, X b) { return a.v - b.v; }   // 不好: 让 + 执行减法
+
+##### 注解
+
+非成员运算符应当要么是友元，要么定义于[其操作数所在的命名空间中](#Ro-namespace)。
+[二元运算符应当等价地对待其两个操作数](#Ro-symmetric)。
+
+##### 强制实施
+
+也许是不可能的。
+
 
 
