@@ -6900,6 +6900,40 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 ???
 
+### <a name="Renum-class"></a>Enum.3: 优先采用 `class enum` 而不是“普通”`enum`
+
+##### 理由
+
+最小化意外情况：传统的 `enum` 太容易转换为 `int` 了。
+
+##### 示例
+
+    void PrintColor(int color);
+
+    enum Webcolor { red = 0xFF0000, green = 0x00FF00, blue = 0x0000FF };
+    enum Productinfo { Red=0, Purple=1, Blue=2 };
+
+    Webcolor webby = Webcolor::blue;
+
+    // 显然至少有一个调用是有问题的。
+    PrintColor(webby);
+    PrintColor(Productinfo::Blue);
+
+代之以 `enum class`：
+
+    void PrintColor(int color);
+
+    enum class Webcolor { red=0xFF0000, green=0x00FF00, blue=0x0000FF };
+    enum class Productinfo { red=0, purple=1, blue=2 };
+
+    Webcolor webby = Webcolor::blue;
+    PrintColor(webby);  // 错误: 无法转换 Webcolor 为 int。
+    PrintColor(Productinfo::Red);  // 错误: 无法转换 Productinfo 为 int。
+
+##### 强制实施
+
+【简单】 对所有非 `class enum` 定义进行警告。
+
 
 
 
