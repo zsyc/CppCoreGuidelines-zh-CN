@@ -6851,6 +6851,41 @@ C++ 语义中的很多部分都假定了其默认的含义。
 * [Enum.6: 采用无名枚举来 ???](#Renum-unnamed)
 * ???
 
+### <a name="Renum-macro"></a>Enum.1: 优先采用 `enum` 而不是宏
+
+##### 理由
+
+宏不遵守作用域和类型规则。而且，宏的名字在预处理中就被移除，因而通常不会出现在如调试器这样的工具中。
+
+##### 示例
+
+首先是一些不好的老代码：
+
+    // webcolors.h (第三方头文件)
+    #define RED   0xFF0000
+    #define GREEN 0x00FF00
+    #define BLUE  0x0000FF
+
+    // productinfo.h
+    // 以下则基于颜色定义了产品的子类型
+    #define RED    0
+    #define PURPLE 1
+    #define BLUE   2
+
+    int webby = BLUE;   // webby == 2; 可能不是我们所想要的
+
+代之以 `enum`：
+
+    enum class Webcolor { red = 0xFF0000, green = 0x00FF00, blue = 0x0000FF };
+    enum class Productinfo { red = 0, purple = 1, blue = 2 };
+
+    int webby = blue;   // 错误: 应当明确
+    Webcolor webby = Webcolor::blue;
+
+##### 强制实施
+
+标记定义整数值的宏
+
 
 
 
