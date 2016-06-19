@@ -6837,6 +6837,20 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 ???
 
+# <a name="S-enum"></a>Enum: 枚举
+
+枚举用于定义整数值的集合，并用于为这种值集定义类型。有两种类型的枚举，“普通”的 `enum` 和 `class enum`。
+
+枚举规则概览：
+
+* [Enum.1: 优先采用 `enum` 而不是宏](#Renum-macro)
+* [Enum.2: 采用枚举来表示具名常量的集合](#Renum-set)
+* [Enum.3: 优先采用 `class enum` 而不是“普通”`enum`](#Renum-class)
+* [Enum.4: 针对安全和简单的用法来为枚举定义操作](#Renum-oper)
+* [Enum.5: 请勿为枚举符采用 `ALL_CAPS` 命名方式](#Renum-caps)
+* [Enum.6: 采用无名枚举来 ???](#Renum-unnamed)
+* ???
+
 
 
 
