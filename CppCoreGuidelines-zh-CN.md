@@ -6475,5 +6475,31 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 标记成员运算符函数。
 
+### <a name="Ro-equivalent"></a>C.162: 重载的操作之间应当大体上是等价的
+
+##### 理由
+
+让逻辑上互相等价的操作对不同的参数类型使用不同的名字会带来混乱，导致在函数名字中编码类型信息，并妨碍泛型编程。
+
+##### 示例
+
+考虑：
+
+    void print(int a);
+    void print(int a, int base);
+    void print(const string&);
+
+这三个函数都对其参数进行（适当的）打印。相比而言：
+
+    void print_int(int a);
+    void print_based(int a, int base);
+    void print_string(const string&);
+
+这三个函数也都对其参数进行（适当的）打印。在名字上附加仅仅增添了啰嗦程度，而且妨碍了泛型代码。
+
+##### 强制实施
+
+???
+
 
 
