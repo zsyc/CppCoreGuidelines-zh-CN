@@ -6489,13 +6489,42 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
     void print(int a, int base);
     void print(const string&);
 
-这三个函数都对其参数进行（适当的）打印。相比而言：
+这三个函数都对其参数进行（适当的）打印。相对而言：
 
     void print_int(int a);
     void print_based(int a, int base);
     void print_string(const string&);
 
 这三个函数也都对其参数进行（适当的）打印。在名字上附加仅仅增添了啰嗦程度，而且妨碍了泛型代码。
+
+##### 强制实施
+
+???
+
+### <a name="Ro-equivalent-2"></a>C.163: 应当仅对大体上等价的操作进行重载
+
+##### 理由
+
+让逻辑上不同的函数使用相同的名字会带来混乱，并导致在泛型编程时发生错误。
+
+##### 示例
+
+考虑：
+
+    void open_gate(Gate& g);   // 把车库出口通道的障碍移除
+    void fopen(const char*name, const char* mode);   // 打开文件
+
+这两个操作本质上就是不同的（而且没有关联），因此让它们的名字相区别是正确的。相对而言：
+
+    void open(Gate& g);   // 把车库出口通道的障碍移除
+    void open(const char*name, const char* mode ="r");   // 打开文件
+
+这两个操作仍旧本质不同（且没有关联），但它们的名字缩减成了（共同的）最小词，并带来了发生混乱的机会。
+幸运的是，类型系统能够识别出许多这种错误。
+
+##### 注解
+
+对于一般性的和流行的名字，比如 `open`、`move`、`+` 和 `==` 等等，应当特别小心。
 
 ##### 强制实施
 
