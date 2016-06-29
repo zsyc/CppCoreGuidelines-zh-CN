@@ -6976,6 +6976,53 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 ???
 
+# <a name="S-resource"></a>R: 资源管理
+
+本章节中包含于资源相关的各项规则。
+资源，就是任何必须进行获取，并（显式或隐式）进行释放的东西，比如内存、文件句柄、Socket 和锁等等。
+其必须进行释放的原因在于它们是短缺的，因而即便是采用延迟释放也是有害的。
+基本的目标是要确保不会泄漏任何资源，而且不会持有不在需要的任何资源。
+负责释放某个资源的实体被称作是其所有者。
+
+少数情况下，发生泄漏是可接受的甚至是理想的：
+如果所编写的程序只是基于输入来产生输出，而其所需的内存正比于输入的大小，那么最理想的（性能和开发便利性）策略有时候恰是不要删除任何东西。
+如果有足够的内存来处理最大输入的话，让其泄漏即可，但如果并非如此，应当保证给出一条恰当的错误消息。
+这里，我们将忽略这样的情况。
+
+* 资源管理规则概览：
+
+  * [R.1: 利用资源包装器和 RAII（资源获取即初始化）来自动管理资源](#Rr-raii)
+  * [R.2: 接口中的原生指针（仅）代表个体对象](#Rr-use-ptr)
+  * [R.3: 原生指针（`T*`）没有所有权](#Rr-ptr)
+  * [R.4: 原生引用（`T&`）没有所有权](#Rr-ref)
+  * [R.5: 优先采用有作用域的对象](#Rr-scoped)
+  * [R.6: 避免非 `const` 的全局变量](#Rr-global)
+
+* 分配和回收规则概览：
+
+  * [R.10: 避免 `malloc()` 和 `free()`](#Rr-mallocfree)
+  * [R.11: 避免显式调用 `new` 和 `delete`](#Rr-newdelete)
+  * [R.12: 显式资源分配的结果应当立即交给一个管理对象](#Rr-immediate-alloc)
+  * [R.13: 单个表达式语句中至多进行一次明确资源分配](#Rr-single-alloc)
+  * [R.14: ??? 数组 vs. 指针参数](#Rr-ap)
+  * [R.15: 总是同时重载相匹配的分配、回收函数对](#Rr-pair)
+
+* <a name="Rr-summary-smartptrs"></a>智能指针规则概览：
+
+  * [R.20: 用 `unique_ptr` 或 `shared_ptr` 表示所有权](#Rr-owner)
+  * [R.21: 优先采用 `unique_ptr` 而不是 `shared_ptr`，除非需要共享所有权](#Rr-unique)
+  * [R.22: 使用 `make_shared()` 创建 `shared_ptr`](#Rr-make_shared)
+  * [R.23: 使用 `make_unique()` 创建 `unique_ptr`](#Rr-make_unique)
+  * [R.24: 使用 `std::weak_ptr` 来打断 `shared_ptr` 的循环引用](#Rr-weak_ptr)
+  * [R.30: 以智能指针为参数，仅用于明确表达生存期语义](#Rr-smartptrparam)
+  * [R.31: 非 `std` 的智能指针，应当遵循 `std` 的行为模式](#Rr-smart)
+  * [R.32: `unique_ptr<widget>` 参数用以表达函数假定获得 `widget` 的所有权](#Rr-uniqueptrparam)
+  * [R.33: `unique_ptr<widget>&` 参数用以表达函数对该 `widget` 重新置位](#Rr-reseat)
+  * [R.34: `shared_ptr<widget>` 参数用以表达函数是所有者的一份子](#Rr-sharedptrparam-owner)
+  * [R.35: `shared_ptr<widget>&` 参数用以表达函数可能会对共享的指针重新置位](#Rr-sharedptrparam)
+  * [R.36: `const shared_ptr<widget>&` 参数用以表达它可能将保留一个对对象的引用 ???](#Rr-sharedptrparam-const)
+  * [R.37: 不要把来自某个智能指针别名的指针或引用传递出去](#Rr-smartptrget)
+
 
 
 
