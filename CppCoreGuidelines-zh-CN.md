@@ -7023,6 +7023,68 @@ C++ 语义中的很多部分都假定了其默认的含义。
   * [R.36: `const shared_ptr<widget>&` 参数用以表达它可能将保留一个对对象的引用 ???](#Rr-sharedptrparam-const)
   * [R.37: 不要把来自某个智能指针别名的指针或引用传递出去](#Rr-smartptrget)
 
+### <a name="Rr-raii"></a>R.1: 利用资源包装器和 RAII（资源获取即初始化）来自动管理资源
+
+##### 理由
+
+避免资源泄漏和人工资源管理的复杂性。
+C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取/释放函数对（比如 `fopen`/`fclose`，`lock`/`unlock`，以及 `new`/`delete` 等）的对称性本质。
+每当需要处理某个需要成对儿的获取/释放函数调用的资源时，应当将资源封装到保证这种配对调用的对象之中——在构造函数中获取资源，并在其析构函数中释放它。
+
+##### 示例，不好
+
+考虑：
+
+    void send(X* x, cstring_span destination)
+    {
+        auto port = OpenPort(destination);
+        my_mutex.lock();
+        // ...
+        Send(port, x);
+        // ...
+        my_mutex.unlock();
+        ClosePort(port);
+        delete x;
+    }
+
+这段代码中，你必须记得在所有路径中调用 `unlock`、`ClosePort` 和 `delete`，并且每个都恰好调用一次。
+而且，一旦上面标有 `...` 的任何代码抛出了异常，`x` 就会泄漏，而 `my_mutex` 则保持锁定。
+
+##### 示例
+
+考虑：
+
+    void send(unique_ptr<X> x, cstring_span destination)  // x 拥有这个 X
+    {
+        Port port{destination};            // port 拥有这个 PortHandle
+        lock_guard<mutex> guard{my_mutex}; // guard 拥有这个锁
+        // ...
+        Send(port, x);
+        // ...
+    } // 自动解锁 my_mutex 并删除 x 中的指针
+
+现在所有的资源清理都是自动进行的，不管是否发生了异常，所有路径中都会执行一次。额外的好处是，该函数现在明确声称它将接过指针的所有权。
+
+`Port` 又是什么呢？是一个封装资源的便利包装器：
+
+    class Port {
+        PortHandle port;
+    public:
+        Port(cstring_span destination) : port{OpenPort(destination)} { }
+        ~Port() { ClosePort(port); }
+        operator PortHandle() { return port; }
+
+        // port 句柄通常是不能克隆的，因此根据需要关闭了复制和赋值
+        Port(const Port&) =delete;
+        Port& operator=(const Port&) =delete;
+    };
+
+##### 注解
+
+一旦发现一个“表现不良”的资源并未以带有析构函数的类来表示，就用一个类来包装它，或者使用 [`finally`](#S-gsl)。
+
+**参见**: [RAII](#Rr-raii)。
+
 
 
 
