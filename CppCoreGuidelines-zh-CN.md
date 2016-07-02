@@ -7303,6 +7303,54 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 (??? NM: 显然可以对非 `const` 的静态对象给出警告……要不要这样做呢？)
 
+## <a name="SS-alloc"></a>R.alloc: 分配与回收
+
+### <a name="Rr-mallocfree"></a>R.10: 避免 `malloc()` 和 `free()`
+
+##### 理由
+
+`malloc()` 和 `free()` 并不支持构造和销毁，而且无法同 `new` 和 `delete` 之间进行混用。
+
+##### 示例
+
+    class Record {
+        int id;
+        string name;
+        // ...
+    };
+
+    void use()
+    {
+        Record* p1 = static_cast<Record*>(malloc(sizeof(Record)));
+        // p1 可能是 nullptr
+        // *p1 并未初始化；尤其是，其中的 string 也还不是一个 string，而是一片和 string 大小相同的字节而已
+
+        auto p2 = new Record;
+
+        // 如果没有抛出异常的话，*p2 就经过了默认初始化
+        auto p3 = new(nothrow) Record;
+        // p3 可能为 nullptr；否则 *p3 就经过了默认初始化
+
+        // ...
+
+        delete p1;    // 错误: 不能 delete 由 malloc() 分配的对象
+        free(p2);    // 错误: 不能 free() 由 new 分配的对象
+    }
+
+在某些实现中，`delete` 和 `free()` 可能可以工作，或者也可能引发运行时的错误。
+
+##### 例外
+
+有些应用程序或者代码段是不能接受异常的。
+它们的最佳例子就是那些姓名攸关的硬实时代码。
+但要注意的是，许多对异常的禁止其实是基于某种（不良的）迷信，
+或者来源于对没有进行系统性的资源管理的老式代码库的关注（很不幸，但这经常是必须的）。
+在这些情况下，应当考虑使用 `nothrow` 版本的 `new`。
+
+##### 强制实施
+
+对 `malloc` 和 `free` 的使用进行标记。
+
 
 
 
