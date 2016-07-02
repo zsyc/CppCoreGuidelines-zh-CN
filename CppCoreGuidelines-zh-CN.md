@@ -7369,6 +7369,39 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 【简单】 对任何 `new` 和 `delete` 的显式使用都给出警告。建议代之以 `make_unique`。
 
+### <a name="Rr-immediate-alloc"></a>R.12: 显式资源分配的结果应当立即交给一个管理对象
+
+##### 理由
+
+如果不这样做的话，当发生异常或者返回时就可能造成泄露。
+
+##### 示例，不好
+
+    void f(const string& name)
+    {
+        FILE* f = fopen(name, "r");          // 打开文件
+        vector<char> buf(1024);
+        auto _ = finally([f] { fclose(f); })  // 记得要关闭文件
+        // ...
+    }
+
+`buf` 的分配可能会失败，并导致文件句柄的泄漏。
+
+##### 示例
+
+    void f(const string& name)
+    {
+        ifstream f{name, "r"};   // 打开文件
+        vector<char> buf(1024);
+        // ...
+    }
+
+对文件句柄（在 `ifstream` 中）的使用是简单、高效而且安全的。
+
+##### 强制实施
+
+* 将用于初始化指针的显式分配标记出来。（问题：我们能识别出多少直接资源分配呢？）
+
 
 
 
