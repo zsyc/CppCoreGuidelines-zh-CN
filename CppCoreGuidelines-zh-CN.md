@@ -7533,6 +7533,25 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 【简单】 如果函数所使用的 `shared_ptr` 的对象是函数之内所分配的，而且既不会将这个 `shared_ptr` 返回，也不会将其传递给其他接受 `shared_ptr&` 的函数的话，就给出警告。建议代之以 `unique_ptr`。
 
+### <a name="Rr-make_shared"></a>R.22: 使用 `make_shared()` 创建 `shared_ptr`
+
+##### 理由
+
+如果先创建对象再将其传给 `shared_ptr` 的构造函数的话，（最大可能是）比用 `make_shared()` 时多进行一次分配（以及随后的回收），这是因为引用计数只能和对象分开进行分配。
+
+##### 示例
+
+考虑：
+
+    shared_ptr<X> p1 { new X{2} }; // 不好
+    auto p = make_shared<X>(2);    // 好
+
+`make_shared()` 版本仅提到一次 `X`，因而它通常比显式的 `new` 方式要更简短（而且更快）。
+
+##### 强制实施
+
+【简单】 如果 `shared_ptr` 从 `new` 的结果而不是 `make_shared` 进行构造，就给出警告。
+
 
 
 
