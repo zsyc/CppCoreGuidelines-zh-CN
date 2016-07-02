@@ -7503,6 +7503,36 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 【简单】 如果 `new` 的返回值或者指针类型的函数调用返回值被赋值给了原生指针，就给出警告。
 
+### <a name="Rr-unique"></a>R.21: 优先采用 `unique_ptr` 而不是 `shared_ptr`，除非需要共享所有权
+
+##### 理由
+
+`unique_ptr` 概念上要更简单且更可预测（知道它何时会销毁），而且更快（不需要暗中维护引用计数）。
+
+##### 示例，不好
+
+这里并不需要维护一个引用计数。
+
+    void f()
+    {
+        shared_ptr<Base> base = make_shared<Derived>();
+        // 局部范围中使用 base，并未进行复制——引用计数不会超过 1
+    } // 销毁 base
+
+##### 示例
+
+这样更加高效：
+
+    void f()
+    {
+        unique_ptr<Base> base = make_unique<Derived>();
+        // 局部范围中使用 base
+    } // 销毁 base
+
+##### 强制实施
+
+【简单】 如果函数所使用的 `shared_ptr` 的对象是函数之内所分配的，而且既不会将这个 `shared_ptr` 返回，也不会将其传递给其他接受 `shared_ptr&` 的函数的话，就给出警告。建议代之以 `unique_ptr`。
+
 
 
 
