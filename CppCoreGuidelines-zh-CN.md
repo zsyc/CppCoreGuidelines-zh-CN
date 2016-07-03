@@ -7552,6 +7552,20 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 【简单】 如果 `shared_ptr` 从 `new` 的结果而不是 `make_shared` 进行构造，就给出警告。
 
+### <a name="Rr-make_unique"></a>R.23: 使用 `make_unique()` 创建 `unique_ptr`
+
+##### 理由
+
+编码便利以及和 `shared_ptr` 保持一致。
+
+##### 注解
+
+`make_unique()` 是 C++14 中的，不过已经广泛可用（而且也很容易编写）。
+
+##### 强制实施
+
+【简单】 如果 `unique_ptr` 从 `new` 的结果而不是 `make_unique` 进行构造，就给出警告。
+
 
 
 
