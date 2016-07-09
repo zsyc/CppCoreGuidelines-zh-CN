@@ -9569,6 +9569,114 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 查找显式的范围检查，并启发式地给出替代方案建议。
 
 
+### <a name="Res-move"></a>ES.56: 仅在确实需要明确移动某个对象到别的作用域时才使用 `std::move()`
+
+##### 理由
+
+我们用移动而不是复制，以避免发生重复并提升性能。
+
+一次移动通常会遗留一个空对象（[C.64](#Rc-move-semantic)），这可能令人意外甚至很危险，因此我们试图避免从左值进行移动（它们可能随后会被访问到）。
+
+##### 注解
+
+当来源是右值（比如 `return` 的值或者函数的结果）时就会隐式地进行移动，因此请不要在这些情况下明确写下 `move` 而无意义地使代码复杂化。可以代之以编写简短的返回值的函数，这样的话无论是函数的返回还是调用方的返回值接收，都会很自然地得到优化。
+
+一般来说，遵循本文档中的指导方针（包括不要让变量的作用域无必要地变大，编写返回值的简短函数，返回局部变量等），有助于消除大多数对显式使用 `std::move` 的需要。
+
+显式的 `move` 需要用于把某个对象明确移动到另一个作用域，尤其是将其传递给某个“接收器”函数，以及移动操作自身（移动构造函数，移动赋值运算符）和交换（`swap`）操作的实现之中。
+
+##### 示例，不好
+
+    void sink(X&& r);   // sink 接收 r 的所有权
+    
+    void user()
+    {
+        X x;
+        sink(r);            // 错误: 无法将作者绑定到右值引用
+        sink(std::move(r));  // OK: sink 接收了 r 的内容，r 随即必须假定为空
+        // ...
+        use(r);             // 可能是个错误
+    }
+
+通常来说，`std::move()` 都用做某个 `&&` 形参的实参。
+而这点之后，应当假定对象已经被移走（参见 [C.64](#Rc-move-semantic)），而直到首次向它设置某个新值之前，请勿再次读取它的状态。
+
+    void f() {
+        string s1 = "supercalifragilisticexpialidocious";
+ 
+        string s2 = s1;             // ok, 接收了一个副本
+        assert(s1=="supercalifragilisticexpialidocious");  // ok
+        
+        string s3 = move(s1);       // 不好, 如果你打算保留 s1 的值的话
+        assert(s1=="supercalifragilisticexpialidocious");  // 不好, assert 很可能会失败, s1 很可能被改动了
+    }
+
+##### 示例
+    
+    void sink( unique_ptr<widget> p );  // 将 p 的所有权传递给 sink()
+ 
+    void f() {
+        auto w = make_unique<widget>();
+        // ...
+        sink( std::move(w) );               // ok, 交给 sink() 
+        // ...
+        sink(w);    // 错误: unique_ptr 经过严格设计，你无法复制它
+    }
+ 
+##### 注解
+ 
+`std::move()` 经过伪装的向 `&&` 的强制转换；其自身并不会移动任何东西，但会把具名的对象标记为可被移动的候选者。
+语言中已经了解了对象可以被移动的一般情况，尤其是从函数返回时，因此请不要用多余的 `std::move()` 使代码复杂化。
+
+绝不要仅仅因为听说过“这样更加高效”就使用 `std::move()`。
+通常来说，请不要相信那些没有支持数据的有关“效率”的断言。(???).
+通常来说，请不要无理由地使代码复杂化。(??)
+
+##### 示例，不好
+
+    vector<int> make_vector() {
+        vector<int> result;
+        // ... 加载 result 的数据
+        return std::move(result);       // 不好; 直接写 "return result;" 即可
+    }
+    
+绝不要写 `return move(local_variable);`，这是因为语言已经知道这个变量是移动的候选了。
+在这段代码中用 `move` 并不会带来帮助，而且可能实际上是有害的，因为它创建了局部变量的一个额外引用别名，而在某些编译器中这回对 RVO（返回值优化）造成影响。
+ 
+##### 示例，不好
+ 
+    vector<int> v = std::move(make_vector());   // 不好; 这个 std::move 完全是多余的 
+
+绝不在返回值上使用 `move`，如 `x = move(f());`，其中的 `f` 按值返回。
+语言已经知道返回值是临时对象而且可以被移动。
+
+##### 示例
+
+    void mover(X&& x) {
+        call_something( std::move(x) );         // ok
+        call_something( std::forward<X>(x) );   // 不好, 请勿对右值引用 std::forward
+        call_something( x );                    // 可疑, 为什么不用 std::move?
+    }
+
+    template<class T>
+    void forwarder(T&& t) {
+        call_something( std::move(t) );         // 不好, 请勿对转发引用 std::move
+        call_something( std::forward<T>(t) );   // ok
+        call_something( t );                    // 可疑, 为什么不用 std::forward?
+    }
+
+##### 强制实施
+ 
+* 对于 `std::move(x)` 的使用，当 `x` 是右值，或者语言已经将其当做右值，这包括 `return std::move(local_variable);` 以及在按值返回的函数上的 `std::move(f())`，进行标记
+* 当没有接受 `const S&` 的函数重载来处理左值时，对接受 `S&&` 参数的函数进行标记。
+* 当将经过 `std::move` 的实参传递给某个形参时进行标记，除非形参的类型符合以下各项：`X&&` 右值引用；`T&&` 转发引用，其中 `T` 为模板参数类型；或者按值传递而其类型是只能移动的。
+* 当对转发引用（`T&&` 其中 `T` 为模板参数类型）使用 `std::move` 时进行标记。应当代之以使用 `std::forward`。
+* 当对并非右值引用使用 `std::move` 时进行标记。（这是前一条规则的更一般的情况，以覆盖非转发的情况。）
+* 当对右值引用（`X&&` 其中 `X` 为独立类型）使用 `std::forward` 时进行标记。应当代之以使用 `std::move`。
+* 当对并非转发引用使用 `std::forward` 时进行标记。（这是前一条规则的更一般的情况，以覆盖非移动的情况。）
+* 如果对象潜在地被移动走之后的下一个操作是 `const` 操作的话，则进行标记；首先应当交错进行一个非 `const` 操作，最好是赋值，以首先对对象的值进行重置。
+
+
 
 
 
