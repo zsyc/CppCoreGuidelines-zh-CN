@@ -9753,6 +9753,45 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ???
 
+### <a name="Res-slice"></a>ES.63: 不要产生切片
+
+##### 理由
+
+切片——亦即使用赋值或初始化而只对对象的一部分进行复制——通常会导致错误，
+这是因为对象总是被当成是一个整体。
+在罕见的进行蓄意的切片的代码中，其代码会让人意外。
+
+##### 示例
+
+    class Shape { /* ... */ };
+    class Circle : public Shape { /* ... */ Point c; int r; };
+    
+    Circle c {{0,0}, 42};
+    Shape s {c};    // 复制了 Circle 中的 Shape 部分
+    
+这样的结果是无意义的，因为不会把中心和半径从 `c` 复制给 `s`。
+针对这个的第一条防线是[基类 `Shape` 定义为不允许这样做将](#Rc-copy-virtual)。
+
+##### 替代方案
+
+如果确实需要切片的话，应当为之定义一个明确的操作。
+这会避免读者产生混乱。
+例如：
+
+    class Smiley : public Circle {
+        public:
+        Circle copy_circle();
+        // ...
+    };
+    
+    Smiley sm { /* ... */ };
+    Circle c1 {sm};  // 理想情况下又 Circle 的定义所禁止
+    Circle c2 {sm.copy_circle()};
+    
+##### 强制实施
+
+针对切片给出警告。
+
 
 
 
