@@ -8197,6 +8197,48 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 对所有的 ALL CAPS 进行标记。对于老代码，则接受宏名字的 ALL CAPS 而标记所有的非 ALL-CAPS 的宏名字。
 
+### <a name="Res-name-one"></a>ES.10: 每条声明中（仅）声明一个名字
+
+##### 理由
+
+每行一条声明的做法增加可读性并可避免与 C++ 的文法
+相关的错误。这样做也为更具描述性的行尾注释留下了
+空间。
+
+##### 示例，不好
+
+       char *p, c, a[7], *pp[7], **aa[10];   // 讨厌！
+
+**例外**: 函数声明中可以包含多个函数参数声明。
+
+##### 示例
+
+    template <class InputIterator, class Predicate>
+    bool any_of(InputIterator first, InputIterator last, Predicate pred);
+
+用 concept 则更佳：
+
+    bool any_of(InputIterator first, InputIterator last, Predicate pred);
+
+##### 示例
+
+    double scalbn(double x, int n);   // OK: x*pow(FLT_RADIX, n); FLT_RADIX 通常为 2
+
+或者：
+
+    double scalbn(    // 有改善: x*pow(FLT_RADIX, n); FLT_RADIX 通常为 2
+        double x,     // 基数
+        int n         // 指数
+    );
+
+或者：
+
+    double scalbn(double base, int exponent);   // 有改善: base*pow(FLT_RADIX, exponent); FLT_RADIX 通常为 2
+
+##### 强制实施
+
+非函数参数的声明中，若有多个声明符，并且设计了声明符运算符（比如 `int* p, q;`），则进行标记。
+
 
 
 
