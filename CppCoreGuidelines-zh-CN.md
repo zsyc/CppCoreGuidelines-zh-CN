@@ -7939,6 +7939,43 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 并不容易。??? 寻找混乱的循环，嵌套的循环，长函数，函数调用的缺失，缺乏使用非内建类型。圈复杂度？
 
+### <a name="Res-abstr"></a>ES.2: 优先采用适当的抽象而不是直接使用语言功能特性
+
+##### 理由
+
+“适当的抽象”（比如程序库或者类），更加贴近应用的概念而不是语言概念，将带来更简洁的代码，而且更容易进行测试。
+
+##### 示例
+
+    vector<string> read1(istream& is)   // 好
+    {
+        vector<string> res;
+        for (string s; is >> s;)
+            res.push_back(s);
+        return res;
+    }
+
+与之近乎等价的更传统且更低层的代码，更长、更混乱、更难编写正确，而且很可能更慢：
+
+    char** read2(istream& is, int maxelem, int maxstring, int* nread)   // 不好：啰嗦而且不完整
+    {
+        auto res = new char*[maxelem];
+        int elemcount = 0;
+        while (is && elemcount < maxelem) {
+            auto s = new char[maxstring];
+            is.read(s, maxstring);
+            res[elemcount++] = s;
+        }
+        nread = elemcount;
+        return res;
+    }
+
+一旦添加了溢出检查和错误处理，代码就变得相当混乱了，而且还有个要记得 `delete` 其所返回的指针以及数组所包含的 C 风格字符串的问题。
+
+##### 强制实施
+
+并不容易。??? 寻找混乱的循环，嵌套的循环，长函数，函数调用的缺失，缺乏使用非内建类型。圈复杂度？
+
 
 
 
