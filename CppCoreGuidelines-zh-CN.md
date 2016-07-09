@@ -8070,6 +8070,75 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 * 对声明于循环之前，且在循环之后不再使用的循环变量进行标记。
 * 【困难】 对声明与循环之前，且在循环之后用于某个无关用途的循环变量进行标记。
 
+### <a name="Res-name-length"></a>ES.7: 保持常用的和局部的名字尽量简短，而让非常用的和非局部的名字较长
+
+##### 理由
+
+可读性。减低在无关的非局部名字之间发生冲突的机会。
+
+##### 示例
+
+符合管理的简短的局部名字能够增强可读性：
+
+    template<typename T>    // 好
+    void print(ostream& os, const vector<T>& v)
+    {
+        for (int i = 0; i < v.end(); ++i)
+            os << v[i] << '\n';
+    }
+
+索引根据惯例称为 `i`，而这个泛型函数中不存在有关这个 vector 的含义的提示，因此和其他名字一样， `v` 也没问题。与之相比，
+
+    template<typename Element_type>   // 不好: 啰嗦，难于阅读
+    void print(ostream& target_stream, const vector<Element_type>& current_vector)
+    {
+        for (int current_element_index = 0;
+                current_element_index < current_vector.end();
+                ++current_element_index
+        )
+        target_stream << current_vector[i] << '\n';
+    }
+
+当然，这是一个讽刺，但我们还见过更糟糕的。
+
+##### 示例
+
+不合惯例而简短的非局部名字则会搞乱代码：
+
+    void use1(const string& s)
+    {
+        // ...
+        tt(s);   // 不好: tt() 是什么？
+        // ...
+    }
+
+更好的做法是，为非局部实体提供可读的名字：
+
+    void use1(const string& s)
+    {
+        // ...
+        trim_tail(s);   // 好多了
+        // ...
+    }
+
+这样的话，有可能读者指导 `trim_tail` 是什么意思，而且读者可以找一下它并回忆起来。
+
+##### 示例，不好
+
+大型函数的参数的名字实际上可当作是非局部的，因此应当有意义：
+
+    void complicated_algorithm(vector<Record>& vr, const vector<int>& vi, map<string, int>& out)
+    // 根据 vi 中的索引，从 vr 中读取事件（并标记所用的 Record），向 out 中放置（名字，索引）对
+    {
+        // ... 500 行的代码，使用 vr，vi，和 out ...
+    }
+
+我们建议保持函数短小，但这条规则并不受到普遍坚持，而命名应当能反映这一点。
+
+##### 强制实施
+
+检查局部和非局部的名字的长度。同时考虑函数的长度。
+
 
 
 
