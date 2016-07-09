@@ -7877,7 +7877,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 * [ES.46: 避免“魔法常量”，采用符号化常量](#Res-magic)
 * [ES.47: 使用 `nullptr` 而不是 `0` 或 `NULL`](#Res-nullptr)
 * [ES.48: 避免强制转换](#Res-casts)
-* [ES.49: 当必须使用强制转换时，使用由名字的强制转换](#Res-casts-named)
+* [ES.49: 当必须使用强制转换时，使用有名字的强制转换](#Res-casts-named)
 * [ES.50: 不要强制掉 `const`](#Res-casts-const)
 * [ES.55: 避免发生对范围检查的需要](#Res-range-checking)
 * [ES.56: 避免在应用代码中使用 `std::move()`](#Res-move)
@@ -9491,6 +9491,45 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 * 强制消除 C 风格的强制转换。
 * 对具名的强制转换给出警告。
 * 当存在许多函数风格的强制转换时给出警告（显而易见的问题是如何量化“许多”）。
+
+### <a name="Res-casts-named"></a>ES.49: 当必须使用强制转换时，使用有名字的强制转换
+
+##### 理由
+
+可读性。避免错误。
+有名字的强制转换比 C 风格或函数风格的强制转换更加特殊，允许编译器捕捉到某些错误。
+
+有名字的强制转换包括：
+
+* `static_cast`
+* `const_cast`
+* `reinterpret_cast`
+* `dynamic_cast`
+* `std::move`         // `move(x)` 是指代 `x` 的右值引用
+* `std::forward`      // `forward(x)` 是指代 `x` 的右值引用
+* `gsl::narrow_cast`  // `narrow_cast<T>(x)` 就是 `static_cast<T>(x)`
+* `gsl::narrow`       // `narrow<T>(x)` 在当 `static_cast<T>(x) == x` 时即为 `static_cast<T>(x)` 否则会抛出 `narrowing_error`
+
+##### 示例
+
+    ???
+
+##### 注解
+
+当在类型之间进行没有信息丢失的转换时（比如从 `float` 到
+`double` 或者从 `int32` 到 `int64`），可以代之以使用花括号初始化。
+
+    double d{some_float};
+    int64_t i{some_int32};
+
+这样做明确了有意进行类型转换，而且同样避免了
+发生可能导致精度损失的结果的类型转换。（比如说，
+试图用这种风格来从 `double` 初始化 `float` 会导致
+编译错误。）
+
+##### 强制实施
+
+对 C 风格和函数式的强制转换进行标记。
 
 
 
