@@ -8239,6 +8239,49 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 非函数参数的声明中，若有多个声明符，并且设计了声明符运算符（比如 `int* p, q;`），则进行标记。
 
+### <a name="Res-auto"></a>ES.11: 使用 `auto` 来避免类型名字的多余重复
+
+##### 理由
+
+* 单纯的重复既麻烦又易错。
+* 当使用 `auto` 时，所声明的实体的名字是处于声明的固定位置的，这增加了可读性。
+* 模板函数声明的返回类型可能是某个成员类型。
+
+##### 示例
+
+考虑：
+
+    auto p = v.begin();   // vector<int>::iterator
+    auto s = v.size();
+    auto h = t.future();
+    auto q = make_unique<int[]>(s);
+    auto f = [](int x){ return x + 10; };
+
+以上都避免了写下冗长又难记的类型，它们是编译器已知的，但程序员则可能会搞错。
+
+##### 示例
+
+    template<class T>
+    auto Container<T>::first() -> Iterator;   // Container<T>::Iterator
+
+**例外**: 当使用初始化式列表，而所需要的确切类型是已知的，同时某个初始化式可能需要转换时，应当避免使用 `auto`。
+
+##### 示例
+
+    auto lst = { 1, 2, 3 };   // lst 是一个 initializer_list
+    auto x{1};   // x 是一个 int（在 C++14 标准中经过修正；而在 C++11 中则为 initializer_list）
+
+##### 注解
+
+如果可以使用概念的话，我们可以（而且应该）更加明确说明所推断的类型：
+
+    // ...
+    ForwardIterator p = algo(x, y, z);
+
+##### 强制实施
+
+对声明中多余的类型名字进行标记。
+
 
 
 
