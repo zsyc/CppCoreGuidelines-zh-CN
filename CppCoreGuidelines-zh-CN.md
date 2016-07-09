@@ -9087,6 +9087,61 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ???
 
+### <a name="Res-break"></a>ES.78: 总是让非空的 `case` 以 `break` 结尾
+
+##### 理由
+
+意外地遗漏 `break` 是一种相当常见的 BUG。
+蓄意的直落（fall through）是维护的噩梦。
+
+##### 示例
+
+    switch(eventType)
+    {
+    case Information:
+        update_status_bar();
+        break;
+    case Warning:
+        write_event_log();
+    case Error:
+        display_error_window(); // 不好
+        break;
+    }
+
+很容易忽略掉这个直落。应当更明确：
+
+    switch(eventType)
+    {
+    case Information:
+        update_status_bar();
+        break;
+    case Warning:
+        write_event_log();
+        // 直落 fall through
+    case Error:
+        display_error_window(); // 不好
+        break;
+    }
+
+有一个 `[[fallthrough]]` 标注的提案。
+
+##### 注解
+
+单个语句带有多个 `case` 标签是可以的：
+
+    switch (x) {
+    case 'a':
+    case 'b':
+    case 'f':
+        do_something(x);
+        break;
+    }
+
+##### 强制实施
+
+对所有从非空的 `case` 发生的直落进行标记。
+
+
 
 
 
