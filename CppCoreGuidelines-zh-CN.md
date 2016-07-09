@@ -8709,6 +8709,55 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 * 对具有非常量界的数组（C 风格的 VLA）作出标记。
 * 对具有非局部的常量界的数组作出标记。
 
+### <a name="Res-lambda-init"></a>ES.28: 为复杂的初始化（尤其是 `const` 变量）使用 lambda
+
+##### 理由
+
+它可以很好地封装局部的初始化，包括对仅为初始化所需的临时变量进行清理，而且避免了创建不必要的非局部而且无法重用的函数。它对于应当为 `const` 的变量也可以工作，不过必须先进行一些初始化。
+
+##### 示例，不好
+
+    widget x;   // 应当为 const, 不过:
+    for (auto i = 2; i <= N; ++i) {             // 这是由 x 的
+        x += some_obj.do_something_with(i);  // 初始化所需的
+    }                                        // 一段任意长的代码
+    // 自此开始，x 应当为 const，不过我们无法在这种风格的代码中做到这点
+
+##### 示例，好
+
+    const widget x = [&]{
+        widget val;                                // 假定 widget 具有默认构造函数
+        for (auto i = 2; i <= N; ++i) {            // 这是由 x 的
+            val += some_obj.do_something_with(i);  // 初始化所需的
+        }                                          // 一段任意长的代码
+        return val;
+    }();
+
+##### 示例
+
+    string var = [&]{
+        if (!in) return "";   // 默认值
+        string s;
+        for (char c : in >> c)
+            s += toupper(c);
+        return s;
+    }(); // 注意这个 ()
+
+如果可能的话，应当将条件缩减成一个后续的简单集合（比如一个 `enum`），并避免把选择和初始化相互混合起来。
+
+##### 示例
+
+    owner<istream&> in = [&]{
+        switch (source) {
+        case default:       owned=false; return cin;
+        case command_line:  owned=true;  return *new istringstream{argv[2]};
+        case file:          owned=true;  return *new ifstream{argv[2]};
+    }();
+
+##### 强制实施
+
+很难。最多是某种启发式方案。查找跟随某个未初始化变量之后的循环中向其赋值。
+
 
 
 
