@@ -7831,6 +7831,85 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 * 【简单】 如果从非局部或局部但潜在具有别名的智能指针变量（`Unique_ptr` 或 `Shared_ptr`）中所获取的指针或引用，被用于进行函数调用，则给出警告。如果智能指针是一个 `Shared_ptr`，则建议代之以获取该智能指针的一个局部副本并从中获取指针或引用。
 
+# <a name="S-expr"></a>ES: 表达式和语句
+
+表达式和语句是用以表达动作和计算的最底层也是最直接的方式。局部作用域总的声明也是语句。
+
+有关命名、注释和缩进的规则，参见 [NL: 命名与布局](#S-naming)。
+
+一般规则：
+
+* [ES.1: 优先采用标准库而不是其他的库或者“手工自制代码”](#Res-lib)
+* [ES.2: 优先采用适当的抽象而不是直接使用语言功能特性](#Res-abstr)
+
+声明的规则：
+
+* [ES.5: 保持作用域尽量小](#Res-scope)
+* [ES.6: 在 for 语句的初始化式和条件中声明名字以限制其作用域](#Res-cond)
+* [ES.7: 保持常用的和局部的名字尽量简短，而让非常用的和非局部的名字较长](#Res-name-length)
+* [ES.8: 避免使用看起来相似的名字](#Res-name-similar)
+* [ES.9: 避免 `ALL_CAPS` 式的名字](#Res-not-CAPS)
+* [ES.10: 每条声明中（仅）声明一个名字](#Res-name-one)
+* [ES.11: 使用 `auto` 来避免类型名字的多余重复](#Res-auto)
+* [ES.20: 总要为对象进行初始化](#Res-always)
+* [ES.21: 不要在确实需要使用变量（或常量）之前就引入它](#Res-introduce)
+* [ES.22: 要等到获得了用以初始化变量的值之后才声明变量](#Res-init)
+* [ES.23: 优先使用 `{}` 初始化语法](#Res-list)
+* [ES.24: 在可能会抛出异常的代码中，用 `unique_ptr<T>` 来保存指针](#Res-unique)
+* [ES.25: 应当将对象声明为 `const` 或 `constexpr`，除非后面需要修改其值](#Res-const)
+* [ES.26: 不要用一个变量来达成两个不相关的目的](#Res-recycle)
+* [ES.27: 使用 `std::array` 或 `stack_array` 作为栈上的数组](#Res-stack)
+* [ES.28: 为复杂的初始化（尤其是 `const` 变量）使用 lambda](#Res-lambda-init)
+* [ES.30: 不要用宏来操纵程序文本](#Res-macros)
+* [ES.31: 不要用宏来作为常量或“函数”](#Res-macros2)
+* [ES.32: 对所有的宏名采用 `ALL_CAPS` 命名方式](#Res-ALL_CAPS)
+* [ES.33: 当必须使用宏时，请为之提供唯一的名字](#Res-MACROS)
+* [ES.40: 不要定义（C 风格的）变参函数](#Res-ellipses)
+
+表达式的规则：
+
+* [ES.40: 避免复杂的表达式](#Res-complicated)
+* [ES.41: 对运算符优先级不保准时应使用括号](#Res-parens)
+* [ES.42: 保持单纯直接的指针使用方式](#Res-ptr)
+* [ES.43: 避免带有未定义的求值顺序的表达式](#Res-order)
+* [ES.44: 不要对函数参数求值顺序有依赖](#Res-order-fct)
+* [ES.45: 避免窄化转换](#Res-narrowing)
+* [ES.46: 避免“魔法常量”，采用符号化常量](#Res-magic)
+* [ES.47: 使用 `nullptr` 而不是 `0` 或 `NULL`](#Res-nullptr)
+* [ES.48: 避免强制转换](#Res-casts)
+* [ES.49: 当必须使用强制转换时，使用由名字的强制转换](#Res-casts-named)
+* [ES.50: 不要强制掉 `const`](#Res-casts-const)
+* [ES.55: 避免发生对范围检查的需要](#Res-range-checking)
+* [ES.56: 避免在应用代码中使用 `std::move()`](#Res-move)
+* [ES.60: 避免在资源管理函数之外使用 `new` 和 `delete`](#Res-new)
+* [ES.61: 用 `delete[]` 删除数组，用 `delete` 删除非数组对象](#Res-del)
+* [ES.62: 不要将指针和不同的数组进行比较](#Res-arr2)
+* [ES.63: 不要产生切片](#Res-slice)
+
+语句的规则：
+
+* [ES.70: 面临选择时，优先采用 `switch` 语句而不是 `if` 语句](#Res-switch-if)
+* [ES.71: 面临选择时，优先采用范围式 `for` 语句而不是普通 `for` 语句](#Res-for-range)
+* [ES.72: 当存在显然的循环变量时，优先采用 `for` 语句而不是 `while` 语句](#Res-for-while)
+* [ES.73: 当没有显然的循环变量时，优先采用 `while` 语句而不是 `for` 语句](#Res-while-for)
+* [ES.74: 优先在 `for` 语句的初始化部分中声明循环变量](#Res-for-init)
+* [ES.75: 避免使用 `do` 语句](#Res-do)
+* [ES.76: 避免 `goto`](#Res-goto)
+* [ES.77: ??? `continue`](#Res-continue)
+* [ES.78: 总是让非空的 `case` 以 `break` 结尾](#Res-break)
+* [ES.79: ??? `default`](#Res-default)
+* [ES.85: 让空语句显著可见](#Res-empty)
+* [ES.86: 避免在原生的 `for` 循环中修改循环控制变量](#Res-loop-counter)
+
+算术规则：
+
+* [ES.100: 不要进行有符号和无符号混合运算](#Res-mix)
+* [ES.101: 使用无符号类型进行位操作](#Res-unsigned)
+* [ES.102: 使用有符号类型进行算术运算](#Res-signed)
+* [ES.103: 避免上溢出](#Res-overflow)
+* [ES.104: 避免下溢出](#Res-underflow)
+* [ES.105: 避免除零](#Res-zero)
+
 
 
 
