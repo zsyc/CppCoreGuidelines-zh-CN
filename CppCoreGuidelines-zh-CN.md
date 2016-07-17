@@ -10819,6 +10819,26 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 ??? 很难，需要启发式方法
 
+### <a name="Re-finally"></a>E.19: 当没有合适的资源包装时，使用 `final_action` 对象来表达清理动作
+
+##### 理由
+
+`finally` 要比 `try`/`catch` 更不啰嗦且难于搞错。
+
+##### 示例
+
+    void f(int n)
+    {
+        void* p = malloc(1, n);
+        auto _ = finally([p] { free(p); });
+        // ...
+    }
+
+##### 注解
+
+`finally` 没有 `try`/`catch` 那样混乱，但它仍然比较特别。
+优先采用[适当的资源管理对象](#Re-raii)。
+
 
 
 
