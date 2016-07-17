@@ -10585,6 +10585,34 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 **参见**: [讨论](#Sd-noexcept)。
 
+### <a name="Re-never-throw"></a>E.13: 不要在作为某个对象的直接所有者时抛出异常
+
+##### 理由
+
+这可能导致一次泄漏。
+
+##### 示例
+
+    void leak(int x)   // 请勿如此: 可能泄漏
+    {
+        auto p = new int{7};
+        if (x < 0) throw Get_me_out_of_here{}  // 可能泄漏 *p
+        // ...
+        delete p;   // 可能不会执行到这里
+    }
+
+避免这种问题的一种方法是坚持使用资源包装：
+
+    void no_leak(int x)
+    {
+        auto p = make_unique<int>(7);
+        if (x < 0) throw Get_me_out_of_here{};  // 将按需删除 *p
+        // ...
+        // 无须 delete p
+    }
+
+**参见**: ??? 资源规则 ???
+
 
 
 
