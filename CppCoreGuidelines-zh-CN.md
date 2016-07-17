@@ -10554,6 +10554,37 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 **参见**: [后条件规则](#Ri-post)。
 
+### <a name="Re-noexcept"></a>E.12: 当函数不可能或不能接受以 `throw` 来退出时，使用 `noexcept`
+
+##### 理由
+
+使错误处理系统化，强健，且高效。
+
+##### 示例
+
+    double compute(double d) noexcept
+    {
+        return log(sqrt(d <= 0 ? 1 : d));
+    }
+
+这里，我们已知 `compute` 不会抛出异常，因为它仅由不会抛出异常的操作所组成。通过将 `compute` 声明为 `noexcept`，让编译器和人类阅读者获得信息，使其更容易理解和操作 `compute`。
+
+##### 注解
+
+许多标准库函数都是 `noexcept` 的，这包括所有从 C 标准库中“继承”来的标准库函数。
+
+##### 示例
+
+    vector<double> munge(const vector<double>& v) noexcept
+    {
+        vector<double> v2(v.size());
+        // ... 做一些事 ...
+    }
+
+这里的 `noexcept` 表明我不希望或无法处理无法构造局部的 `vector` 对象的情形。也就是说，我认为内存耗尽是一种严重的设计错误（类比于硬件故障），因此我希望当其发生时让程序崩溃。
+
+**参见**: [讨论](#Sd-noexcept)。
+
 
 
 
