@@ -10384,6 +10384,29 @@ SIMD 规则概览：
 
 在你决定你无法负担或者不喜欢基于异常的错误处理之前，请看一看[替代方案](#Re-no-throw-raii)。
 
+### <a name="Re-errors"></a>E.3: 仅使用异常来进行错误处理
+
+##### 理由
+
+以保持错误处理和“常规代码”互相分离。
+C++ 实现都倾向于基于假定异常的稀有而进行优化。
+
+##### 示例，请勿如此
+
+    int find_index(vector<string>& vec, const string& x)   // 请勿如此: 异常并未用于错误处理
+    {
+        try {
+            for (int i =0; i < vec.size(); ++i)
+                if (vec[i] == x) throw i;  // 找到了 x
+        } catch (int i) {
+            return i;
+        }
+        return -1;   // 未找到
+    }
+
+这种代码要比显然的替代方式更加复杂，而且极可能运行慢得多。
+在 `vector` 中寻找一个值是没什么意外情况的。
+
 
 
 
