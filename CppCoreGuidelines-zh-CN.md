@@ -10307,7 +10307,7 @@ SIMD 规则概览：
 * [E.15: 按引用捕获类型层次中的异常](#Re-exception-ref)
 * [E.16: 析构函数，回收函数，以及 `swap` 决不能失败](#Re-never-fail)
 * [E.17: 不要试图在每个函数中捕获每个异常](#Re-not-always)
-* [E.18: 最小化对 `try`/`catch` 的明确使用](#Re-catch)
+* [E.18: 最小化对 `try`/`catch` 的显式使用](#Re-catch)
 * [E.19: 当没有合适的资源包装时，使用 `final_action` 对象来表达清理动作](#Re-finally)
 
 * [E.25: 当不能抛出异常时，模拟 RAII 来进行资源管理](Re-no-throw-raii)
@@ -10776,6 +10776,48 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 * 标记嵌套的 `try` 块。
 * 对带有过高的 `try` 块/函数比率的源代码文件进行标记。 (??? 问题：定义“过高”)
+
+### <a name="Re-catch"></a>E.18: 最小化对 `try`/`catch` 的显式使用
+
+##### 理由
+
+`try`/`catch` 很啰嗦，而且非平凡的使用是易错的。
+`try`/`catch` 可以作为对非系统化和/或低级的资源管理或错误处理的一个信号。
+
+##### 示例，不好
+
+    void f(zstring s)
+    {
+        Gadget* p;
+        try {
+            p = new Gadget(s);
+            // ...
+        }
+        catch (Gadget_construction_failure) {
+            delete p;
+            throw;
+        }
+    }
+    
+这段代码很混乱。
+可能在 `try` 块中的裸指针上发生泄漏。
+并未处理所有的异常。
+`delete` 一个构造失败的对象几乎肯定是一个错误。
+更好的是：
+
+    void f2(zstring s)
+    {
+        Gadget g {s};
+    }
+    
+##### 替代方案
+
+* 合适的资源包装以及 [RAII](#Re-raii)
+* [`finally`](#Re-finally)
+
+##### 强制实施
+
+??? 很难，需要启发式方法
 
 
 
