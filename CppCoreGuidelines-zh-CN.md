@@ -10138,6 +10138,22 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ???
 
+# <a name="S-concurrency"></a>CP: 并发与并行
+
+???
+
+并发和并行规则概览：
+
+* [CP.1: 假定你的代码将作为多线程程序的一部分而运行](#Rconc-multi)
+* [CP.2: 避免数据竞争](#Rconc-races)
+
+参见：
+
+* [CP.con: 并发](#SScp-con)
+* [CP.par: 并行](#SScp-par)
+* [CP.simd: SIMD](#SScp-simd)
+* [CP.free: 无锁编程](#SScp-free)
+
 
 
 
