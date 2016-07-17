@@ -10613,6 +10613,86 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 **参见**: ??? 资源规则 ???
 
+### <a name="Re-exception-types"></a>E.14: 应当使用为目的所设计的自定义类型（而不是内建类型）作为异常
+
+##### 理由
+
+自定义类型不大可能会和其他人的异常造成冲突。
+
+##### 示例
+
+    void my_code()
+    {
+        // ...
+        throw Moonphase_error{};
+        // ...
+    }
+
+    void your_code()
+    {
+        try {
+            // ...
+            my_code();
+            // ...
+        }
+        catch(Bufferpool_exhausted) {
+            // ...
+        }
+    }
+
+##### 示例，请勿如此
+
+    void my_code()     // 请勿如此
+    {
+        // ...
+        throw 7;       // 7 的意思是“月亮在第四象限”
+        // ...
+    }
+
+    void your_code()   // 请勿如此
+    {
+        try {
+            // ...
+            my_code();
+            // ...
+        }
+        catch(int i) {  // i == 7 的意思是“输入缓冲区太小”
+            // ...
+        }
+    }
+
+##### 注解
+
+标准库中派生于 `exception` 的类应当仅被当做基类，或者用于仅需要“通用”处理的异常。和内建类型相似，它们的使用可能会与其他人的使用相冲突。
+
+##### 示例，请勿如此
+
+    void my_code()   // 请勿如此
+    {
+        // ...
+        throw runtime_error{"moon in the 4th quarter"};
+        // ...
+    }
+
+    void your_code()   // 请勿如此
+    {
+        try {
+            // ...
+            my_code();
+            // ...
+        }
+        catch(runtime_error) {   // runtime_error 的含义是“输入缓冲区太小”
+            // ...
+        }
+    }
+
+**参见**: [讨论](#Sd-???)
+
+##### 强制实施
+
+识别内建类型的 `throw` 和 `catch`。可能要对使用标准库 `exception` 类型的 `throw` 和 `catch` 进行警告。当然，派生于 `std::exception` 类型层次的异常是没问题的。
+
+
 
 
 
