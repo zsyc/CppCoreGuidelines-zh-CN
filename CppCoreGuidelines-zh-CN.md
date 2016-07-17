@@ -10114,6 +10114,30 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ???
 
+### <a name="Rper-access"></a>PER.19: 进行可预测的内存访问
+
+##### 理由
+
+性能对于 Cache 的性能非常敏感，而 Cache 算法则更喜欢对相邻数据进行的（通常是线性的）简单访问行为。
+
+##### 示例
+
+    int matrix[rows][cols];
+
+    // 不好
+    for (int c = 0; c < cols; ++c)
+        for (int r = 0; r < rows; ++r)
+            sum += matrix[r][c];
+
+    // 好
+    for (int r = 0; r < rows; ++r)
+        for (int c = 0; c < cols; ++c)
+            sum += matrix[r][c];
+
+### <a name="Rper-context"></a>PER.30: 避免在关键路径中进行上下文切换
+
+???
+
 
 
 
