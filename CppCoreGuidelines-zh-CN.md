@@ -10312,7 +10312,7 @@ SIMD 规则概览：
 
 * [E.25: 当不能抛出异常时，模拟 RAII 来进行资源管理](Re-no-throw-raii)
 * [E.26: 当不能抛出异常时，考虑采取快速失败](#Re-no-throw-crash)
-* [E.27: 当不能抛出异常时，系统性地使用错误代码](#Re-no-throw-codes)
+* [E.27: 当不能抛出异常时，系统化地使用错误代码](#Re-no-throw-codes)
 * [E.28: 避免基于全局状态（比如 `errno`）的错误处理](#Re-no-throw)
 
 ### <a name="Re-design"></a>E.1: 在设计中尽早开发错误处理策略
@@ -10913,7 +10913,8 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 就是说，如果你无法在检测到错误的函数的上下文中处理它，则调用 `abort()`，`quick_exit()`，
 或者相似的某个将触发某种系统重启的函数。
 
-在具有大量进程和/或大量计算机的系统中，你总要预计到并处理这些关键程序崩溃，比如说源于硬件故障而引发。
+在具有大量进程和/或大量计算机的系统中，你总要预计到并处理这些关键程序崩溃，
+比如说源于硬件故障而引发。
 这种情况下，“程序崩溃”只不过把错误处理留给了系统的下一个层次。
 
 ##### 示例
@@ -10940,6 +10941,160 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 ##### 强制实施
 
 很难对付
+
+## <a name="Re-no-throw-codes"></a>E.27: 当不能抛出异常时，系统化地使用错误代码
+
+##### 理由
+
+系统化地使用任何错误处理策略都能最小化忘记处理错误的机会。
+
+参见 [模拟 RAII](#Re-no-throw-raii)。
+
+##### 注解
+
+需要处理几个问题：
+
+* 如何从函数向外传递错误指示？
+* 如何在错误退出函数之前释放所有资源？
+* 使用什么来作为错误指示？
+
+通常，返回错误指示意味着返回两个值：其结果以及一个错误指示。
+错误指示可以是对象的一部分，例如对象可以带有 `valid()` 指示，
+也可以返回一对值。
+
+##### 示例
+
+    Gadget make_gadget(int n)
+    {
+        // ...
+    }
+    
+    void user()
+    {
+        Gadget g = make_gadget(17);
+        if (!g.valid()) {
+                // 错误处理
+        }
+        // ...
+    }
+    
+这种方案符合[模拟 RAII 资源管理](#Re-no-throw-raii)。
+`valid()` 函数可以返回一个 `error_indicator`（比如说 `error_indicator` 枚举的某个成员）。
+
+##### 示例
+
+要是我们无法或者不想改动 `Gadget` 类型呢？
+这种情况下，我们只能返回一对值。
+例如：
+
+    std::pair<Gadget,error_indicator> make_gadget(int n)
+    {
+        // ...
+    }
+    
+    void user()
+    {
+        auto r = make_gadget(17);
+        if (!r.second) {
+                // 错误处理
+        }
+        Gadget& g = r.first; 
+        // ...
+    }
+
+可见，`std::pair` 是一种可能的返回类型。
+某些人则更喜欢专门的类型。
+例如：
+
+    Gval make_gadget(int n)
+    {
+        // ...
+    }
+    
+    void user()
+    {
+        auto r = make_gadget(17);
+        if (!r.err) {
+                // 错误处理
+        }
+        Gadget& g = r.val; 
+        // ...
+    }
+
+倾向于专门返回类型的一种原因是为其成员提供命名，而不是使用多少有些隐秘的 `first` 和 `second`,
+而且可以避免与 `std::pair` 的其他使用相混淆。
+
+###### 示例
+
+通常，在错误退出之前必须进行清理。
+这样做是很混乱的：
+
+    std::pair<int,error_indicator> user()
+    {
+        Gadget g1 = make_gadget(17);
+        if (!g1.valid()) {
+                return {0,g1_error};
+        }
+        
+        Gadget g2 = make_gadget(17);
+        if (!g2.valid()) {
+                cleanup(g1);
+                return {0,g2_error};
+        }
+        
+        // ...
+        
+        if (all_foobar(g1,g2)) {
+            cleanup(g1);
+            cleanup(g2);
+            return {0,foobar_error};
+        // ...
+        
+        cleanup(g1);
+        cleanup(g2);
+        return {res,0};
+    }
+
+模拟 RAII 可能不那么简单，尤其是在带有多个资源和多种可能错误的函数之中。
+一种较为常见的技巧是把清理都集中到函数末尾以避免重复：
+
+    std::pair<int,error_indicator> user()
+    {
+        error_indicator err = 0;
+        
+        Gadget g1 = make_gadget(17);
+        if (!g1.valid()) {
+                err = g2_error;
+                goto exit;
+        }
+        
+        Gadget g2 = make_gadget(17);
+        if (!g2.valid()) {
+                err = g2_error;
+                goto exit;
+        }
+        
+        if (all_foobar(g1,g2)) {
+            err = foobar_error;
+            goto exit;
+        }
+        // ...
+  exit:      
+        if (g1.valid()) cleanup(g1);
+        if (g1.valid()) cleanup(g2);
+        return {res,err};
+    }
+
+函数越大，这种技巧就越有吸引力。
+而且，程序变得越大，系统化地采用一中基于错误指示的错误处理策略就越加困难。
+
+我们[优先采用基于异常的错误处理](#Re-throw)，并建议[保持函数短小](#Rf-single)。
+
+**参见**: [讨论](#Sd-???)。
+
+##### 强制实施
+
+很难对付。
 
 
 
