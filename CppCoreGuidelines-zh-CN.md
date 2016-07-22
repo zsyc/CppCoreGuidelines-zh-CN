@@ -11132,6 +11132,35 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 * [Con.4: 构造之后不再改变其值的对象应当以 `const` 来定义](#Rconst-const)
 * [Con.5: 以 `constexpr` 来定义可以在编译期计算的值](#Rconst-constexpr)
 
+### <a name="Rconst-immutable"></a>Con.1: 缺省情况下，对象应当是不可变的
+
+##### 理由
+
+不可变对象更易于进行推理，应仅当需要改动对象的值时，才使之为非 `const` 对象。
+避免出现意外造成的或者很难发觉的值的改变。
+
+##### 示例
+
+    for (const string& s : c) cout << s << '\n';    // 仅进行读取: const
+    
+    for (string& s : c) cout << s << '\n';    // 不好: 仅进行读取
+    
+    for (string& s: c) cin>>s;  // 需要写入: 非 const
+ 
+##### 例外
+
+函数参数时很少改动的，但也很少被声明为 `const`。
+为了避免造成混淆和大量的误报，不要对函数参数参数实施这条规则。。
+
+    void f(const char*const p); // 迂腐
+    void g(const int i);        // 迂腐
+
+注意，函数参数时局部变量，其改动也是局部的。
+
+##### 强制实施
+
+* 标记未发生改动的非 `const` 变量（排除参数以避免误报）
+
 
 
 
