@@ -11699,6 +11699,76 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 * 当人们从 `<typename T>` and `<class T>` 写法进行转换时，使用简短形式是不可行的。
 * 之后，如果声明中首先引入了一个 `typename`，之后又用简单的单类型参数概念对其进行约束的话，就对其进行标记。
 
+## <a name="SS-concepts-def"></a>T.concepts.def: 概念定义规则
+
+???
+
+### <a name="Rt-low"></a>T.20: 避免没有有意义的语义的“概念”
+
+##### 理由
+
+概念是用于表现语义的观念的，比如“数”，元素的“范围”，以及“全序的”等等。
+简单的约束，比如“带有 `+` 运算符”和“带有 `>` 运算符”，是无法独立进行有意义的运用的，
+而仅应当被用作有意义的概念的构造块，而不是在用户代码中使用。
+
+##### 示例，不好
+
+    template<typename T>
+    concept Addable = has_plus<T>;    // 不好，不充分
+
+    template<Addable N> auto algo(const N& a, const N& b) // 使用两个数值
+    {
+        // ...
+        return a + b;
+    }
+
+    int x = 7;
+    int y = 9;
+    auto z = plus(x, y);   // z = 16
+
+    string xx = "7";
+    string yy = "9";
+    auto zz = plus(xx, yy);   // zz = "79"
+
+也许拼接是有意进行的。不过更可能的是一种意外。而对减法进行同等的定义则会导致可接受类型的集合的非常不同。
+这个 `Addable` 违反了加法应当可交换的数学法则：`a + b == b + a`。
+
+##### 注解
+
+给出有意义的语义的能力，在于定义真正的概念的特征，而不是仅给出语法约束。
+
+##### 示例（使用 TS 概念语法）
+
+    template<typename T>
+    // 假定数值的运算符 +、-、* 和 / 都遵循常规的数学法则
+    concept Number = has_plus<T>
+                     && has_minus<T>
+                     && has_multiply<T>
+                     && has_divide<T>;
+
+    template<Number N> auto algo(const N& a, const N& b) // 使用两个数值
+    {
+        // ...
+        return a + b;
+    }
+
+    int x = 7;
+    int y = 9;
+    auto z = plus(x, y);   // z = 18
+
+    string xx = "7";
+    string yy = "9";
+    auto zz = plus(xx, yy);   // 错误：string 不是 Number
+
+##### 注解
+
+带有多个操作的概念要远比单个操作的概念更少和类型发生意外匹配的机会。
+
+##### 强制实施
+
+* 对在其他 `concept` 的定义之外使用的但操作 `concept` 进行标记。
+* 对表现为模拟单操作 `concept` 的 `enable_if` 的使用进行标记。
+
 
 
 
