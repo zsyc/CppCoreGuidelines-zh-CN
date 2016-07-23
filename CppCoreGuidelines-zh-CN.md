@@ -11894,6 +11894,48 @@ GSL 中的概念都具有恰当定义的语义；请参见 Palo Alto TR 和 Rang
 * 编译器会将对相同的概念的有歧义的使用标记出来。
 * 对相同的概念定义进行标记。
 
+### <a name="Rt-not"></a>T.25: 避免否定性的约束
+
+##### 理由
+
+清晰性。可维护性。
+用否定来表达的具有互补要求的函数是很脆弱的。
+
+##### 示例
+
+最初，人们总会试图定义带有互补要求的函数：
+
+    template<typename T>
+        requires !C<T>    // 不好
+    void f();
+
+    template<typename T>
+        requires C<T>
+    void f();
+
+这样会好得多：
+
+    template<typename T>   // 通用模板
+        void f();
+
+    template<typename T>   // 用概念进行特化
+        requires C<T>
+    void f();
+
+仅当 `C<T>` 无法满足时，编译器将会选择无约束的模板。
+如果你并不想（或者无法）定义无约束版本的
+`f()` 的话，你可以删掉它。
+
+    template<typename T>
+    void f() = delete;
+
+编译器将会选取这个重载并给出一个适当的错误。
+
+##### 强制实施
+
+* 对带有 `C<T>` 和 `!C<T>` 约束的函数对进行标记。
+* 对所有的否定约束进行标记。
+
 
 
 
