@@ -11673,6 +11673,32 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 * ???
 
+### <a name="Rt-shorthand"></a>T.13: 对于简单的单类型参数概念，优先采用简写形式
+
+##### 理由
+
+可读性。直接表达意图。
+
+##### 示例
+
+这样来表达“`T` 是一种 `Sortable`”：
+
+    template<typename T>       // 正确但很啰嗦：“参数的类型
+        requires Sortable<T>   // 为 T，这是某个 Sortable
+    void sort(T&);             // 类型的名字”
+
+    template<Sortable T>       // 有改善：“参数的类型
+    void sort(T&);             // 为 Sortable 的类型 T”
+
+    void sort(Sortable&);      // 最佳方式：“参数为 Sortable”
+
+越简练的版本越符合我们的说话方式。注意许多模板不在需要使用 `template` 关键字了。
+
+##### 强制实施
+
+* 当人们从 `<typename T>` and `<class T>` 写法进行转换时，使用简短形式是不可行的。
+* 之后，如果声明中首先引入了一个 `typename`，之后又用简单的单类型参数概念对其进行约束的话，就对其进行标记。
+
 
 
 
