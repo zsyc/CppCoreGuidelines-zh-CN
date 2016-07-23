@@ -11540,8 +11540,9 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 ## <a name="SS-concepts"></a>T.concepts: 概念规则
 
 概念是一种用于为模板参数指定要求的设施。
-它是一项 [ISO 技术规范](#Ref-conceptsTS)，但还未被当前供应的编译期所支持。
-然而，在考虑泛型编程，以及未来的 C++ 程序库（无论标准的还是其他的）的基础时，概念都是关键性的。
+它是一项 [ISO 技术规范](#Ref-conceptsTS)，但还未被当前供应的编译器所支持。
+然而，在考虑泛型编程，以及未来的 C++ 程序库（无论标准的还是其他的）的基础时，
+概念都是关键性的。
 
 概念使用的规则概览：
 
@@ -11561,6 +11562,60 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 * [T.25: 避免否定性的约束](#Rt-not)
 * [T.26: 优先采用使用模式而不是简单的语法来定义概念](#Rt-use)
 * ???
+
+## <a name="SS-concept-use"></a>T.con-use: 概念的使用
+
+### <a name="Rt-concepts"></a>T.10: 为所有模板实参指明概念
+
+##### 理由
+
+正确性和可读性。
+针对模板参数所假定的含义（包括语法和语义），是模板接口的基础部分。
+使用概念能够显著改善模板的文档和错误处理。
+为模板参数指定概念是一种强力的设计工具。
+
+##### 示例
+
+    template<typename Iter, typename Val>
+        requires Input_iterator<Iter>
+                 && Equality_comparable<Value_type<Iter>, Val>
+    Iter find(Iter b, Iter e, Val v)
+    {
+        // ...
+    }
+
+也可以等价地用更为简洁的方式：
+
+    template<Input_iterator Iter, typename Val>
+        requires Equality_comparable<Value_type<Iter>, Val>
+    Iter find(Iter b, Iter e, Val v)
+    {
+        // ...
+    }
+
+##### 注解
+
+在编译器支持概念的语言功能特性之前，我们可以在注释中使用概念：
+
+    template<typename Iter, typename Val>
+        // requires Input_iterator<Iter>
+        //       && Equality_comparable<Value_type<Iter>, Val>
+    Iter find(Iter b, Iter e, Val v)
+    {
+        // ...
+    }
+
+##### 注解
+
+普通的 `typename`（或 `auto`）是受最少约束的概念。
+应当仅在只能假定“这是一个类型”的罕见情况中使用它们。
+通常，这只会在当我们（用模板元编程代码）操作纯粹的表达式树，并推迟进行类型检查时才会需要。
+
+**参考**: TC++PL4, Palo Alto TR, Sutton
+
+##### 强制实施
+
+对没有概念的模板类型参数进行标记。
 
 
 
