@@ -11617,6 +11617,46 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 对没有概念的模板类型参数进行标记。
 
+### <a name="Rt-std-concepts"></a>T.11: 尽可能采用标准概念
+
+##### 理由
+
+“标准”（即由 GSL，ISO concepts TS，以及希望尽快出现的 ISO 标准自身所提供的）概念，
+避免了我们思考自己的概念，它们比我们匆忙中能够想出来的要好得多，而且还提升了互操作性。
+
+##### 注解
+
+如果你不是要创建一个新的泛型程序库的话，大多数所需的概念都已经在标准库中定义过了。
+
+##### 示例
+
+    concept<typename T>
+    // 请勿定义这个: GSL 中已经有 Sortable
+    Ordered_container = Sequence<T> && Random_access<Iterator<T>> && Ordered<Value_type<T>>;
+
+    void sort(Ordered_container& s);
+
+这个 `Ordered_container` 貌似相当合理，但它和 GSL（以及 Range TS）中的 `Sortable` 概念非常相似。
+它是更好？更正确？它真的精确地反映了标准对于 `sort` 的要求吗？
+直接使用 `Sortable` 则更好而且更简单：
+
+    void sort(Sortable& s);   // 更好
+
+##### 注解
+
+“标准”概念的集合是在我们推进真正的（ISO 的）标准化过程中不断演进的。
+
+##### 注解
+
+设计一个有用的概念是很有挑战性的。
+
+##### 强制实施
+
+很难。
+
+* 查找无约束的参数，使用“非常规”或非标准的概念的模板，以及使用“自造的”又没有公理的概念的目标。
+* 开发一种概念识别工具（例如，参考[一种早期实验](http://www.stroustrup.com/sle2010_webversion.pdf)）。
+
 
 
 
