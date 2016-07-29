@@ -11301,7 +11301,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 模板接口的规则概览：
 
 * [T.40: 使用函数对象向算法传递操作](#Rt-fo)
-* [T.41: 要求为某个概念提供完整的操作集合](#Rt-operations)
+* [T.41: 要求为概念提供完整的操作集合](#Rt-operations)
 * [T.42: 使用模板别名来简化写法并隐藏实现细节](#Rt-alias)
 * [T.43: 优先使用 `using` 而不是 `typedef` 来定义别名](#Rt-using)
 * [T.44: （如果可行）使用函数模板来对类模板的参数类型进行推断](#Rt-deduce)
@@ -11991,6 +11991,80 @@ Lambda 会生成函数对象。
 
 * 标记以函数指针作为模板参数。
 * 标记将函数指针作为模板的参数进行传递（存在误报风险）。
+
+### <a name="Rt-operations"></a>T.41: 要求为概念提供完整的操作集合
+
+##### 理由
+
+便于理解。
+提升互操作性。
+模板实现方获得灵活性。
+
+##### 注解
+
+这里的问题在于是否应当为模板参数要求其最小操作集合
+（比如说，只要 `==` 而不要 `!=`，或只要 `+` 而不要 `+=`）。
+这条规则所支持的观点是，概念应当反映出（数学上）协调的操作集合。
+
+##### 示例，不好
+
+    class Minimal {
+        // ...
+    };
+    
+    bool operator==(const Minimal&,const Minimal&);
+    bool operator<(const Minimal&,const Minimal&);
+    Minimal operator+(const Minimal&, const Minimal&);
+    // 没有其他运算符
+    
+    void f(const Minimal& x, const Minimal& y)
+    {
+        if (!(x==y) { /* ... */ }    // OK
+        if (x!=y) { /* ... */ }      // 意外！错误
+        
+        while (!(x<y)) { /* ... */ }    // OK
+        while (x>=y) { /* ... */ }      // 意外！错误
+        
+        x = x+y;        // OK
+        x += y;         // 意外！错误
+    }
+ 
+这是最小化的，但对于用户来说存在意外和限制。
+它甚至可能效率较差。
+
+##### 示例
+
+    class Convenient {
+        // ...
+    };
+    
+    bool operator==(const Convenient&,const Convenient&);
+    bool operator<(const Convenient&,const Convenient&);
+    // ... 以及其他比较运算符 ...
+    Minimal operator+(const Convenient&, const Convenient&);
+    // ... 以及其他算术运算符 ...
+    
+    void f(const Convenient& x, const Convenient& y)
+    {
+        if (!(x==y) { /* ... */ }    // OK
+        if (x!=y) { /* ... */ }      // OK
+        
+        while (!(x<y)) { /* ... */ }    // OK
+        while (x>=y) { /* ... */ }      // OK
+        
+        x = x+y;     // OK
+        x += y;      // OK
+    }
+ 
+定义出所有的运算符可能很麻烦，但并不困难。
+C++17 将有望能够提供默认的比较运算符。
+
+
+##### 强制实施
+
+* 对支持“古怪”运算符集合（比如 `==` 而没有 `!=`，或者 `+` 但没有 `-`）的类进行标记。
+没错，`std::string` 是“古怪”的，不过要改掉已经太晚了。
+
 
 
 
