@@ -12065,6 +12065,35 @@ C++17 将有望能够提供默认的比较运算符。
 * 对支持“古怪”运算符集合（比如 `==` 而没有 `!=`，或者 `+` 但没有 `-`）的类进行标记。
 没错，`std::string` 是“古怪”的，不过要改掉已经太晚了。
 
+### <a name="Rt-alias"></a>T.42: 使用模板别名来简化写法并隐藏实现细节
+
+##### 理由
+
+提升可读性。隐藏实现。注意，模板别名取代了许多用于计算类型的特征。它们也可以用于封装一个特征。
+
+##### 示例
+
+    template<typename T, size_t N>
+    class matrix {
+        // ...
+        using Iterator = typename std::vector<T>::iterator;
+        // ...
+    };
+
+这免除了 `Matrix` 的用户必须了解其元素是存储于 `vector` 之中，而且也免除了用户重复书写 `typename std::vector<T>::`。
+
+##### 示例
+
+    template<typename T>
+    using Value_type = typename container_traits<T>::value_type;
+
+这免除了 `Value_type` 的用户必须了解用于实现 `value_type` 的技术。
+
+##### 强制实施
+
+* 将 `using` 声明之外用于消除歧义的 `typename` 进行标记。
+* ???
+
 
 
 
