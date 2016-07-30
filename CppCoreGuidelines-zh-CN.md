@@ -12094,6 +12094,30 @@ C++17 将有望能够提供默认的比较运算符。
 * 将 `using` 声明之外用于消除歧义的 `typename` 进行标记。
 * ???
 
+### <a name="Rt-using"></a>T.43: 优先使用 `using` 而不是 `typedef` 来定义别名
+
+##### 理由
+
+提升可读性：使用 `using` 时，新名字在前面，而不是被嵌在声明中的什么地方。
+通用性：`using` 可用于模板别名，而 `typedef` 无法轻易作为模板。
+一致性：`using` 在语法上和 `auto` 相似。
+
+##### 示例
+
+    typedef int (*PFI)(int);   // OK, 但很别扭
+
+    using PFI2 = int (*)(int);   // OK, 更好
+
+    template<typename T>
+    typedef int (*PFT)(T);      // 错误
+
+    template<typename T>
+    using PFT2 = int (*)(T);   // OK
+
+##### 强制实施
+
+* 标记 `typedef` 的使用。不过这样会出现大量的“命中” :-(
+
 
 
 
