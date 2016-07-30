@@ -12289,6 +12289,72 @@ C++17 将有望能够提供默认的比较运算符。
 
 ??? 很麻烦
 
+### <a name="Rt-scary"></a>T.61: 请勿对成员进行过度参数化（恐怖）
+
+##### 理由
+
+不依赖于模板参数的成员，除非给定某个特定的模板参数，否则也是无法使用的。
+这样会限制其使用，而且通常会增加代码大小。
+
+##### 示例，不好
+
+    template<typename T, typename A = std::allocator{}>
+        // requires Regular<T> && Allocator<A>
+    class List {
+    public:
+        struct Link {   // 并未依赖于 A
+            T elem;
+            T* pre;
+            T* suc;
+        };
+
+        using iterator = Link*;
+
+        iterator first() const { return head; }
+
+        // ...
+    private:
+        Node* head;
+    };
+
+    List<int> lst1;
+    List<int, my_allocator> lst2;
+
+    ???
+
+这个看起来没什么问题，不过 ???
+
+    template<typename T>
+    struct Link {
+        T elem;
+        T* pre;
+        T* suc;
+    };
+
+    template<typename T, typename A = std::allocator{}>
+        // requires Regular<T> && Allocator<A>
+    class List2 {
+    public:
+
+        using iterator = Link<T>*;
+
+        iterator first() const { return head; }
+
+        // ...
+    private:
+        Node* head;
+    };
+
+    List<int> lst1;
+    List<int, my_allocator> lst2;
+
+    ???
+
+##### 强制实施
+
+* 对并未依赖于全部模板参数的成员类型进行标记。
+* 对并未依赖于全部模板参数的成员函数进行标记。
+
 
 
 
