@@ -12180,6 +12180,45 @@ C++17 将有望能够提供默认的比较运算符。
 
 * 对并非至少为 `SemiRegular` 的类型进行标记。
 
+### <a name="Rt-visible"></a>T.47: 避免用常用名字命名高度可见的无约束模板
+
+##### 示例
+
+无约束的模板参数和任何东西都能完全匹配，因此这样的模板相对于需要少量转换的更特定类型来说可能更优先。
+而当使用 ADL 时，这一点将会更加麻烦和危险。
+而常用的名字则会让这种问题更易于出现。
+
+##### 示例
+
+    namespace Bad {
+	   struct S { int m; };
+	   template<typename T1, typename T2>
+	   bool operator==(T1, T2) { cout << "Bad\n"; return true; }
+    }
+
+    namespace T0 {
+	   bool operator==(int, Bad::S) { cout << "T0\n"; return true; }  // 与 int 比较
+    
+	   void test()
+	   {
+		  Bad::S bad{ 1 };
+		  vector<int> v(10);
+		  bool b = 1==bad;
+		  bool b2 = v.size()==bad;
+	   }
+    }
+
+这将会打印出 `T0` 和 `Bad`。
+
+这里 `Bad` 中的 `==` 有意设计为造成问题，不过你是否在真实代码中发现过这个问题呢？
+问题在于 `v.size()` 返回的是 `unsigned` 整数，因此需要进行转换才能调用局部的 `==`；
+而 `Bad` 中的 `=` 则不需要任何转换。
+实际的类型，比如标准库的迭代器，也可以被弄成类似的反社会倾向。
+
+##### 强制实施
+
+????
+
 
 
 
