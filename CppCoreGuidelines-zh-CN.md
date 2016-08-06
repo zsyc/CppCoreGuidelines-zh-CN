@@ -12846,6 +12846,34 @@ C++ 是不支持这样做的。
 
 ???
 
+### <a name="Rt-fct"></a>T.123: 用 `constexpr` 函数来在编译期进行值运算
+
+##### 理由
+
+函数是用于表达计算一个值的最显然和传统的方式。
+通常 `constexpr` 函数都比其他的替代方式具有更少的编译期开销。
+
+##### 注解
+
+“特征（Trait）”技术基本上在计算类型方面被模板别名所代替，而在计算值方面则被 `constexpr` 函数所代替。
+
+##### 示例
+
+    template<typename T>
+        // requires Number<T>
+    constexpr T pow(T v, int n)   // 幂/指数
+    {
+        T res = 1;
+        while (n--) res *= v;
+        return res;
+    }
+
+    constexpr auto f7 = pow(pi, 7);
+
+##### 强制实施
+
+    * 对产生值的模板元程序进行标记。它们应当被替换成 `constexpr` 函数。
+
 
 
 
