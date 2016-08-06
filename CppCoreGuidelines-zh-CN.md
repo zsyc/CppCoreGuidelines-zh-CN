@@ -12799,6 +12799,35 @@ C++ 是不支持这样做的。
 
 当你觉得需要把模板元编程代码隐藏到宏之中时，你可能已经跑得太远了。
 
+### <a name="Rt-emulate"></a>T.121: 模板元编程主要用于模拟概念机制
+
+##### 理由
+
+在概念可以广泛使用之前，我们需要用 TMP 来模拟它。
+对概念给出要求的用例（比如基于概念进行重载）是 TMP 的最常见（而且最简单）的用法。
+
+##### 示例
+
+    template<typename Iter>
+        /*requires*/ enable_if<random_access_iterator<Iter>, void>
+    advance(Iter p, int n) { p += n; }
+
+    template<typename Iter>
+        /*requires*/ enable_if<forward_iterator<Iter>, void>
+    advance(Iter p, int n) { assert(n >= 0); while (n--) ++p;}
+
+##### 注解
+
+这种代码使用概念时将更加简单：
+
+    void advance(RandomAccessIterator p, int n) { p += n; }
+
+    void advance(ForwardIterator p, int n) { assert(n >= 0); while (n--) ++p;}
+
+##### 强制实施
+
+???
+
 
 
 
