@@ -12562,6 +12562,55 @@ C++17 将有望能够提供默认的比较运算符。
 
 * 对依赖于模板参数的虚函数进行标记。 ??? 误报
 
+### <a name="Rt-array"></a>T.81: 请勿混合类层次和数组
+
+##### 理由
+
+派生类的数组可以隐式地“衰退”称指向基类的指针，并带来潜在的灾难性后果。
+
+##### 示例
+
+假定 `Apple` 和 `Pear` 是两种 `Fruit`。
+
+    void maul(Fruit* p)
+    {
+        *p = Pear{};     // 把一个 Pear 放入 *p
+        p[1] = Pear{};   // 把一个 Pear 放入 p[2]
+    }
+
+    Apple aa [] = { an_apple, another_apple };   // aa 包含的是 Apple （显然！）
+
+    maul(aa);
+    Apple& a0 = &aa[0];   // 是 Pear 吗？
+    Apple& a1 = &aa[1];   // 是 Pear 吗？
+
+`aa[0]` 可能会变为 `Pear`（并且没进行过强制转换！）。
+当 `sizeof(Apple) != sizeof(Pear)` 时，对 `aa[1]` 的访问就是并未跟数组中的对象的适当起始位置进行对齐的。
+这里出现了类型违例，以及很可能出现的内存损坏。
+决不要写这样的代码。
+
+注意，`maul()` 违反了 `T*` 应指向独立对象的[规则](#???)。
+
+**替代方案**: 使用适当的容器：
+
+    void maul2(Fruit* p)
+    {
+        *p = Pear{};   // 把一个 Pear 放入 *p
+    }
+
+    vector<Apple> va = { an_apple, another_apple };   // aa 包含的是 Apple （显然！）
+
+    maul2(aa);       // 错误: 无法把 vector<Apple> 转换为 Fruit*
+    maul2(&aa[0]);   // 这是你明确要做的
+
+    Apple& a0 = &aa[0];   // 是 Pear 吗？
+
+注意，`maul2()` 中的赋值违反了避免发生切片的[规则](#???)。
+
+##### 强制实施
+
+* 对这种恐怖的东西进行检测！
+
 
 
 
