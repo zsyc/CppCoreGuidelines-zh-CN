@@ -12653,6 +12653,55 @@ C++ 是不支持这样做的。
 
 编译器会处理这个问题。
 
+### <a name="Rt-abi"></a>T.84: 使用非模板的核心实现来提供 ABI 稳定的接口
+
+##### 理由
+
+提升代码的稳定性。避免代码爆炸。
+
+##### 示例
+
+这个应当是基类：
+
+    struct Link_base {   // 稳定
+        Link* suc;
+        Link* pre;
+    };
+
+    template<typename T>   // 模板化的包装带来了类型安全性
+    struct Link : Link_base {
+        T val;
+    };
+
+    struct List_base {
+        Link_base* first;   // 第一个元素（如果有）
+        int sz;             // 元素数量
+        void add_front(Link_base* p);
+        // ...
+    };
+
+    template<typename T>
+    class List : List_base {
+    public:
+        void put_front(const T& e) { add_front(new Link<T>{e}); }   // 隐式强制转换为 Link_base
+        T& front() { static_cast<Link<T>*>(first).val; }   // 显式强制转换回 Link<T>
+        // ...
+    };
+
+    List<int> li;
+    List<string> ls;
+
+这样的话就只有一份用于对 `List` 的元素进行入链和解链的操作的代码了。
+而类 `Link` 和 `List` 除了进行类型操作之外什么也没做。
+
+除了使用一个独立的“base”类型外，另一种常用的技巧是对 `void` 或 `void*` 进行特化，并让针对 `T` 的通用模板成为在从或向 `void` 的核心实现进行强制转换的一层类型安全封装。
+
+**替代方案**: 使用一个 [PIMPL](#???) 实现。
+
+##### 强制实施
+
+???
+
 
 
 
