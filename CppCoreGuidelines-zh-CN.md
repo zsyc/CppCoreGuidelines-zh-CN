@@ -12932,6 +12932,23 @@ C++ 是不支持这样做的。
 
 ???
 
+### <a name="Rt-lambda"></a>T.141: 当仅在一个地方需要一个简单的函数对象时，使用无名的 lambda
+
+##### 理由
+
+这样能够使代码精简并比其他方式提供更好的局部性。
+
+##### 示例
+
+    auto earlyUsersEnd = std::remove_if(users.begin(), users.end(),
+                                        [](const User &a) { return a.id > 100; });
+
+**例外**: 为 lambda 命名是有用的，即便它可能只会一次性使用也是如此。
+
+##### 强制实施
+
+* 寻找相同和几乎相同的 lambda（以便将它们替换为具名的函数或者具名的 lambda）。
+
 
 
 
