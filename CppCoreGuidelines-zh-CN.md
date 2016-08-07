@@ -12963,6 +12963,64 @@ C++ 是不支持这样做的。
 
 ???
 
+### <a name="Rt-nongeneric"></a>T.143: 请勿编写并非有意非泛型的代码
+
+##### 理由
+
+一般性。可重用性。请勿无必要地陷入技术细节之中；请使用最广泛可用的设施。
+
+##### 示例
+
+用 `!=` 而不是 `<` 来比较迭代器；`!=` 可以在更多对象上正常工作，因为它并未蕴含有序性。
+
+    for (auto i = first; i < last; ++i) {   // 通用性较差
+        // ...
+    }
+
+    for (auto i = first; i != last; ++i) {   // 好; 通用性较强
+        // ...
+    }
+
+当然，范围式 for 在符合需求的时候当然是更好的选择。
+
+##### 示例
+
+使用能够提供所需功能的最接近基类的类。
+
+    class base {
+    public:
+        void f();
+        void g();
+    };
+
+    class derived1 : public base {
+    public:
+        void h();
+    };
+
+    class derived2 : public base {
+    public:
+        void j();
+    };
+
+    void myfunc(derived1& param)  // 不好，除非确实有特别的原因来将之仅限制为 derived1 对象
+    {
+        use(param.f());
+        use(param.g());
+    }
+
+    void myfunc(base& param)   // 号，仅使用 base 的接口，且保证了这个类型
+    {
+        use(param.f());
+        use(param.g());
+    }
+
+##### 强制实施
+
+* 对使用 `<` 而不是 `!=` 的迭代器比较进行标记。
+* 当存在 `x.empty()` 或 `x.is_empty()` 时，对 `x.size() == 0` 进行标记。`empty()` 比 `size()` 能够对于更多的容器工作，因为某些容器是不知道自己的大小的，甚至概念上就是大小无界的。
+* 如果函数接受指向更加派生的类型的指针或引用，但仅使用了在某个基类中所声明的函数，则对其进行标记。
+
 
 
 
