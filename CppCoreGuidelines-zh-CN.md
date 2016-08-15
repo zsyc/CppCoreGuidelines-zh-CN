@@ -13336,6 +13336,24 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
 ???
 
+### <a name="Rs-guards"></a>SF.8: 为所有的 `.h` 文件使用 `#include` 防卫宏
+
+##### 理由
+
+避免文件被多次 `#include`。
+
+##### 示例
+
+    // file foobar.h:
+    #ifndef FOOBAR_H
+    #define FOOBAR_H
+    // ... 声明 ...
+    #endif // FOOBAR_H
+
+##### 强制实施
+
+标记没有 `#include` 防卫的 `.h` 文件。
+
 
 
 
