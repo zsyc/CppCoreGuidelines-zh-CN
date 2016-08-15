@@ -13267,6 +13267,47 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
 容易。
 
+### <a name="Rs-consistency"></a>SF.5: `.cpp` 文件必须包含定义了它的接口的一个或多个 `.h` 文件
+
+##### 理由
+
+这使得编译器可以提早进行一致性检查。
+
+##### 示例，不好
+
+    // foo.h:
+    void foo(int);
+    int bar(long double);
+    int foobar(int);
+
+    // foo.cpp:
+    void foo(int) { /* ... */ }
+    int bar(double) { /* ... */ }
+    double foobar(int);
+
+这个错误直到调用了 `bar` 或 `foobar` 的程序的连接时才会被发现。
+
+##### 示例
+
+    // foo.h:
+    void foo(int);
+    int bar(long double);
+    int foobar(int);
+
+    // foo.cpp:
+    #include<foo.h>
+
+    void foo(int) { /* ... */ }
+    int bar(double) { /* ... */ }
+    double foobar(int);   // 错误: 错误的返回类型
+
+`foobar` 的返回类型错误在编译 `foo.cpp` 时立即就被发现了。
+对 `bar` 的参数类型错误在连接时之前无法被发现，因为可能会有重载发生，但系统性地使用 `.h` 文件能够增加时其被程序员更早发现的可能性。
+
+##### 强制实施
+
+???
+
 
 
 
