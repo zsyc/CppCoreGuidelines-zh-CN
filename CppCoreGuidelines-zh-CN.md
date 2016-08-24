@@ -13460,6 +13460,32 @@ API 类及其成员不能放在无名命名空间中；而在实现源文件中�
 * [SL.11: 除非有理由使用别的容器，否则默认情况应优先采用 STL 的 `vector`](#Rsl-vector)
 ???
 
+### <a name="Rsl-arrays"></a>SL.10: 优先采用 STL 的 `array` 或 `vector` 而不是 C 数组
+
+##### 理由
+
+C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么优势。
+对于定长数组，应使用 `std::array`，它传递给函数时并不会退变为指针并丢失其大小信息。
+对于变长数组，应使用 `std::vector`，它还可以改变大小并处理内存分配。
+
+##### 示例
+
+    int v[SIZE];                        // 不好
+     
+    std::array<int,SIZE> w;             // ok
+
+##### 示例
+
+    int* v = new int[initial_size];     // 不好，有所有权的原生指针
+    delete[] v;                         // 不好，手工 delete
+
+    std::vector<int> w(initial_size);   // ok
+
+##### 强制实施
+
+* 如果 C 数组的声明所在的函数或类也声明了 STL 的某个容器（这是为了避免在老式的非 STL 代码中的大量警告噪音），则对其进行标记。修正：最少要把 C 数组改成 `std::array`。
+
+
 
 
 
