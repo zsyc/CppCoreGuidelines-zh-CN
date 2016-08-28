@@ -13621,6 +13621,45 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 * [RS.video: 有关“当代 C++”的视频](#SS-vid)
 * [RF.man: 手册](#SS-man)
 
+## <a name="SS-rules"></a>RF.rules: 编码规则
+
+* [Boost Library Requirements and Guidelines](http://www.boost.org/development/requirements.html).
+  ???.
+* [Bloomberg: BDE C++ Coding](https://github.com/bloomberg/bde/wiki/CodingStandards.pdf).
+  着重强调了代码的组织和布局。
+* Facebook: ???
+* [GCC Coding Conventions](https://gcc.gnu.org/codingconventions.html).
+  C++03 以及（相当）一部分向后兼容。
+* [Google C++ Style Guide](http://google-styleguide.googlecode.com/svn/trunk/cppguide.html).
+  过于保守，且反映了其源自 1990 年代的背景。
+  [A critique from 2014](https://www.linkedin.com/pulse/20140503193653-3046051-why-google-style-guide-for-c-is-a-deal-breaker).
+  Google 正忙于更新它们的代码库，我们无法得知其所公布的指导方针有多确切地反应了它们的实际代码。
+  这一组建议正在演进中。
+* [JSF++: JOINT STRIKE FIGHTER AIR VEHICLE C++ CODING STANDARDS](http://www.stroustrup.com/JSF-AV-rules.pdf).
+  文档编号 2RDU00001 Rev C. December 2005.
+  针对飞行控制软件。
+  针对硬实时。
+  这意味着它需要非常多的限制（“程序如果发生故障就会有人挂掉”）。
+  例如，飞机起飞后禁止进行自由存储的分配和回收（禁止内存溢出并禁止发生碎片化）。
+  禁止使用异常（因为没有可用工具可以保证异常能够在固定的短时间段内被处理）。
+  所使用的程序库必须是已被证明可以用于关键任务应用的。
+  它和这个指导方针集合的相似性并不让人惊讶，因为 Bjarne Stroustrup 正是 JSF++ 的作者之一。
+  建议采纳，但请注意其非常特定的关注领域。
+* [Mozilla Portability Guide](https://developer.mozilla.org/en-US/docs/Mozilla/C%2B%2B_Portability_Guide).
+  如其名称所示，它关注于跨许多（老）编译器的兼容性。
+  因此，它是很具有限制性的。
+* [Geosoft.no: C++ Programming Style Guidelines](http://geosoft.no/development/cppstyle.html).
+  ???.
+* [Possibility.com: C++ Coding Standard](http://www.possibility.com/Cpp/CppCodingStandard.html).
+  ???.
+* [SEI CERT: Secure C++ Coding Standard](https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=637).
+  针对安全关键代码所编写的一组非常好的规则（还带有示例和原理说明）。
+  它们的许多规则都广泛适用。
+* [High Integrity C++ Coding Standard](http://www.codingstandard.com/).
+* [llvm](http://llvm.org/docs/CodingStandards.html).
+  有些简略，前 C++11 时代的，而且是（有理由地）针对其应用领域的。
+* ???
+
 
 
 
