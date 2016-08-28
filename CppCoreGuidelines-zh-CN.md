@@ -13681,6 +13681,12 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
   大多是一些低级的命名和布局规则。
   主要作为教学工具。
 
+## <a name="SS-Cplusplus"></a>RF.C++: C++ 编程 (C++11/C++14)
+
+* TC++PL4
+* Tour++
+* Programming: Principles and Practice using C++
+
 
 
 
