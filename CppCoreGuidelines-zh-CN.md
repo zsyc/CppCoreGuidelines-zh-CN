@@ -13687,6 +13687,15 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 * Tour++
 * Programming: Principles and Practice using C++
 
+## <a name="SS-web"></a>RF.web: 网站
+
+* [isocpp.org](http://www.isocpp.com)
+* [Bjarne Stroustrup 的个人主页](http://www.stroustrup.com)
+* [WG21](http://www.open-std.org/jtc1/sc22/wg21/)
+* [Boost](http://www.boost.org)<a name="Boost"></a>
+* [Adobe open source](http://www.adobe.com/open-source.html)
+* [Poco libraries](http://pocoproject.org/)
+
 
 
 
