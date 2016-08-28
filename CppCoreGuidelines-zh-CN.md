@@ -13660,6 +13660,27 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
   有些简略，前 C++11 时代的，而且是（有理由地）针对其应用领域的。
 * ???
 
+## <a name="SS-books"></a>RF.books: 带有编码指导方针的书籍
+
+* [Meyers96](#Meyers96) Scott Meyers: *More Effective C++*. Addison-Wesley 1996.
+* [Meyers97](#Meyers97) Scott Meyers: *Effective C++, Second Edition*. Addison-Wesley 1997.
+* [Meyers01](#Meyers01) Scott Meyers: *Effective STL*. Addison-Wesley 2001.
+* [Meyers05](#Meyers05) Scott Meyers: *Effective C++, Third Edition*. Addison-Wesley 2005.
+* [Meyers15](#Meyers15) Scott Meyers: *Effective Modern C++*. O'Reilly 2015.
+* [SuttAlex05](#SuttAlex05) Sutter and Alexandrescu: *C++ Coding Standards*. Addison-Wesley 2005. 与其说是一组规则，不如说是一组元规则。前 C++11 时代。
+* [Stroustrup05](#Stroustrup05) Bjarne Stroustrup: [A rationale for semantically enhanced library languages](http://www.stroustrup.com/SELLrationale.pdf).
+  LCSD05. October 2005.
+* [Stroustrup14](#Stroustrup05) Stroustrup: [A Tour of C++](http://www.stroustrup.com/Tour.html).
+  Addison Wesley 2014.
+  每章的结尾都有一个包含一组建议的忠告部分。
+* [Stroustrup13](#Stroustrup13) Stroustrup: [The C++ Programming Language (4th Edition)](http://www.stroustrup.com/4th.html).
+  Addison Wesley 2013.
+  每章的结尾都有一个包含一组建议的忠告部分。
+* Stroustrup: [Style Guide](http://www.stroustrup.com/Programming/PPP-style.pdf)
+  for [Programming: Principles and Practice using C++](http://www.stroustrup.com/programming.html).
+  大多是一些低级的命名和布局规则。
+  主要作为教学工具。
+
 
 
 
