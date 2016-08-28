@@ -13705,6 +13705,14 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 * Sutter: ???
 * ??? more ???
 
+## <a name="SS-man"></a>RF.man: 手册
+
+* ISO C++ Standard C++11
+* ISO C++ Standard C++14
+* Palo Alto "Concepts" TR
+* ISO C++ Concepts TS
+* WG21 Ranges report
+
 
 
 
