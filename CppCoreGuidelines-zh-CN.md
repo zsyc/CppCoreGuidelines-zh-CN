@@ -13713,6 +13713,18 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 * ISO C++ Concepts TS
 * WG21 Ranges report
 
+## <a name="SS-ack"></a>鸣谢
+
+感谢对规则、建议、支持信息和参考材料等等作出了各种贡献的许多人：
+
+* Peter Juhl
+* Neil MacIntosh
+* Axel Naumann
+* Andrew Pardoe
+* Gabriel Dos Reis
+* Zhuang, Jiangang (Jeff)
+* Sergey Zubkov
+
 
 
 
