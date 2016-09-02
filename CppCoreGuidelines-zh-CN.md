@@ -13753,6 +13753,21 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 
 这个剖面配置的实现应当在源代码中识别出下列模式，将之作为不符合并给出诊断信息。
 
+### <a name="Pro-type-reinterpretcast"></a>Type.1: 请勿使用 `reinterpret_cast`
+
+##### 理由
+
+使用这些强制转换将会违反类型安全性，并导致程序对实际上为 `X` 类型的变量当作某个无关类型 `Z` 来进行访问。
+
+##### 示例，不好
+
+    std::string s = "hello world";
+    double* p = reinterpret_cast<double*>(&s); // 不好
+
+##### 强制实施
+
+对所有 `reinterpret_cast` 的使用给出诊断消息。修正：考虑代之以使用一个 `variant`。
+
 
 
 
