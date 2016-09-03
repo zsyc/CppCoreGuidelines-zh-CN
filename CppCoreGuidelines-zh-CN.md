@@ -13883,6 +13883,48 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 
 对所有 `const_cast` 的使用给出诊断消息。修正：要么避免以非 `const` 方式使用变量，要么不要使它 `const`。
 
+### <a name="Pro-type-cstylecast"></a>Type.4: 请勿使用 C 风格的强制转换 `(T)expression`，它可能进行 `static_cast` 向下转换，`const_cast`，或者 `reinterpret_cast`
+
+##### 理由
+
+使用这些强制转换将会违反类型安全性，并导致程序对实际上为 `X` 类型的变量当作某个无关类型 `Z` 来进行访问。
+注意 C 风格的强制转换 `(T)expression` 的含义为实施以下之中第一个可行的转换：`const_cast`，`static_cast`，`static_cast` 之后再 `const_cast`，`reinterpret_cast`，`reinterpret_cast` 之后再 `const_cast`。本条规则仅当 `(T)expression` 用于实施不安全的强制转换时才将之禁止。
+
+##### 示例，不好
+
+    std::string s = "hello world";
+    double* p = (double*)(&s); // 不好
+
+    class base { public: virtual ~base() = 0; };
+
+    class derived1 : public base { };
+
+    class derived2 : public base {
+        std::string s;
+    public:
+        std::string get_s() { return s; }
+    };
+
+    derived1 d1;
+    base* p = &d1; // ok, 隐式转换为基类指针没有问题
+
+    derived2* p2 = (derived2*)(p); // 不好，试图把 d1 当作一个 derived2，
+    cout << p2->get_s(); // 试图访问 d1 并不存在的字符串成员，它将见到临近 d1 的任意字节数据
+
+    void f(const int& i) {
+        (int&)(i) = 42;   // 不好
+    }
+
+    static int i = 0;
+    static const int j = 0;
+
+    f(i); // 隐含的副作用
+    f(j); // 未定义行为
+
+##### 强制实施
+
+对所有可能进行向下强制转换的 `static_cast`，`const_cast`，或者 `reinterpret_cast` 的 C 风格的 `(T)expression` 的使用给出诊断消息。修正：相应分别代之以 `dynamic_cast`，`const` 正确的声明，或使用 `variant`。
+
 
 
 
