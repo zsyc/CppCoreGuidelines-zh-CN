@@ -7851,7 +7851,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 * [ES.9: 避免 `ALL_CAPS` 式的名字](#Res-not-CAPS)
 * [ES.10: 每条声明中（仅）声明一个名字](#Res-name-one)
 * [ES.11: 使用 `auto` 来避免类型名字的多余重复](#Res-auto)
-* [ES.20: 总要为对象进行初始化](#Res-always)
+* [ES.20: 坚持为对象进行初始化](#Res-always)
 * [ES.21: 不要在确实需要使用变量（或常量）之前就引入它](#Res-introduce)
 * [ES.22: 要等到获得了用以初始化变量的值之后才声明变量](#Res-init)
 * [ES.23: 优先使用 `{}` 初始化语法](#Res-list)
@@ -8282,7 +8282,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 对声明中多余的类型名字进行标记。
 
-### <a name="Res-always"></a>ES.20: 总要为对象进行初始化
+### <a name="Res-always"></a>ES.20: 坚持为对象进行初始化
 
 ##### 理由
 
@@ -13924,6 +13924,10 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 ##### 强制实施
 
 对所有可能进行向下强制转换的 `static_cast`，`const_cast`，或者 `reinterpret_cast` 的 C 风格的 `(T)expression` 的使用给出诊断消息。修正：相应分别代之以 `dynamic_cast`，`const` 正确的声明，或使用 `variant`。
+
+### <a name="Pro-type-init"></a>Type.5: 请勿在初始化之前使用变量
+
+需要采用 [ES.20: 坚持为对象进行初始化](#Res-always)。
 
 
 
