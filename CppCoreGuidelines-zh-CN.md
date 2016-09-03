@@ -13820,6 +13820,69 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 
 对所有进行向下强制转换（即将某个 `X` 的指针或引用强制转换为某个并非 `X` 或 `X` 的可访问基类的类型的指针或引用）的 `static_cast` 的使用给出诊断消息。修正：若它是一个向下强制转换或交叉强制转换，则代之以 `dynamic_cast`，否则考虑代之以使用一个 `variant`。
 
+### <a name="Pro-type-constcast"></a>Type.3: 请勿用 `const_cast` 强制掉 `const`（亦即不要这样做）
+
+##### 理由
+
+强制掉 `const` 是在说谎。如果变量其实被声明为了 `const` 的话，这种谎言将会被未定义行为所惩罚。
+
+##### 示例，不好
+
+    void f(const int& i)
+    {
+        const_cast<int&>(i) = 42;   // 不好
+    }
+
+    static int i = 0;
+    static const int j = 0;
+
+    f(i); // 隐含的副作用
+    f(j); // 未定义行为
+
+##### 示例
+
+有些时候你可能打算诉诸于 `const_cast` 来避免代码重复，比如说两个访问函数由相似的实现而只有 `const` 上有区别。例如：
+
+    class bar;
+    
+    class foo {
+        bar mybar;
+    public:                         // 不好，逻辑有重复
+              bar& get_bar()       { /* 获得 mybar 的一个非 const 引用的复杂逻辑 */ } 
+        const bar& get_bar() const { /* 获得 mybar 的一个 const 引用的相同的复杂逻辑 */ } 
+    };
+
+应当采用公用实现来代替。通常我们可以直接让非 `const` 函数来调用 `const` 函数。不过，当逻辑比较复杂时这将会导致下面的代码模式，它仍然要诉诸于一次 `const_cast`：
+
+    class foo {
+        bar mybar;
+    public:                         // 不太好，非 const 调用了 const 版本，但诉诸于 const_cast
+              bar& get_bar()       { return const_cast<bar&>(static_cast<const foo&>(*this).get_bar()); } 
+        const bar& get_bar() const { /* 获得 mybar 的一个 const 引用的复杂逻辑 */ } 
+    };
+
+虽然正确应用这个模式是安全的（由于调用方必然有一个非 `const` 对象来进行调用），这种做法并不理想，因为其安全性很难作为检查工具的规则来自动进行加强。
+
+应当替换为将共同的代码放到一个公共辅助函数中——并将其作为模板以使它可以推断 `const`。这样完全不需要使用任何 `const_cast`：
+
+    class foo {
+        bar mybar;
+
+        template<class T>           // 好，推断出 T 是 const 还是非 const
+        static auto get_bar_impl(T& t) -> decltype(t.get_bar())
+            { /* 获得 mybar 的一个可能 const 的引用的复杂逻辑 */ } 
+
+    public:                         // 好
+              bar& get_bar()       { return get_bar_impl(*this); } 
+        const bar& get_bar() const { return get_bar_impl(*this); } 
+    };
+
+**例外**: 你可能需要在调用 `const` 不正确的函数时强制掉 `const`。请优先采取将这种函数包装到内联的 `const` 正确的包装函数中的方式，以将其强制转换封装到一处。
+
+##### 强制实施
+
+对所有 `const_cast` 的使用给出诊断消息。修正：要么避免以非 `const` 方式使用变量，要么不要使它 `const`。
+
 
 
 
