@@ -14320,6 +14320,14 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
 
 对于不能为 `nullptr` 的 C 风格字符串，应使用 `not_null<zstring>`。 ??? 我们需要为 `not_null<zstring>` 命名吗？还是说它的难看是有用的？
 
+## <a name="SS-ownership"></a>GSL.owner: 所有权指针
+
+* `unique_ptr<T>`     // 唯一所有权：`std::unique_ptr<T>`
+* `shared_ptr<T>`     // 共享所有权：`std::shared_ptr<T>`（引用计数指针）
+* `stack_array<T>`    // 栈分配数组。元素的数量在构造时确定并固定下来。其元素可改变，除非 `T` 为 `const` 类型。
+* `dyn_array<T>`      // ??? 有必要吗 ??? 堆分配数组。元素的数量在构造时确定并固定下来。
+  其元素可改变，除非 `T` 为 `const` 类型。基本上这是一个进行分配并拥有其元素的 `span`。
+
 
 
 
