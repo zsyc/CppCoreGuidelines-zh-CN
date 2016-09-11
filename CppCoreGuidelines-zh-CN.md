@@ -14020,6 +14020,59 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 
 这个剖面配置的实现应当在源代码中识别出下列模式，将之作为不符合并给出诊断信息。
 
+### <a name="Pro-bounds-arithmetic"></a>Bounds.1: 请勿使用指针算术。请使用 `span` 代替
+
+##### 理由
+
+指针只应当指代单个对象，指针算术是脆弱而易错的。`span` 带有边界检查，是访问数组数据的安全类型。
+
+##### 示例，不好
+
+    void f(int* p, int count)
+    {
+        if (count < 2) return;
+
+        int* q = p + 1; // 不好
+
+        ptrdiff_t d;
+        int n;
+        d = (p - &n); // OK
+        d = (q - p); // OK
+
+        int n = *p++; // 不好
+
+        if (count < 6) return;
+
+        p[4] = 1; // 不好
+
+        p[count - 1] = 2; // 不好
+
+        use(&p[0], 3); // 不好
+    }
+
+##### 示例，好
+
+    void f(span<int> a) // 好多了：函数声明中使用了 span
+    {
+        if (a.length() < 2) return;
+
+        int n = *a++; // OK
+
+        span<int> q = a + 1; // OK
+
+        if (a.length() < 6) return;
+
+        a[4] = 1; // OK
+
+        a[count - 1] = 2; // OK
+
+        use(a.data(), 3); // OK
+    }
+
+##### 强制实施
+
+对任何在指针类型的表达式上进行的产生指针类型的值的算术运算给出诊断消息。
+
 
 
 
