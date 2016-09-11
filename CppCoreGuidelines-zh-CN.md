@@ -14345,6 +14345,34 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
 * `[[implicit]]`  // 放在单参数构造函数上的“记号”，以明确说明它们并非显式构造函数。
 * `move_owner`    // `p = move_owner(q)` 含义为 `p = q` 但 ???
 
+## <a name="SS-gsl-concepts"></a>GSL.concept: 概念
+
+这些概念（类型谓词）借用于 Andrew Sutton 的 Origin 程序库，Range 提案，以及 ISO WG21 的 Palo Alto TR。
+它们可能会与 ISO C++ 标准中将会提供的概念十分相似。
+它们的写法依照 ISO WG21 Concepts TS (???ref???)。
+
+* `Range`
+* `String`   // ???
+* `Number`   // ???
+* `Sortable`
+* `Pointer`  // 带有 `*`，`->`，`==`，以及默认构造的类型（默认构造被假定为设值为唯一的“null”值） [参见 smartptrconcepts](#Rr-smartptrconcepts)
+* `Unique_ptr`  // 符合 `Pointer` 的类型，具有移动（而不是复制）操作，并符合生存期剖面配置中针对 `unique` 所有者类型的准则 [参见 smartptrconcepts](#Rr-smartptrconcepts)
+* `Shared_ptr`   // 符合 `Pointer` 的类型，具有复制操作，并符合生存期剖面配置中针对 `shared` 所有者类型的准则 [参见 smartptrconcepts](#Rr-smartptrconcepts)
+* `EqualityComparable`   // ???我们非得用 CaMelcAse 吗???
+* `Convertible`
+* `Common`
+* `Boolean`
+* `Integral`
+* `SignedIntegral`
+* `SemiRegular`
+* `Regular`
+* `TotallyOrdered`
+* `Function`
+* `RegularFunction`
+* `Predicate`
+* `Relation`
+* ...
+
 
 
 
