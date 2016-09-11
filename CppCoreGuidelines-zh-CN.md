@@ -14373,6 +14373,11 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
 * `Relation`
 * ...
 
+### <a name="SS-gsl-smartptrconcepts"></a>智能指针概念
+
+在 [Lifetimes paper](https://github.com/isocpp/CppCoreGuidelines/blob/master/docs/Lifetimes%20I%20and%20II%20-%20v0.9.1.pdf) 中进行了描述。
+
+
 
 
 
