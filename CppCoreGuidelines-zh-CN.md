@@ -14159,6 +14159,41 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
         at(a, i + j) = 12;  // OK - 带有边界检查
     }
 
+### <a name="Pro-bounds-decay"></a>Bounds.3: 避免数组向指针的衰变
+
+##### 理由
+
+不能把指针用作数组。`span` 是对通过指针来访问数组的一种带有边界检查的安全的替代方案。
+
+##### 示例，不好
+
+    void g(int* p, size_t length);
+
+    void f()
+    {
+        int a[5];
+        g(a, 5);        // 不好
+        g(&a[0], 1);    // OK
+    }
+
+##### 示例，好
+
+    void g(int* p, size_t length);
+    void g1(span<int> av); // 好多了：改动了 g()
+
+    void f()
+    {
+        int a[5];
+        span av = a;
+
+        g(a.data(), a.length());   // OK, 如果没有其他选择的话
+        g1(a);                     // OK - 这里没有衰变，而是使用了隐式的 span 构造函数
+    }
+
+##### 强制实施
+
+对任何可能依赖于从数组类型向指针类型的隐式转换的表达式给出诊断消息。
+
 
 
 
