@@ -14337,6 +14337,14 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
 
 现在这些断言还是宏（天呐！）等待标准委员会对于契约和断言语法的确定。
 
+## <a name="SS-utilities"></a>GSL.util: 工具
+
+* `finally`       // `finally(f)` 创建一个 `final_action{f}`，其析构函数将执行 `f`
+* `narrow_cast`   // `narrow_cast<T>(x)` 就是 `static_cast<T>(x)`
+* `narrow`        // `narrow<T>(x)` 在满足 `static_cast<T>(x) == x` 时为 `static_cast<T>(x)`，否则抛出 `narrowing_error`
+* `[[implicit]]`  // 放在单参数构造函数上的“记号”，以明确说明它们并非显式构造函数。
+* `move_owner`    // `p = move_owner(q)` 含义为 `p = q` 但 ???
+
 
 
 
