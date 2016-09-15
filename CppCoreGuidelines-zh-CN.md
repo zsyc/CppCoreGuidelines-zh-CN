@@ -14396,7 +14396,7 @@ IDE 和工具可以提供辅助（当然也可能造成妨碍）。
 * [NL.7: 使名字的长度大约正比于其作用域的长度](#Rl-name-length)
 * [NL.8: 使用一种统一的命名风格](#Rl-name)
 * [NL 9: 将 `ALL_CAPS` 仅用于宏的名字](#Rl-all-caps)
-* [NL.10: 避免 CamelCase 风格](#Rl-camel)
+* [NL.10: 避免 CamelCase 命名风格](#Rl-camel)
 * [NL.15: 节制地使用空格](#Rl-space)
 * [NL.16: 使用一种常规的类成员声明次序](#Rl-order)
 * [NL.17: 使用从 K&R 派生出的代码布局](#Rl-knr)
@@ -14589,6 +14589,32 @@ CamelCase：多词标识符的每个词首字母大写：
 
 * 对带有小写字母的宏进行标记
 * 对 `ALL_CAPS` 非宏名字进行标记
+
+### <a name="Rl-camel"></a>NL.10: 避免 CamelCase 命名风格
+
+##### 理由
+
+用下划线来分隔名字的各部分就是 C 和 C++ 的原始风格，并被用于 C++ 标准库中。
+如果更倾向 CamelCase，你还得从各种 camelCase 的变体中进行选择。
+
+##### 注解
+
+这条规则仅作为当你有选择权时的缺省方案。
+通常你是没有什么选择权的，而只能遵循某个已经设立的风格以维持[一致性](#Rl-name)。
+对一致性的需要优先于个人喜好。
+
+##### 示例
+
+[Stroustrup](http://www.stroustrup.com/Programming/PPP-style.pdf)：
+采用 ISO 标准，但在自己的类型和概念上采用大写字母：
+
+* `int`
+* `vector`
+* `My_map`
+
+##### 强制实施
+
+不可能。
 
 
 
