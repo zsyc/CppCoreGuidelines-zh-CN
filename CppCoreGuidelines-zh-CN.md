@@ -14787,6 +14787,59 @@ C 风格的布局强调其在表达式中的用法和文法，而 C++ 风格强�
 
 可能造成很大的问题，但这并不适于 21 世纪和 C++。
 
+# <a name="S-faq"></a>FAQ: 常见问题及其回答
+
+本节中包括了对关于这些指导方针的常见问题的回答。
+
+### <a name="Faq-aims"></a>FAQ.1: 这些指导方针的想要达成什么目标？
+
+请参见<a href="#S-abstract">本页面开头</a>。这是一个开源项目，旨在为采用当今的 C++ 标准（写此文时为 C++14）来编写 C++ 代码而维护的一组现代的权威指导方针。这些指导方针的设计是现代的，尽可能使机器可实施的，并且是为贡献和分支保持开放，以使各种组织机构可以便于将它们整合到其自己组织的编码指导方针之中。
+
+### <a name="Faq-announced"></a>FAQ.2: 这项工作室何时何地首次公开的？
+
+是在 [Bjarne Stroustrup 在他为 CppCon 2015 的开场主旨演讲，“Writing Good C++14”](https://isocpp.org/blog/2015/09/stroustrup-cppcon15-keynote)。另请参见[相应的 isocpp.org 博客条目](https://isocpp.org/blog/2015/09/bjarne-stroustrup-announces-cpp-core-guidelines)，关于类型和内存安全性指导方针的原理请参见 [Herb Sutter 的后续 CppCon 2015 演讲，“Writing Good C++14 ... By Default”](https://isocpp.org/blog/2015/09/sutter-cppcon15-day2plenary)。
+
+### <a name="Faq-maintainers"></a>FAQ.3: 谁是这些指导方针的作者和维护者？
+
+最初的主要作者和维护者是 Bjarne Stroustrup 和 Herb Sutter，而迄今为止的指导方针则是由来自 CERN，Microsoft，Morgan Stanley，以及许多其他组织机构的专家所贡献的。指导方针发布时，其正处于 "0.6" 状态，我们欢迎人们进行贡献。正如 Stroustrup 在其声明中所说：“我们需要帮助！”
+
+### <a name="Faq-contribute"></a>FAQ.4: 我如何进行贡献呢？
+
+参见 [CONTRIBUTING.md](https://github.com/isocpp/CppCoreGuidelines/blob/master/CONTRIBUTING.md)。我们感激志愿者的帮助！
+
+### <a name="Faq-maintainer"></a>FAQ.5: 怎样成为一名编辑或维护者？
+
+通过先进行大量贡献并使你的贡献被认可具有一致的质量。参见 [CONTRIBUTING.md](https://github.com/isocpp/CppCoreGuidelines/blob/master/CONTRIBUTING.md)。我们感激志愿者的帮助！
+
+### <a name="Faq-iso"></a>FAQ.6: 这些指导方针被 ISO C++ 标准委员会采纳了吗？它们是否代表委员会的一致意见？
+
+不是这样。这些指导方针不在标准之内。它们是为标准服务的，而当前维护的指导方针是为了更有效地使用当前的标准 C++的。我们的目标是使其与委员会所设计的标准保持同步。
+
+### <a name="Faq-isocpp"></a>FAQ.7: 既然这些指导方针并不是委员会所采纳的，它们为何在 `github.com/isocpp` 之下呢？
+
+因为 `isocpp` 是标准 C++ 基金会；而标准委员会的仓库则处于 [github.com/*cplusplus*](https://github.com/cplusplus) 之下。我们需要一个中立组织来持有版权和许可以明确其并不是由某个人或供应商所控制的。这个自然实体就是基金会，其设立是为了推进使用并持续更新对现代标准 C++ 的理解，以及推进标准委员会的工作。其所遵循的正是与 isocpp.org 为 [C++ FAQ](https://isocpp.org/faq) 所做的相同模式，它是有 Bjarne Stroustrup，Marshall Cline，和 Herb Sutter 所发起的工作，并以相同的方式贡献为了开放项目。
+
+### <a name="Faq-cpp98"></a>FAQ.8: 会有 C++98 版本的指导方针吗？C++11 版本呢？
+
+不会。这些指导方针的目标是更好地使用标准 C++14（和 Concepts Lite 技术规范，当你有一个实现的话），以及假定你有一个现代的遵循标准的编译器时如何进行代码编写的。
+
+### <a name="Faq-language-extensions"></a>FAQ.9: 这些指导方针中会提出新的语言功能吗？
+
+不会。这些指导方针的目标是更好地使用标准 C++14 和 Concepts Lite 技术规范的，它们会自我限定为仅建议使用这些功能。
+
+### <a name="Faq-markdown"></a>FAQ.10: 这些指导方针的书写使用的是哪个版本的 Markdown？
+
+这些编码指导方针使用的是 [CommonMark](http://commonmark.org)，以及 `<a>` HTML 锚定元素。
+
+我们正在考虑以下这些来自 [GitHub Flavored Markdown (GFM)](https://help.github.com/articles/github-flavored-markdown/) 的扩展：
+
+- 有围栏代码块（正在讨论是否统一使用缩进还是围栏代码块）
+- 表格（我们虽然还没用到，但很需要它们，这是一种 GFM 扩展）
+
+避免使用其他 HTML 标签和其他扩展。
+
+注意：我们还没对这种风格达成一致。
+
 
 
 
