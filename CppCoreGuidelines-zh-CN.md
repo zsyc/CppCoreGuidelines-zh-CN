@@ -7835,7 +7835,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 表达式和语句是用以表达动作和计算的最底层也是最直接的方式。局部作用域总的声明也是语句。
 
-有关命名、注释和缩进的规则，参见 [NL: 命名与布局](#S-naming)。
+有关命名、注释和缩进的规则，参见 [NL: 命名与代码布局](#S-naming)。
 
 一般规则：
 
@@ -13678,7 +13678,7 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
   每章的结尾都有一个包含一组建议的忠告部分。
 * Stroustrup: [Style Guide](http://www.stroustrup.com/Programming/PPP-style.pdf)
   for [Programming: Principles and Practice using C++](http://www.stroustrup.com/programming.html).
-  大多是一些低级的命名和布局规则。
+  大多是一些低级的命名和代码布局规则。
   主要作为教学工具。
 
 ## <a name="SS-Cplusplus"></a>RF.C++: C++ 编程 (C++11/C++14)
@@ -14377,6 +14377,36 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
 
 在 [Lifetimes paper](https://github.com/isocpp/CppCoreGuidelines/blob/master/docs/Lifetimes%20I%20and%20II%20-%20v0.9.1.pdf) 中进行了描述。
 
+
+# <a name="S-naming"></a>NL: 命名和代码布局规则
+
+维持一致的命名和代码布局是很有用的。即便不为其他原因，也可以减少“我的代码风格比你的好”这类的纷争。
+然而，人们使用许多许多的不同代码风格，并狂热地坚持它们（的优缺点）。
+而且，大多数的现实项目都包含来自于许多来源的代码，因而通常不可能把所有的代码都标准化为某个单一的代码风格。
+我们给出一组规则，当你没有更好的选择时可以使用它们，但真正的目标在于一致性，而不是任何一组特定的规则。
+IDE 和工具可以提供辅助（当然也可能造成妨碍）。
+
+命名和代码布局规则：
+
+* [NL 1: 不要在代码注释中说明可以由代码来清晰表达的东西](#Rl-comments)
+* [NL.2: 在代码注释中说明意图](#Rl-comments-intent)
+* [NL.3: 保持代码注释简明干脆](#Rl-comments-crisp)
+* [NL.4: 保持一种统一的缩进风格](#Rl-indent)
+* [NL.5: 请勿在名字中编码类型信息](#Rl-name-type)
+* [NL.7: 使名字的长度大约正比于其作用域的长度](#Rl-name-length)
+* [NL.8: 使用一种统一的命名风格](#Rl-name)
+* [NL 9: 将 `ALL_CAPS` 仅用于宏的名字](#Rl-all-caps)
+* [NL.10: 避免 CamelCase 风格](#Rl-camel)
+* [NL.15: 节制地使用空格](#Rl-space)
+* [NL.16: 使用一种常规的类成员声明次序](#Rl-order)
+* [NL.17: 使用从 K&R 派生出的代码布局](#Rl-knr)
+* [NL.18: 使用 C++ 风格的声明符布局](#Rl-ptr)
+* [NL.25: 请勿将 `void` 用作参数类型](#Rl-void)
+
+这些问题的大部分都是审美问题，程序员都有很强的个人倾向。
+IDE 也都会提供某些默认方案和一组替代方案。这些规则是作为缺省建议的，如果没有别的理由，请采用它们。
+
+更专门和详细的规则更加易于强制实施。
 
 
 
