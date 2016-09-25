@@ -14938,3 +14938,33 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 这个部分包含了对规则和规则集合的跟进材料。
 尤其是，我们列出了更多的原理说明，更长的例子，以及对替代方案的探讨等。
 
+### <a name="Sd-order"></a>讨论: 以成员的声明顺序进行成员变量的定义和初始化
+
+成员变量总是以它们在类定义中的声明顺序进行初始化，因此在构造函数初始化列表中应当以该顺序来书写它们。以别的顺序书写它们只会让代码混淆，因为它并不会以你所见到的顺序来运行，而这会导致难于发现与顺序有关的 BUG。
+
+    class Employee {
+        string email, first, last;
+    public:
+        Employee(const char* firstName, const char* lastName);
+        // ...
+    };
+
+    Employee::Employee(const char* firstName, const char* lastName)
+      : first(firstName),
+        last(lastName),
+        // 不好: first 和 last 还未构造
+        email(first + "." + last + "@acme.com")
+    {}
+
+在这个例子中，`email` 比 `first` 和 `last` 构造得早，因为它是先声明的。这意味着其构造函数对 `first` 和 `last` 的使用过早了——不只在它们被设为所需的值之前，而完全是在它们被构造之前就使用了。
+
+如果类定义和构造函数体是在不同文件中的话，这种由成员变量声明顺序对构造函数的正确性造成的远距离影响将更难于发现。
+
+**参考**
+
+[[Cline99]](#Cline99) §22.03-11, [[Dewhurst03]](Dewhurst03) §52-53, [[Koenig97]](#Koenig97) §4, [[Lakos96]](#Lakos96) §10.3.5, [[Meyers97]](#Meyers97) §13, [[Murray93]](#Murray93) §2.1.3, [[Sutter00]](#Sutter00) §47
+
+### <a name="TBD"></a>使用 `=`，`{}`，和 `()` 作为初始化式
+
+???
+
