@@ -7878,17 +7878,17 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
     void send(X* x, cstring_span destination)
     {
-        auto port = OpenPort(destination);
+        auto port = open_port(destination);
         my_mutex.lock();
         // ...
-        Send(port, x);
+        send(port, x);
         // ...
         my_mutex.unlock();
-        ClosePort(port);
+        close_port(port);
         delete x;
     }
 
-这段代码中，你必须记得在所有路径中调用 `unlock`、`ClosePort` 和 `delete`，并且每个都恰好调用一次。
+这段代码中，你必须记得在所有路径中调用 `unlock`、`close_port` 和 `delete`，并且每个都恰好调用一次。
 而且，一旦上面标有 `...` 的任何代码抛出了异常，`x` 就会泄漏，而 `my_mutex` 则保持锁定。
 
 ##### 示例
@@ -7900,7 +7900,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
         Port port{destination};            // port 拥有这个 PortHandle
         lock_guard<mutex> guard{my_mutex}; // guard 拥有这个锁
         // ...
-        Send(port, x);
+        send(port, x);
         // ...
     } // 自动解锁 my_mutex 并删除 x 中的指针
 
@@ -7911,13 +7911,13 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
     class Port {
         PortHandle port;
     public:
-        Port(cstring_span destination) : port{OpenPort(destination)} { }
-        ~Port() { ClosePort(port); }
+        Port(cstring_span destination) : port{open_port(destination)} { }
+        ~Port() { close_port(port); }
         operator PortHandle() { return port; }
 
         // port 句柄通常是不能克隆的，因此根据需要关闭了复制和赋值
-        Port(const Port&) =delete;
-        Port& operator=(const Port&) =delete;
+        Port(const Port&) = delete;
+        Port& operator=(const Port&) = delete;
     };
 
 ##### 注解
@@ -7952,7 +7952,9 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
         // ... 只使用 *p 和 p[0] ...
     }
 
-**例外**: C 风格的字符串是以单个指向以零结尾的字符序列的指针来传递的。
+##### 例外
+
+C 风格的字符串是以单个指向以零结尾的字符序列的指针来传递的。
 为了表明对这种约定的依赖，应当使用 `zstring` 而不是 `char*`。
 
 ##### 注解
@@ -8000,7 +8002,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
     class X2 {
         // ...
     public:
-        owner<T> p;   // OK: p 具有所有权
+        owner<T*> p;  // OK: p 具有所有权
         T* q;         // OK: q 没有所有权
     };
 
@@ -8024,9 +8026,9 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 ##### 注解
 
-`owner<T>` 并没有超出 `T*` 的默认语义。使用它可以不改动任何使用方代码，也不会影响 ABI。
+`owner<T*>` 并没有超出 `T*` 的默认语义。使用它可以不改动任何使用方代码，也不会影响 ABI。
 它只不过是一项针对程序员和分析工具的提示。
-比如说，当 `owner<T>` 是某个类的成员时，这个类最好提供一个析构函数来 `delete` 它。
+比如说，当 `owner<T*>` 是某个类的成员时，这个类最好提供一个析构函数来 `delete` 它。
 
 ##### 示例，不好
 
@@ -8103,9 +8105,9 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 ##### 示例
 
-下面的例子效率不佳（因为无必要的分配和回收），在异常抛出时是脆弱的并将导致发生泄漏，而且也比较啰嗦：
+下面的例子效率不佳（因为无必要的分配和回收），在 `...` 中抛出异常和返回也是脆弱的（导致发生泄漏），而且也比较啰嗦：
 
-    void some_function(int n)
+    void f(int n)
     {
         auto p = new Gadget{n};
         // ...
@@ -8114,7 +8116,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 可以用局部变量来代替它：
 
-    void some_function(int n)
+    void f(int n)
     {
         Gadget g{n};
         // ...
@@ -8136,9 +8138,13 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 当使用全局对象时，应当用常量为之初始化。
 还要注意，即便对于 `const` 对象，也可能发生未定义的初始化顺序。
 
-**例外**: 全局对象通常优于单例。
+##### 例外
 
-**例外**: 不可变（`const`）的全局对象并不会引入那些我们试图通过禁止全局对象来避免的问题。
+全局对象通常优于单例。
+
+##### 例外
+
+不可变（`const`）的全局对象并不会引入那些我们试图通过禁止全局对象来避免的问题。
 
 ##### 强制实施
 
@@ -8162,9 +8168,10 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
     void use()
     {
-        Record* p1 = static_cast<Record*>(malloc(sizeof(Record)));
         // p1 可能是 nullptr
-        // *p1 并未初始化；尤其是，其中的 string 也还不是一个 string，而是一片和 string 大小相同的字节而已
+        // *p1 并未初始化；尤其是，
+	// 其中的 string 也还不是一个 string，而是一片和 string 大小相同的字节而已
+        Record* p1 = static_cast<Record*>(malloc(sizeof(Record)));
 
         auto p2 = new Record;
 
@@ -8232,7 +8239,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
     void f(const string& name)
     {
-        ifstream f{name, "r"};   // 打开文件
+        ifstream f{name};   // 打开文件
         vector<char> buf(1024);
         // ...
     }
@@ -8255,7 +8262,8 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 可以这样调用 `fun`：
 
-    fun(shared_ptr<Widget>(new Widget(a, b)), shared_ptr<Widget>(new Widget(c, d)));   // 不好：可能会泄漏
+    // 不好：可能会泄漏
+    fun(shared_ptr<Widget>(new Widget(a, b)), shared_ptr<Widget>(new Widget(c, d)));
 
 这是异常不安全的，因为编译器可能会把两个用以创建函数的两个参数的表达式重新排序。
 特别是，编译器是可以交错执行这两个表达式的：
@@ -8491,14 +8499,14 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 ##### 示例
 
     // 使用 Boost 的 intrusive_ptr
-    #include <boost/intrusive_ptr.hpp>
+    #include<boost/intrusive_ptr.hpp>
     void f(boost::intrusive_ptr<widget> p)  // 根据 'sharedptrparam' 规则是错误的
     {
         p->foo();
     }
 
     // 使用 Microsoft 的 CComPtr
-    #include <atlbase.h>
+    #include<atlbase.h>
     void f(CComPtr<widget> p)               // 根据 'sharedptrparam' 规则是错误的
     {
         p->foo();
@@ -8563,7 +8571,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 ##### 示例，好
 
-    void share(shared_ptr<widget>);            // 共享 – “将会”保持一个引用计数
+    void share(shared_ptr<widget>);            // 共享——“将会”保持一个引用计数
 
     void reseat(shared_ptr<widget>&);          // “可能”重新置位指针
 
@@ -8587,7 +8595,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 ##### 示例，好
 
-    void share(shared_ptr<widget>);            // 共享 – “将会”保持一个引用计数
+    void share(shared_ptr<widget>);            // 共享——“将会”保持一个引用计数
 
     void reseat(shared_ptr<widget>&);          // “可能”重新置位指针
 
@@ -8607,7 +8615,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 ##### 示例，好
 
-    void share(shared_ptr<widget>);            // 共享 – “将会”保持一个引用计数
+    void share(shared_ptr<widget>);            // 共享——“将会”保持一个引用计数
 
     void reseat(shared_ptr<widget>&);          // “可能”重新置位指针
 
@@ -8654,18 +8662,26 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
     void my_code()
     {
-        f(*g_p);     // 不好: 传递的是从非局部的智能指针中获得的指针或引用
-                     //       而这可能会在 f 或其调用的函数中的某处被不经意地重置掉
-        g_p->func(); // 不好: 原因相同，只不过将其作为“this”指针传递
+	// 不好: 传递的是从非局部的智能指针中获得的指针或引用
+        //       而这可能会在 f 或其调用的函数中的某处被不经意地重置掉
+        f(*g_p);
+
+	// 不好: 原因相同，只不过将其作为“this”指针传递
+        g_p->func();
     }
 
 修正很简单——获取该指针的一个局部副本，为调用树“保持一个引用计数”：
 
     void my_code()
     {
-        auto pin = g_p; // 很廉价: 一次增量就搞定了整个函数以及下面的所有调用树
-        f(*pin);        // 好: 传递的是从局部的无别名智能指针中获得的指针或引用
-        pin->func();    // 好: 原因相同
+	// 很廉价: 一次增量就搞定了整个函数以及下面的所有调用树
+        auto pin = g_p;
+
+	// 好: 传递的是从局部的无别名智能指针中获得的指针或引用
+        f(*pin);
+
+	// 好: 原因相同
+        pin->func();
     }
 
 ##### 强制实施
