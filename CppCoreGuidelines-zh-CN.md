@@ -11883,6 +11883,50 @@ C++ 对此的机制是 `atomic` 类型：
 这一般来说是无法确定的，但找出常见的简单例子（比如上面这个）则比较容易。
 
 
+### <a name="Rconc-unknown"></a>CP.22: 绝不在持有锁的时候调用未知的代码（比如回调）
+
+##### 理由
+
+如果不了解代码做了什么，就有死锁的风险。
+
+##### 示例
+
+    void do_this(Foo* p)
+    {
+        lock_guard<mutex> lck {my_mutex};
+        // ... 做一些事 ...
+        p->act(my_data);
+        // ...
+    }
+
+如果不知道 `Foo::act` 会干什么（可能它是一个虚函数，调用某个还未编写的某个派生类成员），
+它可能会（递归地）调用 `do_this` 因而在 `my_mutex` 上造成死锁。
+可能它会在某个别的 `mutex` 上锁定而无法在适当的时间内返回，对任何调用了 `do_this` 的代码造成延迟。
+
+##### 示例
+
+“调用未知代码”问题的一个常见例子是调用了试图在相同对象上进行锁定访问的函数。
+这种问题通常可以用 `recursive_mutex` 来解决。例如：
+
+    recursive_mutex my_mutex;
+
+    template<typename Action>
+    void do_something(Action f)
+    {
+        unique_lock<recursive_mutex> lck {my_mutex};
+        // ... 做一些事 ...
+        f(this);    // f 将会对 *this 做一些事
+        // ...
+    }
+
+如果如同其很可能做的那样，`f()` 调用了 `*this` 的某个操作的话，我们就必须保证在调用之前对象的不变式是满足的。
+
+##### 强制实施
+
+* 当持有非递归的 `mutex` 时调用虚函数则进行标记。
+* 当持有非递归的 `mutex` 时调用回调则进行标记。
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
