@@ -3581,7 +3581,8 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
     class Date {
     public:
-        Date(int yy, Month mm, char dd);    // 验证 {yy, mm, dd} 是有效的日期并进行初始化
+	// 验证 {yy, mm, dd} 是有效的日期并进行初始化
+        Date(int yy, Month mm, char dd);
         // ...
     private:
         int y;
@@ -3616,7 +3617,8 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
         // ... 一些内部表示 ...
     public:
         Date();
-        Date(int yy, Month mm, char dd);    // 验证 {yy, mm, dd} 是有效的日期并进行初始化
+	// 验证 {yy, mm, dd} 是有效的日期并进行初始化
+        Date(int yy, Month mm, char dd);
 
         int day() const;
         Month month() const;
@@ -3656,7 +3658,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 ##### 注解
 
-当 C++17 带来“统一函数调用”之后，这条规则会更有效。???
+当 C++ 带来[统一函数调用](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0251r0.pdf)之后，这条规则会更有效。
 
 ##### 强制实施
 
@@ -3682,7 +3684,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
         Date next_weekday(Date);
         // ...
     }
-    
+
 ##### 注解
 
 这点对于[重载运算符](#Ro-namespace)来说尤其重要。
@@ -3690,7 +3692,6 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 ##### 强制实施
 
 * 对接受某一个命名空间中的参数类型的全局函数进行标记。
-
 
 ### <a name="Rc-standalone"></a>C.7: 不要在同一个语句中同时定义类或枚举并声明该类型的变量
 
@@ -3711,7 +3712,6 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 * 如果类或者枚举的定义式的 `}` 后面没有跟着 `;` 就标记出来。它缺少了 `;`。
 
-
 ### <a name="Rc-class"></a>C.8: 当有任何非公开成员时使用 `class` 而不是 `struct`
 
 ##### 理由
@@ -3723,8 +3723,8 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 ##### 示例，不好
 
     struct Date {
-        int d,m;
- 
+        int d, m;
+
         Date(int i, Month m);
         // ... 许多函数 ...
     private:
@@ -3738,7 +3738,6 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 不同部分的数据具有不同的访问性。
 所有这些都减弱了可读性，并使维护变得更复杂。
 
-
 ##### 注解
 
 优先将接口部分放在类的开头[参见](#Rl-order)。
@@ -3746,7 +3745,6 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 ##### 强制实施
 
 对于声明为 `struct` 的类，当其带有 `private` 或 `public` 成员时就进行标记。
-
 
 ### <a name="Rc-private"></a>C.9: 让成员的暴露最小化
 
@@ -3767,14 +3765,14 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 ##### 强制实施
 
-???
+标记 `protected` 数据。
 
 ## <a name="SS-concrete"></a>C.concrete: 具体类型
 
 类的理想情况，是成为一个正规类型。
 其大致上的意思就是“表现为像 `int` 一样”。具体类型是一种最简单的类。
 可以对正规类型的值进行复制，复制的结果是一个与原始对象具有相同的值的独立对象。
-当一个具体类型同时具有 `=` 和 `==` 时，`a=b` 的结果应当导致 `a == b` 为 `true`。
+当一个具体类型同时具有 `=` 和 `==` 时，`a = b` 的结果应当导致 `a == b` 为 `true`。
 也可以定义出没有赋值和相等运算符的具体类，但它们（应当）是罕见情况。
 C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector` 和 `map` 等也同样如此。
 具体类型也常被称为值类型，以便与继承层次中的类型之间进行区分。
@@ -3847,7 +3845,10 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
         vector<Record> vr;
     };
 
-    bool operator==(const Bundle& a, const Bundle& b) { return a.name == b.name && a.vr == b.vr; }
+    bool operator==(const Bundle& a, const Bundle& b)
+    {
+        return a.name == b.name && a.vr == b.vr;
+    }
 
     Bundle b1 { "my bundle", {r1, r2, r3}};
     Bundle b2 = b1;
@@ -3855,7 +3856,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
     b2.name = "the other bundle";
     if (b1 == b2) error("No!");
 
-特别是，当具体类型带有赋值操作时，也应当为之提供相等运算符，以使得 `a=b` 蕴含 `a == b`。
+特别是，当具体类型带有赋值操作时，也应当为之提供相等运算符，以使得 `a = b` 蕴含 `a == b`。
 
 ##### 强制实施
 
@@ -3926,7 +3927,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 其他的默认操作规则：
 
-* [C.80: 当需要明确使用缺省语义时，使用 `=default`](#Rc-default)
+* [C.80: 当需要明确使用缺省语义时，使用 `=default`](#Rc-eqdefault)
 * [C.81: 当需要关闭缺省行为（且不需要替代的行为）时，使用 `=delete`](#Rc-delete)
 * [C.82: 不要在构造函数和析构函数中调用虚函数](#Rc-ctor-virtual)
 * [C.83: 考虑为值类型提供 `noexcept` 的 `swap` 函数](#Rc-swap)
@@ -4216,7 +4217,8 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
     void use(Smart_ptr<int> p1)
     {
-        auto p2 = p1;   // 错误: p2.p 泄漏了（当其不为 nullptr 且未被其他代码所拥有时）
+	// 错误: p2.p 泄漏了（当其不为 nullptr 且未被其他代码所拥有时）
+        auto p2 = p1;
     }
 
 注意，当你定义析构函数时，你必须定义或者弃置（delete）[所有的默认操作](#Rc-five)：
@@ -4230,7 +4232,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
         ~Smart_ptr2() { delete p; }  // p 是所有者！
     };
 
-    void use(Smart_ptr<int> p1)
+    void use(Smart_ptr2<int> p1)
     {
         auto p2 = p1;   // 错误: 双重删除
     }
@@ -4239,7 +4241,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
     template<typename T>
     class Smart_ptr3 {
-        owner<T>* p;   // OK: 明确了 *p 的所有权
+        owner<T*> p;   // OK: 明确了 *p 的所有权
         // ...
     public:
         // ...
@@ -4302,11 +4304,13 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 无论 `Handle` 是否拥有 `Shape`，我们都必须考虑预置复制操作的嫌疑：
 
-    Handle x {*new Circle{p1, 17}};  // Handle 最好拥有这个 Circle，否则会发生泄漏
+    // Handle 最好拥有这个 Circle，否则会发生泄漏
+    Handle x {*new Circle{p1, 17}};
+
     Handle y {*new Triangle{p1, p2, p3}};
     x = y;     // 预置的赋值将尝试执行 *x.s = *y.s
 
-这个 `x=y` 相当可疑。
+这个 `x = y` 相当可疑。
 它把 `Triangle` 赋值给 `Circle` 吗？
 除非 `Shape` 使其[复制赋值为 `=delete`](#Rc-copy-virtual)，否则将只有 `Triangle` 的 `Shape` 部分被复制到 `Circle` 之中。
 
@@ -4338,7 +4342,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 ##### 示例，不好
 
     struct Base {  // 不好: 没有虚析构函数
-        virtual f();
+        virtual void f();
     };
 
     struct D : Base {
@@ -4380,7 +4384,6 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 ##### 强制实施
 
 * 带有任何虚函数的类的析构函数，应当要么是 public virtual，要么是 protected 且非 virtual。
-
 
 ### <a name="Rc-dtor-fail"></a>C.36: 析构函数不能失败
 
@@ -4500,8 +4503,8 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         Rec2(const string& ss, int ii = 0) :s{ss}, i{ii} {}   // 多余的
     };
 
-    Rec r1 {"Foo", 7};
-    Rec r2 {"Bar"};
+    Rec2 r1 {"Foo", 7};
+    Rec2 r2 {"Bar"};
 
 `Rec2` 的构造函数是多余的。
 同样的，`int` 的默认值最好用[成员初始化式](#Rc-in-class-initializer)来给出。
@@ -4541,7 +4544,9 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 编译器读不懂代码注释。
 
-**例外**: 如果无法方便地通过构造函数来构造有效的对象的话，请[使用工厂函数](#Rc-factory)。
+##### 例外
+
+如果无法方便地通过构造函数来构造有效的对象的话，请[使用工厂函数](#Rc-factory)。
 
 ##### 注解
 
@@ -4592,7 +4597,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
             // ...
         }
 
-        void is_valid() { return valid; }
+        bool is_valid() { return valid; }
         void read();   // 从 f 中读取数据
         // ...
     };
@@ -4602,7 +4607,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         X3 file {"Heraclides"};
         file.read();   // 程序崩溃或错误的数据读取！
         // ...
-        if (is_valid()) {
+        if (file.is_valid()) {
             file.read();
             // ...
         }
@@ -4617,7 +4622,9 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 对于变量的定义式（比如在栈上，或者作为其他对象的成员），不存在可以返回错误代码的明确函数调用。
 留下无效的对象并依赖使用者能够一贯地在使用之前检查 `is_valid()` 函数是啰嗦的，易错的，并且是低效的做法。
 
-**例外**: 有些领域，比如像飞行器控制这样的硬实时系统中，（在没有其他工具支持下）异常处理在计时方面不具有足够的可预测性。
+##### 例外
+
+有些领域，比如像飞行器控制这样的硬实时系统中，（在没有其他工具支持下）异常处理在计时方面不具有足够的可预测性。
 这样的话就必须使用 `is_valid()` 技巧。这种情况下，可以一贯并即刻地检查 `is_valid()` 来模拟 [RAII](#Rr-raii)。
 
 **替代方案**: 如果你觉得想要使用某种“构造函数之后初始化”或者“两阶段初始化”手法，请试着避免这样做。
@@ -4679,24 +4686,24 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
     struct X {
         string s;
-        vector v;
+        vector<int> v;
     };
 
-    X x; // 意为 X{ {}, {} }; 即空字符串和空 vector
+    X x; // 意为 X{{}, {}}; 即空字符串和空 vector
 
 需要注意的是，内建类型并不会进行正确的默认构造：
 
     struct X {
-       string s;
-       int i;
+        string s;
+        int i;
     };
 
     void f()
     {
-       X x;    // x.s 被初始化为空字符串; x.i 未初始化
+        X x;    // x.s 被初始化为空字符串; x.i 未初始化
 
-       cout << x.s << ' ' << x.i << '\n';
-       ++x.i;
+        cout << x.s << ' ' << x.i << '\n';
+        ++x.i;
     }
 
 静态分配的内建类型对象被默认初始化为 `0`，但局部的内建变量并非如此。
@@ -4705,10 +4712,9 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 假定你确实需要初始化的话，可以使用明确的默认初始化：
 
     struct X {
-       string s;
-       int i {};   // 默认初始化（为 0）
+        string s;
+        int i {};   // 默认初始化（为 0）
     };
-
 
 ##### 强制实施
 
@@ -4723,7 +4729,8 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 ##### 示例，有问题的
 
     template<typename T>
-    class Vector0 {   // elem 指向以 new 分配的 space-elem 个元素
+    // elem 指向以 new 分配的 space-elem 个元素
+    class Vector0 {
     public:
         Vector0() :Vector0{0} {}
         Vector0(int n) :elem{new T[n]}, space{elem + n}, last{elem} {}
@@ -4741,9 +4748,11 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 ##### 示例
 
     template<typename T>
-    class Vector1 {   // elem 为 nullptr，否则 elem 指向以 new 分配的 space-elem 个元素
+    // elem 为 nullptr，否则 elem 指向以 new 分配的 space-elem 个元素
+    class Vector1 {
     public:
-        Vector1() noexcept {}   // 设置表示为 {nullptr, nullptr, nullptr}; 不会抛出异常
+	// 设置表示为 {nullptr, nullptr, nullptr}; 不会抛出异常
+        Vector1() noexcept {}
         Vector1(int n) :elem{new T[n]}, space{elem + n}, last{elem} {}
         // ...
     private:
@@ -4955,9 +4964,9 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
     class B {
     protected:
-        B() { /* ... */ }                   // 创建不完全初始化的对象
+        B() { /* ... */ }              // 创建不完全初始化的对象
 
-        virtual void PostInitialize()       // 构造之后立即调用
+        virtual void PostInitialize()  // 构造之后立即调用
         {
             // ...
             f();    // 好: 虚函数分派是安全的
@@ -4968,7 +4977,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         virtual void f() = 0;
 
         template<class T>
-        static shared_ptr<T> Create()    // 创建对象的接口
+        static shared_ptr<T> Create()  // 创建对象的接口
         {
             auto p = make_shared<T>();
             p->PostInitialize();
@@ -4976,9 +4985,9 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         }
     };
 
-    class D : public B { /* "¦ */ };            // 某个派生类
+    class D : public B { /* ... */ };            // 某个派生类
 
-    shared_ptr<D> p = D::Create<D>();        // 创建一个 D 的对象
+    shared_ptr<D> p = D::Create<D>();  // 创建一个 D 的对象
 
 通过使构造函数为 `protected`，避免不完全构造的对象泄漏出去。
 通过提供工厂函数 `Create()`，（在自由存储上）构造对象变得简便。
@@ -5003,7 +5012,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         int y;
     public:
         Date(int ii, Month mm, year yy)
-            :i{ii}, m{mm} y{yy}
+            :i{ii}, m{mm}, y{yy}
             { if (!valid(i, m, y)) throw Bad_date{}; }
 
         Date(int ii, Month mm)
@@ -5088,7 +5097,8 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
     public:
         Foo& operator=(const Foo& x)
         {
-            auto tmp = x;   // 好: 不需要检查自赋值的情况（除非为性能考虑）
+	    // 好: 不需要检查自赋值的情况（除非为性能考虑）
+            auto tmp = x;
             std::swap(*this, tmp);
             return *this;
         }
@@ -5149,7 +5159,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 ##### 理由
 
-这正是一般假定所具有的语义。执行 `x=y` 之后，应当有 `x == y`。
+这正是一般假定所具有的语义。执行 `x = y` 之后，应当有 `x == y`。
 进行复制之后，`x` 和 `y` 可以是各自独立的对象（值语义，非指针的内建类型和标准库类型的工作方式），也可以代表某个共享的对象（指针语义，就是指针的工作方式）。
 
 ##### 示例
@@ -5302,7 +5312,8 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 ##### 理由
 
-这正是一般假定所具有的语义。执行 `x=std::move(y)` 之后，`x` 的值应当为 `y` 曾经的值，而 `y` 应当处于有效状态。
+这正是一般假定所具有的语义。
+执行 `y=std::move(x)` 之后，`y` 的值应当为 `x` 曾经的值，而 `x` 应当处于有效状态。
 
 ##### 示例
 
@@ -5337,8 +5348,12 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 ##### 注解
 
-理想情况下，被移走的对象应当为类型的默认值。请确保体现这点，除非有非常好的理由不这样做。然而，并非所有类型都有默认值，而有些类型建立默认值则是昂贵操作。标准所要求的仅仅是被移走的对象应当可以被销毁。
-我们通常也可以轻易且廉价地做得更好一些：标准库假定它可以向被移走的对象进行赋值。请保证总是让被移走的对象处于某种（需要明确的）有效状态。
+理想情况下，被移走的对象应当为类型的默认值。
+请确保体现这点，除非有非常好的理由不这样做。
+然而，并非所有类型都有默认值，而有些类型建立默认值则是昂贵操作。
+标准所要求的仅仅是被移走的对象应当可以被销毁。
+我们通常也可以轻易且廉价地做得更好一些：标准库假定它可以向被移走的对象进行赋值。
+请保证总是让被移走的对象处于某种（需要明确的）有效状态。
 
 ##### 注解
 
@@ -5376,7 +5391,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 ##### 注解
 
-并不存在已知的通用方法，以在移动赋值中避免进行 `if (this == &a) return *this;` 测试，又能使其得到正确的结果（亦即，执行 `x=x` 之后不改变 `x` 的值）。
+并不存在已知的通用方法，以在移动赋值中避免进行 `if (this == &a) return *this;` 测试，又能使其得到正确的结果（亦即，执行 `x = x` 之后不改变 `x` 的值）。
 
 ##### 注解
 
@@ -5452,24 +5467,26 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
     };
 
     class D : public B {
-        string moredata; // 添加一个数据成员
+        string more_data; // 添加一个数据成员
         // ...
     };
 
     auto d = make_unique<D>();
-    auto b = make_unique<B>(d); // 啊呀，对象切片了；仅获得了 d.data 而丢失了 d.moredata
+
+    // 啊呀，对象切片了；仅获得了 d.data 而丢失了 d.more_data
+    auto b = make_unique<B>(d);
 
 ##### 示例
 
     class B { // 好: 基类抑制了复制操作
-        B(const B&) =delete;
-        B& operator=(const B&) =delete;
+        B(const B&) = delete;
+        B& operator=(const B&) = delete;
         virtual unique_ptr<B> clone() { return /* B 对象 */; }
         // ...
     };
 
     class D : public B {
-        string moredata; // add a data member
+        string more_data; // 添加一个数据成员
         unique_ptr<B> clone() override { return /* D 对象 */; }
         // ...
     };
@@ -5495,7 +5512,7 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 还有一些操作也是非常基础的，需要对它们的定义进行规范：
 比较，`swap`，以及 `hash`。
 
-### <a name="Rc-default"></a>C.80: 当需要明确使用缺省语义时，使用 `=default`
+### <a name="Rc-eqdefault"></a>C.80: 当需要明确使用缺省语义时，使用 `=default`
 
 ##### 理由
 
@@ -5515,7 +5532,7 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
         Tracer& operator=(Tracer&&) = default;
     };
 
-由于定义了析构函数，所以也得定义它的复制和移动操作。最佳且最简单的做法就是 `=default`。
+由于定义了析构函数，所以也得定义它的复制和移动操作。最佳且最简单的做法就是 `= default`。
 
 ##### 示例，不好
 
@@ -5526,9 +5543,9 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
         ~Tracer2() { cerr << "exiting " << message << '\n'; }
 
         Tracer2(const Tracer2& a) : message{a.message} {}
-        Tracer2& operator=(const Tracer2& a) { message = a.message; }
+        Tracer2& operator=(const Tracer2& a) { message = a.message; return *this; }
         Tracer2(Tracer2&& a) :message{a.message} {}
-        Tracer2& operator=(Tracer2&& a) { message = a.message; }
+        Tracer2& operator=(Tracer2&& a) { message = a.message; return *this; }
     };
 
 把复制和移动操作的函数体写明的做法，既啰嗦又乏味，而且易于出错。编译器则能干得更好。
@@ -5597,26 +5614,31 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 ##### 示例，不好
 
-    class base {
+    class Base {
     public:
         virtual void f() = 0;   // 未实现
-        virtual void g();       // 有基类版本的实现
-        virtual void h();       // 有基类版本的实现
+        virtual void g();       // 有 Base 版本的实现
+        virtual void h();       // 有 Base 版本的实现
     };
 
-    class derived : public base {
+    class Derived : public Base {
     public:
-        void g() override;      // 提供派生版本的实现
-        void h() final;         // 提供派生版本的实现
+        void g() override;   // 提供 Derived 版本的实现
+        void h() final;      // 提供 Derived 版本的实现
 
-        derived()
+        Derived()
         {
-            f();                // 不好: 试图调用未经事先的虚函数
+	    // 不好: 试图调用未经事先的虚函数
+            f();
 
-            g();                // 不好: 想要调用 derived::g，但并未发生虚函数分派
-            derived::g();       // 好: 明确说明想要调用的就是写明的版本
+	    // 不好: 想要调用 derived::g，但并未发生虚函数分派
+            g();
 
-            h();                // ok，不需要进行限定，h 为 final
+	    // 好: 明确说明想要调用的就是写明的版本
+            Derived::g();
+
+	    // ok，不需要进行限定，h 为 final
+            h();
         }
     };
 
@@ -5713,14 +5735,18 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
         int number;
     };
 
-    bool operator==(const X& a, const X& b) noexcept { return a.name == b.name && a.number == b.number; }
+    bool operator==(const X& a, const X& b) noexcept {
+        return a.name == b.name && a.number == b.number;
+    }
 
 ##### 示例，不好
 
     class B {
         string name;
         int number;
-        bool operator==(const B& a) const { return name == a.name && number == a.number; }
+        bool operator==(const B& a) const {
+	    return name == a.name && number == a.number;
+	}
         // ...
     };
 
@@ -5788,8 +5814,6 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 * 对虚的 `operator==()` 进行标记；其他比较运算符也是如此：`!=`，`<`，`<=`，`>`，和 `>=`。
 
-
-
 ### <a name="Rc-hash"></a>C.89: 使 `hash` 函数 `noexcept`
 
 ##### 理由
@@ -5800,26 +5824,26 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 ##### 示例，不好
 
     template<>
-    struct hash<My_type> {	// 非常不好的 hash 特化
-	   using result_type = size_t;
-	   using argument_type = My_type;
+    struct hash<My_type> {  // 非常不好的 hash 特化
+        using result_type = size_t;
+        using argument_type = My_type;
 
-	   size_t operator() (const My_type & x) const
-	   {
-		  size_t xs = x.s.size();
-		  if (xs < 4) throw Bad_My_type{};    // "没有人期待西班牙宗教裁判所！"
-		  return hash<size_t>()(x.s.size()) ^ trim(x.s);
-	   }
+        size_t operator() (const My_type & x) const
+        {
+            size_t xs = x.s.size();
+            if (xs < 4) throw Bad_My_type{};    // "没有人期待西班牙宗教裁判所！"
+            return hash<size_t>()(x.s.size()) ^ trim(x.s);
+        }
     };
 
     int main()
     {
-        unordered_map<My_type,int> m;
-	   My_type mt{ "asdfg" };
-	   m[mt] = 7;
-	   cout << m[My_type{ "asdfg" }] << '\n';
+        unordered_map<My_type, int> m;
+        My_type mt{ "asdfg" };
+        m[mt] = 7;
+        cout << m[My_type{ "asdfg" }] << '\n';
     }
-    
+
 如果你必须定义 `hash` 的特化的话，请尝试单纯地用 `^`（异或 xor）把标准库的 `hash` 特化进行组合。
 这样做对于非专业人士来说往往会更好。
 
@@ -5866,7 +5890,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 类层次规则概览：
 
-* [C.120: 使用类层次来表达具有天然层次化结构的概念](#Rh-domain)
+* [C.120: 类层次（仅）用于表达具有天然层次化结构的概念](#Rh-domain)
 * [C.121: 如果基类被用作接口的话，应使其成为纯抽象类](#Rh-abstract)
 * [C.122: 当需要完全区分接口和实现时，应当用抽象类作为接口](#Rh-separation)
 
@@ -5953,12 +5977,12 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ##### 示例
 
-    class my_interface {
+    class My_interface {
     public:
         // ... 只有一个纯虚函数 ...
-        virtual ~my_interface() {}   // 或者 =default
+        virtual ~My_interface() {}   // 或者 =default
     };
-    
+
 ##### 示例，不好
 
     class Goof {
@@ -5966,21 +5990,22 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
         // ... 只有一个纯虚函数 ...
         // 没有虚析构函数
     };
-    
+
     class Derived : public Goof {
         string s;
         // ...
     };
-    
+
     void use()
     {
         unique_ptr<Goof> p {new Derived{"here we go"}};
         f(p.get()); // 通过 Goof 接口使用 Derived
         g(p.get()); // 通过 Goof 接口使用 Derived
-     } // 泄漏
+    } // 泄漏
 
 `Derived` 是通过其 `Goof` 接口而被 `delete` 的，而它的 `string` 则泄漏了。
 为 `Goof` 提供虚析构函数就能使其都正常工作。 
+
 
 ##### 强制实施
 
@@ -5998,21 +6023,21 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
         virtual void write(span<const char> outbuf) = 0;
         virtual void read(span<char> inbuf) = 0;
     };
-    
+
     class D1 : public Device {
         // ... 数据 ...
-        
+
         void write(span<const char> outbuf) override;
         void read(span<char> inbuf) override;
     };
-    
+
     class D2 : public Device {
         // ... 不同的数据 ...
-        
+
         void write(span<const char> outbuf) override;
         void read(span<char> inbuf) override;
     };
-    
+
 使用者可以通过由 `Device` 所提供的接口来互换地使用 `D1` 和 `D2`。
 而且，只要其访问一直是通过 `Device` 进行的话，也可以以与老版本二进制不兼容的方式来更新 `D1` 和 `D2`。
 
@@ -6055,7 +6080,8 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
         // ... 没有用户编写的析构函数，缺省为 public 非 virtual ...
     };
 
-    struct D : B {   // 不好：带有资源的类，继承于没有虚析构函数的类
+    // 不好：带有资源的类，继承于没有虚析构函数的类
+    struct D : B {
         string s {"default"};
     };
 
@@ -6078,9 +6104,11 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ##### 理由
 
-可读性。检测错误。明确写下的 `virtual`、`override` 或 `final` 是自说明的，并使编译器可以检查到基类和派生类之间的类型和/或名字的不匹配。不过写出超过一个则不仅多余而且是潜在的错误来源。
+可读性。
+检测错误。
+明确写下的 `virtual`、`override` 或 `final` 是自说明的，并使编译器可以检查到基类和派生类之间的类型和/或名字的不匹配。不过写出超过一个则不仅多余而且是潜在的错误来源。
 
-声明新的虚函数时仅使用 `virtual`。声明覆盖函数时仅使用 `override`。声明最终覆盖函数时仅使用 `final`。
+仅在声明新的虚函数时使用 `virtual`。仅在声明覆盖函数时使用 `override`。仅在声明最终覆盖函数时使用 `final`。当基类析构函数声明为 `virtual` 时，派生类析构函数既不能声明为 `virtual` 也不能为 `override`。
 
 ##### 示例，不好
 
@@ -6092,14 +6120,17 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
     };
 
     struct D : B {
-        void f1(int);      // 警告: D::f1() 隐藏了 B::f1()
-        void f2(int) const;      // 警告: 没有明确 override
-        void f3(double);   // 警告: D::f3() 隐藏了 B::f3()
+        void f1(int);        // 不好（希望会有警告）: D::f1() 隐藏了 B::f1()
+        void f2(int) const;  // 不好（但惯用且合法）: 没有明确 override
+        void f3(double);     // 不好（希望会有警告）: D::f3() 隐藏了 B::f3()
         // ...
     };
     
-    struct D2 : B {
-        virtual void f2(int) final;  // 不好；陷阱，D2::f 并未覆盖 B::f
+    struct Better : B {
+        void f1(int) override;        // 错误（被发现）: D::f1() 隐藏了 B::f1()
+        void f2(int) const override;
+        void f3(double) override;     // 错误（被发现）: D::f3() 隐藏了 B::f3()
+        // ...
     };
 
 ##### 强制实施
@@ -6108,20 +6139,219 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * 对既没有 `override` 也没有 `final` 的覆盖函数进行标记。
 * 对函数声明中使用 `virtual`、`override` 和 `final` 中超过一个的情况进行标记。
 
-
 ### <a name="Rh-kind"></a>C.129: 当设计类层次时，应区分实现继承和接口继承
 
 ##### 理由
 
- ??? Herb: 我现在是个实现继承的反对者——看来它通常都是一种反模式。有没有什么有价值的例子？
+接口中的实现细节会使接口变得脆弱；
+就是说，当实现被改变时其用户不得不进行重新编译。
+基类中的数据增加了基类实现的复杂性，而且会导致代码的重复。
+
+##### 注解
+
+定义：
+
+* 接口继承，是使用继承来把用户和实现进行分离，
+特别是允许添加和修改派生类而不影响基类的用户。
+* 实现继承，是使用继承来简化新设施的实现，
+通过将有用的操作提供给相关的心操作的实现者（有时候称作“差异式编程”）。
+
+纯粹的接口类只是一组纯虚函数；参见 [I.25](#Ri-abstract)。
+
+在早期的 OOP 时代（比如 80 和 90 年代），实现继承和接口继承通常是混在一起的，
+而不良习惯则很难改掉。
+即便是现在，这种混合在旧代码库呵呵老式的教学材料中也不少见。
+
+对两种继承进行区分的重要性随着以下情形而增长：
+
+* 类层次的大小（比如几十个派生类），
+* 类层次的使用时期（比如几十年），以及
+* 使用这个类层次的独立团体的数量
+（比如，可能对分发和更新某个基类造成困难）
+
+
+##### 示例，不好
+
+    class Shape {   // 不好，混合了接口和实现
+    public:
+        Shape();
+        Shape(Point ce = {0, 0}, Color co = none): cent{ce}, col {co} { /* ... */}
+
+        Point center() const { return cent; }
+        Color color() const { return col; }
+
+        virtual void rotate(int) = 0;
+        virtual void move(Point p) { cent = p; redraw(); }
+
+        virtual void redraw();
+
+        // ...
+    public:
+        Point cent;
+        Color col;
+    };
+
+    class Circle : public Shape {
+    public:
+        Circle(Point c, int r) :Shape{c}, rad{r} { /* ... */ }
+
+        // ...
+    private:
+        int rad;
+    };
+
+    class Triangle : public Shape {
+    public:
+        Triangle(Point p1, Point p2, Point p3); // 计算中心点
+        // ...
+    };
+
+问题：
+
+* 随着类层次的增长和向 `Shape` 添加更多的数据，构造函数会越发难于编写和维护。
+* 为什么要计算 `Triangle` 的中心点？我们从不用它。
+* 向 `Shape` 添加新的数据成员（比如绘制风格或者画布）
+将导致所有派生类和所有使用方都需要进行复审，可能需要修改，而且很可能需要重新编译。
+
+`Shape::move()` 的实现就是实现继承的一个例子：
+我们为所有派生类一次性定义 `move()`。
+在这种基类成员函数实现中的代码越多，在基类中放入的共享数据越多，
+就能获得越多的好处——而类层次则越不稳定。
 
 ##### 示例
 
-    ???
+这个 `Shape` 类层次可以用接口继承重新编写：
+
+    class Shape {  // 纯接口
+    public:
+        virtual Point center() const = 0;
+        virtual Color color() const = 0;
+
+        virtual void rotate(int) = 0;
+        virtual void move(Point p) = 0;
+
+        virtual void redraw() = 0;
+
+        // ...
+    };
+
+注意纯接口很少会有构造函数：没什么需要构造的。
+
+    class Circle : public Shape {
+    public:
+        Circle(Point c, int r, Color c) :cent{c}, rad{r}, col{c} { /* ... */ }
+
+        Point center() const override { return cent; }
+        Color color() const override { return col; }
+
+        // ...
+    private:
+        Point cent;
+        int rad;
+        Color col;
+    };
+
+接口不再那么脆弱了，但成员函数的实现需要做更多工作。
+比如说，每个派生于 `Shape` 的类都得实现 `center`。
+
+##### 示例，双类层次
+
+如何才能同时获得接口继承的稳定类层次的好处和实现继承的实现重用的好处呢？
+一种流行的技巧是双类层次。
+有许多实现双类层次的方式；这里，我们使用一种多重继承形式。
+
+首先规划一个接口类的层次：
+
+    class Shape {   // 纯接口
+    public:
+        virtual Point center() const = 0;
+        virtual Color color() const = 0;
+
+        virtual void rotate(int) = 0;
+        virtual void move(Point p) = 0;
+
+        virtual void redraw() = 0;
+
+        // ...
+    };
+
+    class Circle : public Shape {   // 纯接口
+    public:
+        int radius() = 0;
+        // ...
+    };
+
+为使这个接口有用处，我们必须提供其实现类（我们这里用相同的名字，但放入 `Impl` 命名空间）：
+
+    class Impl::Shape : public Shape { // 实现
+    public:
+        // 构造函数，析构函数
+        // ...
+        virtual Point center() const { /* ... */ }
+        virtual Color color() const { /* ... */ }
+
+        virtual void rotate(int) { /* ... */ }
+        virtual void move(Point p) { /* ... */ }
+
+        virtual void redraw() { /* ... */ }
+
+        // ...
+    };
+
+现在 `Shape` 是一个贫乏的具有一个实现的类的例子，
+但还请谅解，因为这只是用来展现一种针对更复杂的类层次的技巧的简单例子。
+
+
+    class Impl::Circle : public Circle, public Impl::Shape {   // 实现
+    public:
+        // 构造函数，析构函数
+
+        int radius() { /* ... */ }
+        // ...
+    };
+
+我们可以通过添加一个 `Smiley` 类来扩展它（:-)）：
+
+    class Smiley : public Circle { // 纯接口
+    public:
+        // ...
+    };
+
+    class Impl::Smiley : Public Smiley, public Impl::Circle {   // 实现
+    public:
+        // 构造函数，析构函数
+        // ...
+    }
+
+这里有两个类层次：
+
+* 接口：Smiley -> Circle -> Shape
+* 实现：Impl::Smiley -> Impl::Circle -> Impl::Shape
+
+由于每个实现都同时派生于其接口和其实现基类，我们因此获得了一个晶格（DAG）：
+
+    Smiley     ->         Circle     ->  Shape
+      ^                     ^               ^
+      |                     |               |
+    Impl::Smiley -> Impl::Circle -> Impl::Shape
+
+我们曾经说过，这只是用来构造双类层次的一种方式。
+
+分离接口和实现的另一个（相关的）技巧是 [PIMPL](#???)。
+
+##### 注解
+
+在提供公共的功能时，我们通常需要在作为（有实现的）基类函数和（在某个实现命名空间中的）
+自由函数之间进行选择。
+基类能够提供更简短的写法，以及更容易访问（基类中的）共享数据，
+但所付出的是其功能将仅能被这个类层次的用户所使用。
 
 ##### 强制实施
 
-???
+* 若派生类向基类转换的基类同时具有数据和虚函数，则对其进行标记
+（但排除在派生类成员中对基类成员的调用）。
+* ???
+
 
 ### <a name="Rh-copy"></a>C.130: 重新定义或禁止基类的复制操作；优先代之以一个虚 `clone` 函数
 
@@ -6131,19 +6361,19 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ##### 示例
 
-    class base {
+    class Base {
     public:
-        virtual owner<base*> clone() = 0;
-        virtual ~base() = 0;
+        virtual owner<Base*> clone() = 0;
+        virtual ~Base() = 0;
 
-        base(const base&) = delete;
-        base& operator=(const base&) = delete;
+        Base(const Base&) = delete;
+        Base& operator=(const Base&) = delete;
     };
 
-    class derived : public base {
+    class Derived : public Base {
     public:
-        owner<derived*> clone() override;
-        virtual ~derived() override;
+        owner<Derived*> clone() override;
+        virtual ~Derived() override;
     };
 
 注意，根据语言规则，协变返回类型不能是智能指针。参见 [C.67](#Rc-copy-virtual)。
@@ -6153,7 +6383,6 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * 对带有虚函数和非用户定义的复制操作的类进行标记。
 * 对基类对象（有派生类的类对象）的赋值操作进行标记。
 
-
 ### <a name="Rh-get"></a>C.131: 避免无价值的取值和设值函数
 
 ##### 理由
@@ -6162,11 +6391,11 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ##### 示例
 
-    class point {
+    class Point {
         int x;
         int y;
     public:
-        point(int xx, int yy) : x{xx}, y{yy} { }
+        Point(int xx, int yy) : x{xx}, y{yy} { }
         int get_x() { return x; }
         void set_x(int xx) { x = xx; }
         int get_y() { return y; }
@@ -6176,7 +6405,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 应当考虑把这个类变为 `struct`——就是一组没有行为的变量，全部都是公开数据而没有成员函数。
 
-    struct point {
+    struct Point {
         int x = 0;
         int y = 0;
     };
@@ -6260,7 +6489,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 大多数的类要么都是 A，要么都是 B：
 
 * *全 public*: 如果编写的是聚集一组变量而没有在这些变量之间维护不变式的话，所有这些变量都应当为 `public`。
-[依照惯例，应当把这样的类声明为 `struct` 而不是 `class`](#Rc-struct)
+  [依照惯例，应当把这样的类声明为 `struct` 而不是 `class`](#Rc-struct)
 * *全 private*: 如果编写的类型维护了某个不变式，则所有的非 `const` 变量都应当是 `private`——应当对它进行封装。
 
 ##### 例外
@@ -6270,7 +6499,6 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 ##### 强制实施
 
 对包含具有不同访问级别的非 `const` 数据成员的类给出标记。
-
 
 ### <a name="Rh-mi-interface"></a>C.135: 用多继承来表达多个不同的接口
 
@@ -6341,7 +6569,6 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
     ???
 
-
 ### <a name="Rh-final"></a>C.139: `final` 的运用应当保守
 
 ##### 理由
@@ -6353,7 +6580,8 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
     class Widget { /* ... */ };
 
-    class My_widget final : public Widget { /* ... */ };    // 没有人会想要改进 My_widget（你可能这么觉得）
+    // 没有人会想要改进 My_widget（你可能这么觉得）
+    class My_widget final : public Widget { /* ... */ };
 
     class My_improved_widget : public My_widget { /* ... */ };  // 错误: 办不到了
 
@@ -6384,7 +6612,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
     // ...
 
-    use(new Better_interface{});
+    use(new Better_implementation{});
 
 在小例子中是很容易看出问题的，但在具有许多虚函数的大型层次中，则需要工具来可靠地识别出这些问题。
 保持一贯地使用 `override` 应该能解决这种问题。
@@ -6403,6 +6631,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 标记出 `final` 的所有使用。
 
+
 ## <a name="Rh-virtual-default-arg"></a>C.140: 不要在虚函数和其覆盖函数上提供不同的默认参数
 
 ##### 理由
@@ -6411,18 +6640,18 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 示例，不好
 
-    class base {
+    class Base {
     public:
         virtual int multiply(int value, int factor = 2) = 0;
     };
 
-    class derived : public base {
+    class Derived : public Base {
     public:
         int multiply(int value, int factor = 10) override;
     };
 
-    derived d;
-    base& b = d;
+    Derived d;
+    Base& b = d;
 
     b.multiply(10);  // 这两次调用将会调用相同的函数，但分别
     d.multiply(10);  // 使用不同的默认实参，因此获得不同的结果
@@ -6514,7 +6743,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 `dynamic_cast` 是一个通用的“是一个”操作，用以发现对象上的最佳接口，
 而 `typeid` 是“报告对象的精确类型”操作，用以发现对象的真实类型。
 后者本质上就是更简单的操作，因而应当更快一些。
-后者（`typeid`）是可以在需要时进行手工模仿的（比如说，当工作在 RTTI 因为某种原因被禁用的系统上），
+后者（`typeid`）是可以在需要时进行手工模仿的（比如说，当工作在（因为某种原因）禁止使用 RTTI 的系统上），
 而前者（`dynamic_cast`）要正确地实现则要困难得多。
 
 考虑：
@@ -6660,7 +6889,8 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 示例
 
-    shared_ptr<Foo> p {new<Foo>{7}};   // OK: 但出现重复；而且为这个 Foo 和 shared_ptr 的使用计数分别进行了分配
+    // OK: 但出现重复；而且为这个 Foo 和 shared_ptr 的使用计数分别进行了分配
+    shared_ptr<Foo> p {new<Foo>{7}};
 
     auto q = make_shared<Foo>(7);   // 有改善: 并未重复 Foo；只有一个对象
 
@@ -6682,7 +6912,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
     void use(B*);
 
-    D a[] = { {1, 2}, {3, 4}, {5, 6} };
+    D a[] = {{1, 2}, {3, 4}, {5, 6}};
     B* p = a;     // 不好: a 衰变为 &a[0]，并被转换为 B*
     p[1].x = 7;   // 覆盖了 D[0].y
 
@@ -6724,10 +6954,10 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
         // ...
         X& operator=(const X&); // 定义赋值的成员函数
         friend bool operator==(const X&, const X&); // == 需要访问其内部表示
-                                                    // 执行 a=b 之后将有 a==b
+                                                    // 执行 a = b 之后将有 a == b
         // ...
     };
-    
+
 这里维持了传统的语义：[副本之间相等](#SS-copy)。
 
 ##### 示例，不好
@@ -6795,12 +7025,12 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 考虑：
 
     void open_gate(Gate& g);   // 把车库出口通道的障碍移除
-    void fopen(const char*name, const char* mode);   // 打开文件
+    void fopen(const char* name, const char* mode);   // 打开文件
 
 这两个操作本质上就是不同的（而且没有关联），因此让它们的名字相区别是正确的。相对而言：
 
     void open(Gate& g);   // 把车库出口通道的障碍移除
-    void open(const char*name, const char* mode ="r");   // 打开文件
+    void open(const char* name, const char* mode ="r");   // 打开文件
 
 这两个操作仍旧本质不同（且没有关联），但它们的名字缩减成了（共同的）最小词，并带来了发生混乱的机会。
 幸运的是，类型系统能够识别出许多这种错误。
@@ -6852,8 +7082,6 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 标记所有的转换运算符。
 
-
-
 ### <a name="Ro-custom"></a>C.165: 为定制点采用 `using`
 
 ##### 理由
@@ -6883,7 +7111,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
     void f2(N::X& a, N::X& b)
     {
-        swap(a,b);   // 调用了 N::swap
+        swap(a, b);   // 调用了 N::swap
     }
 
 但这也不是我们在泛型代码中所要的。
@@ -6893,7 +7121,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
     void f3(N::X& a, N::X& b)
     {
         using std::swap;  // 使得 std::swap 可用
-        swap(a,b);        // 如果存在 N::swap 则调用之，否则为 std::swap
+        swap(a, b);        // 如果存在 N::swap 则调用之，否则为 std::swap
     }
 
 ##### 强制实施
@@ -6918,7 +7146,7 @@ C++ 语义中的很多部分都假定了其默认的含义。
     private:
         T* p;
     };
-        
+
     class X {
         Ptr operator&() { return Ptr{this}; }
         // ...
@@ -6928,7 +7156,7 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 如果你要“折腾”运算符 `&` 的话，请保证其定义和 `->`，`[]`，`*` 和 `.` 在结果类型上具有匹配的含义。
 注意，运算符 `.` 现在是无法重载的，因此不可能做出一个完美的系统。
-我们打算修正这一点： http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4477.pdf。
+我们打算修正这一点： <http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4477.pdf>。
 注意 `std::addressof()` 总会产生一个内建指针。
 
 ##### 强制实施
@@ -6946,23 +7174,23 @@ C++ 语义中的很多部分都假定了其默认的含义。
 ##### 示例
 
     struct S { };
-    bool operator==(S,S);   // OK: 和 S 在相同的命名空间，甚至紧跟着 S
+    bool operator==(S, S);   // OK: 和 S 在相同的命名空间，甚至紧跟着 S
     S s;
 
-    bool s==s;
-    
+    bool x = (s == s);
+
 如果有默认的 == 的话，这正是默认的 == 所做的。
 
 ##### 示例
 
     namespace N {
         struct S { };
-        bool operator==(S,S);   // OK: 和 S 在相同的命名空间，甚至紧跟着 S
+        bool operator==(S, S);   // OK: 和 S 在相同的命名空间，甚至紧跟着 S
     }
-    
+
     N::S s;
 
-    bool s==s;  // 通过 ADL 找到了 N::operator==()
+    bool x = (s == s);  // 通过 ADL 找到了 N::operator==()
 
 ##### 示例，不好
 
@@ -6973,7 +7201,7 @@ C++ 语义中的很多部分都假定了其默认的含义。
         S::operator!(S a) { return true; }
         S not_s = !s;
     }
-    
+
     namespace M {
         S::operator!(S a) { return false; }
         S not_s = !s;
@@ -6987,7 +7215,7 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 当为定义于不同命名空间的两个类型定义一个二元运算符时，无法遵循这条规则。
 例如：
-   
+
     Vec::Vector operator*(const Vec::Vector&, const Mat::Matrix&);
 
 也许最好避免这种情形。
@@ -7008,12 +7236,12 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 ##### 示例
 
-    void cout_my_class(const my_class& c) // 含糊，并非传统约定，非泛型
+    void cout_my_class(const My_class& c) // 含糊，并非传统约定，非泛型
     {
         std::cout << /* 此处为类成员 */;
     }
 
-    std::ostream& operator<<(std::ostream& os, const my_class& c) //OK
+    std::ostream& operator<<(std::ostream& os, const my_class& c) // OK
     {
         return os << /* 此处为类成员 */;
     }
@@ -7023,7 +7251,7 @@ C++ 语义中的很多部分都假定了其默认的含义。
     My_class var { /* ... */ };
     // ...
     cout << "var = " << var << '\n';
-    
+
 ##### 注解
 
 大多数运算符都有很强烈和活跃的含义约定用法，比如
@@ -7062,27 +7290,81 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 ## <a name="SS-union"></a>C.union: 联合体
 
-???
+`union` 是一种 `struct`，其所有成员都开始于相同的地址，因而它同时只能持有一个成员。
+`union` 并不会跟踪其所存储的是哪个成员，因此必须由程序员来保证其正确；
+这本质上就是易错的，但有一些弥补的办法。
+
+由一个 `union` 加上一个用于指出其当前持有哪个成员的指示符构成的类型被称为*带标记联合体（tagged union）*，*区分性联合体（discriminated union）*，或者*变异体（variant）*。
 
 联合体规则概览：
 
-* [C.180: 采用 `union` 用以 ???](#Ru-union)
+* [C.180: 采用 `union` 用以节省内存](#Ru-union)
 * [C.181: 避免“裸” `union`](#Ru-naked)
 * [C.182: 利用匿名 `union` 实现带标记联合体](#Ru-anonymous)
+* [C.183: 不要将 `union` 用于类型双关](#Ru-pun)
 * ???
 
-### <a name="Ru-union"></a>C.180: 采用 `union` 用以 ???
-
-??? 什么时候应当用联合体，如果确实需要的话？对 POD 的对象表示进行重新解释，它的面向未来的良好方式是什么？
-??? 变体（variant）
+### <a name="Ru-union"></a>C.180: 采用 `union` 用以节省内存
 
 ##### 理由
 
- ???
+`union` 可以让一块内存在不同的时间用于不同类型的数据。
+因此，当我们有几个不可能同时使用的对象时，可以用它来节省内存。
 
 ##### 示例
 
-    ???
+    union Value {
+        int x;
+        double d;
+    };
+
+    Value v = { 123 };  // 现在 v 持有一个 int
+    cout << v.x << '\n';    // 写下 123
+    v.d = 987.654;  // 现在 v 持有一个 double
+    cout << v.d << '\n';    // 写下 987.654
+
+但请你留意这个警告：[避免“裸”`union`](#Ru-naked)。
+
+##### 示例
+
+    // 短字符串优化
+    
+    constexpr size_t buffer_size = 16; // 比指针的大小稍大
+    
+    class Immutable_string {
+    public:
+        Immutable_string(const char* str) :
+            size(strlen(str))
+        {
+            if (size < buffer_size)
+                strcpy_s(string_buffer, buffer_size, str);
+            else {
+                string_ptr = new char[size + 1];
+                strcpy_s(string_ptr, size + 1, str);
+            }
+        }
+    
+        ~Immutable_string()
+        {
+            if (size >= buffer_size)
+                delete string_ptr;
+        }
+    
+        const char* get_str() const
+        {
+            return (size < buffer_size) ? string_buffer : string_ptr;
+        }
+    
+    private:
+        // 当字符串足够短时，可以以其自己保存字符串
+        // 而不是指向字符串的指针。
+        union {
+            char* string_ptr;
+            char string_buffer[buffer_size];
+        };
+    
+        const size_t size;
+    };
 
 ##### 强制实施
 
@@ -7092,15 +7374,44 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 ##### 理由
 
+*裸联合体（naked union）*是没有相关的指示其持有哪个成员（如果有）的指示器的联合体，
+程序员必须保持对它的跟踪。
 裸联合体是类型错误的一种来源。
 
-**替代方案**: 将它们和一个类型字段一起包装到类之中。
+###### Example, bad
 
-**替代方案**: 使用 `variant`。
+    union Value {
+        int x;
+        double d;
+    };
 
-##### 示例
+    Value v;
+    v.d = 987.654;  // v 持有一个 double
 
-    ???
+至此为止还都不错，但我们可能会轻易地误用这个 `union`：
+
+    cout << v.x << '\n';    // 不好，未定义的行为：v 持有一个 double，但我们将之当做一个 int 来读取
+
+注意这个类型错误的发生并没有任何明确的强制转换。
+当我们测试程序时，其所打印的最后一个值是 `1683627180`，这是 `987.654` 的位模式的整数值。
+我们这里遇到的是一个“不可见”的类型错误，它刚好给出的结果轻易可能被看作是无辜清白的。
+
+对于“不可见”来说，下面的代码不会产生任何输出：
+
+    v.x = 123;
+    cout << v.d << '\n';    // 不好：未定义的行为
+
+##### 替代方案
+
+将它们和一个类型字段一起包装到类之中。
+
+可以使用即将标准化的 `variant` 类型（在 `<variant>` 中可以找到）：
+
+    variant<int, double> v;
+    v = 123;        // v 持有一个 int
+    int x = get<int>(v);
+    v = 123.456;    // v 持有一个 double
+    w = get<double>(v);
 
 ##### 强制实施
 
@@ -7110,15 +7421,148 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 ##### 理由
 
-???
+设计良好的带标记联合体是类型安全的。
+*匿名*联合体可以简化这种带有 (tag, union) 对的类的定义。
 
 ##### 示例
 
-    ???
+这个例子基本上是从 TC++PL4 pp216-218 借鉴而来的。
+你可以查看原文以获得其介绍。
+
+这段代码多少有点复杂。
+处理一个带有用户定义的赋值和析构函数的类型是比较麻烦的。
+在标准中包含 `variant` 的原因之一就是避免程序员不得不编写这样的代码。
+
+    class Value { // 以一个联合体来表现两个候选表示
+    private:
+        enum class Tag { number, text };
+        Tag type; // 区分
+
+        union { // 表示（注意这是匿名联合体）
+            int i;
+            string s; // string 带有默认构造函数，复制操作，和析构函数
+        };
+    public:
+        struct Bad_entry { }; // 用作异常
+
+        ~Value();
+        Value& operator=(const Value&);   // 因为 string 变体的缘故而需要这个
+        Value(const Value&);
+        // ...
+        int number() const;
+        string text() const;
+
+        void set_number(int n);
+        void set_text(const string&);
+        // ...
+    };
+
+    int Value::number() const
+    {
+        if (type != Tag::number) throw Bad_entry{};
+        return i;
+    }
+
+    string Value::text() const
+    {
+        if (type != Tag::text) throw Bad_entry{};
+        return s;
+    }
+
+    void Value::set_number(int n)
+    {
+        if (type == Tag::text) {
+            s.~string();      // 显式销毁 string
+            type = Tag::number;
+        }
+        i = n;
+    }
+
+    void Value::set_text(const string& ss)
+    {
+        if (type == Tag::text)
+            s = ss;
+        else {
+            new(&s) string{ss};   // 放置式 new: 显式构造 string
+            type = Tag::text;
+        }
+    }
+
+    Value& Value::operator=(const Value& e)   // 因为 string 变体的缘故而需要这个
+    {
+        if (type == Tag::text && e.type == Tag::text) {
+            s = e.s;    // 常规的 string 赋值
+            return *this;
+        }
+
+        if (type == Tag::text) s.~string(); // 显式销毁
+
+        switch (e.type) {
+        case Tag::number:
+            i = e.i;
+            break;
+        case Tag::text:
+            new(&s)(e.s);   // 放置式 new: 显式构造
+            type = e.type;
+        }
+
+        return *this;
+    }
+
+    Value::~Value()
+    {
+        if (type == Tag::text) s.~string(); // 显式销毁
+    }
 
 ##### 强制实施
 
 ???
+
+### <a name="Ru-pun"></a>C.183: 不要将 `union` 用于类型双关
+
+##### 理由
+
+读取一个 `union` 曾写入的成员不同类型的成员是未定义的行为。
+这种双关是不可见的，或者至少比具名强制转换更难于找出。
+使用 `union` 的类型双关是一种错误来源。
+
+##### 示例，不好
+
+    union Pun {
+        int x;
+        unsigned char c[sizeof(int)];
+    };
+
+`Pun` 的想法是要能够查看 `int` 的字符表示。
+
+    void bad(Pun& u)
+    {
+        u.x = 'x';
+        cout << u.c[0] << '\n';     // 未定义行为
+    }
+
+如果你想要查看 `int` 的字节的话，应使用（具名）强制转换：
+
+    void if_you_must_pun(int& x)
+    {
+        auto p = reinterpret_cast<unsigned char*>(&x);
+        cout << p[0] << '\n';     // 未定义的行为
+        // ...
+    }
+
+对对象的声明类型不同的 `reinterpret_cast` 结果进行访问仍然是未定义的行为，
+但至少我们可以发觉发生了某种微妙的事情。
+
+##### 注解
+
+不幸的是，`union` 经常被用于类型双关。
+我们认为“它有时候能够按预期工作”并不是一种强力的理由。
+
+##### 强制实施
+
+???
+
+
 
 # <a name="S-enum"></a>Enum: 枚举
 
