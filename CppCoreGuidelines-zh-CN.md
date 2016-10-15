@@ -11802,6 +11802,38 @@ C++ 对此的机制是 `atomic` 类型：
 * ??? 时序多工
 * ??? 何时/如何使用 `new thread`
 
+### <a name="Rconc-raii"></a>CP.20: 使用 RAII，绝不使用普通的 `lock()`/`unlock()`
+
+##### 理由
+
+避免源于未释放的锁定的令人讨厌的错误。
+
+##### 示例，不好
+
+    mutex mtx;
+
+    void do_stuff()
+    {
+        mtx.lock();
+        // ... 做一些事 ...
+        mtx.unlock();
+    }
+
+或早或晚都会有人忘记 `mtx.unlock()`，在 `... 做一些事 ...` 中放入一个 `return`，抛出异常，或者别的什么。
+
+    mutex mtx;
+
+    void do_stuff()
+    {
+        unique_lock<mutex> lck {mtx};
+        // ... 做一些事 ...
+    }
+
+##### 强制实施
+
+标记对成员 `lock()` 和 `unlock()` 的调用。 ???
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
