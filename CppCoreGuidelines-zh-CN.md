@@ -11781,8 +11781,8 @@ C++ 对此的机制是 `atomic` 类型：
 * [CP.20: 使用 RAII，绝不使用普通的 `lock()`/`unlock()`](#Rconc-raii)
 * [CP.21: 用 `std::lock()` 来获得多个 `mutex`](#Rconc-lock)
 * [CP.22: 绝不在持有锁的时候调用未知的代码（比如回调）](#Rconc-unknown)
-* [CP.23: 把已连接的 `thread` 看作是有作用域的容器](#Rconc-join)
-* [CP.24: 把以分离的 `thread` 看作是全局容器](#Rconc-detach)
+* [CP.23: 把连接的 `thread` 看作是有作用域的容器](#Rconc-join)
+* [CP.24: 把分离的 `thread` 看作是全局容器](#Rconc-detach)
 * [CP.25: 优先采用 `gsl::raii_thread` 而不是 `std::thread`，除非你打算 `detach()`](#Rconc-raii_thread)
 * [CP.26: 当你打算 `detach()` 时，优先采用 `gsl::detached_thread` 而不是 `std::thread`](#Rconc-detached_thread)
 * [CP.27: （仅）当需要基于某个运行时条件分离 `thread` 时，使用 `std::thread`](#Rconc-thread)
@@ -11927,7 +11927,7 @@ C++ 对此的机制是 `atomic` 类型：
 * 当持有非递归的 `mutex` 时调用回调则进行标记。
 
 
-### <a name="Rconc-join"></a>CP.23: 把已连接的 `thread` 看作是有作用域的容器
+### <a name="Rconc-join"></a>CP.23: 把连接的 `thread` 看作是有作用域的容器
 
 ##### 理由
 
@@ -11964,6 +11964,52 @@ C++ 对此的机制是 `atomic` 类型：
 
 确保 `raii_thread` 不会 `detach()`。
 之后，可以实施（针对局部对象的）常规的生存期和所有权强制实施方案。
+
+
+### <a name="Rconc-detach"></a>CP.24: 把分离的 `thread` 看作是全局容器
+
+##### 理由
+
+为了维护指针安全性并避免泄漏，需要考虑 `thread` 所使用的指针。
+如果 `thread` 分离了，我们只可以安全地把指向静态和自由存储的对象的指针传递给它。
+
+##### 示例
+
+    void f(int * p)
+    {
+        // ...
+        *p = 99;
+        // ...
+    }
+
+    int glob = 33;
+
+    void some_fct(int* p)
+    {
+        int x = 77;
+        std::thread t0(f, &x);           // 不好
+        std::thread t1(f, p);            // 不好
+        std::thread t2(f, &glob);        // OK
+        auto q = make_unique<int>(99);
+        std::thread t3(f, q.get());      // 不好
+        // ...
+        t0.detach();
+        t1.detach();
+        t2.detach();
+        t3.detach();
+        // ...
+    }
+
+这里的“OK”表明对象能够在 `thread` 可以使用指向它的指针时一直处于作用域（“存活”）。
+“bad”则表示 `thread` 可能在对象销毁之后使用指向它的指针。
+`thread` 运行的并发性并不会影响这里的生存期或所有权问题；
+这些 `thread` 可以仅仅被看成是从 `some_fct` 中调用的函数对象。
+
+##### 强制实施
+
+一般来说是无法确定是否对某个 `thread` 执行了 `detach()` 的，但简单的常见情况则易于检测出来。
+如果无法证明某个 `thread` 并没有 `detach()` 的话，我们只能假定它确实分离了，且它的存活将超过其构造时所处于的作用域；
+之后，可以实施（针对全局对象的）常规的生存期和所有权强制实施方案。
 
 
 ## <a name="SScp-par"></a>CP.par: 并行
