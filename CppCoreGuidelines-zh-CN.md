@@ -12404,6 +12404,26 @@ C++ 对此的机制是 `atomic` 类型：
 对“裸” `lock()` 和 `unlock()` 进行标记。
 
 
+### <a name="Rconc-name"></a>CP.44: 记得为 `lock_guard` 和 `unique_lock` 命名
+
+##### 理由
+
+无名的局部对象时临时对象，会立刻离开作用域。
+
+##### 示例
+
+    unique_lock<mutex>(m1);
+    lock_guard<mutex> {m2};
+    lock(m1, m2);
+
+这个貌似足够有效，但其实并非如此。
+
+##### 强制实施
+
+标记所有的无名 `lock_guard` 和 `unique_lock`。
+
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
