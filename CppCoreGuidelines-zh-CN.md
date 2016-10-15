@@ -12051,6 +12051,36 @@ C++ 对此的机制是 `atomic` 类型：
 标记对普通 `thread` 的无条件 `detach`。
 
 
+### <a name="Rconc-thread"></a>CP.27: （仅）当需要基于某个运行时条件分离 `thread` 时，使用 `std::thread`
+
+##### 理由
+
+预计会无条件地 `join` 或者无条件地 `detach` 的 `thread`，这样都可以被清晰地指出来。
+普通的 `thread` 应当假定会使用 `std::thread` 的全部通用性。
+
+##### 示例
+
+    void tricky(thread* t, int n)
+    {
+        // ...
+        if (is_odd(n))
+            t->detach();
+        // ...
+    }
+
+    void use(int n)
+    {
+        thread t { tricky, this, n };
+        // ...
+        // ... 这里应不应该连接？ ...
+    }
+
+##### 强制实施
+
+???
+
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
