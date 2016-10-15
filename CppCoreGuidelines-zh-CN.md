@@ -8708,6 +8708,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.9: 避免 `ALL_CAPS` 式的名字](#Res-not-CAPS)
 * [ES.10: 每条声明中（仅）声明一个名字](#Res-name-one)
 * [ES.11: 使用 `auto` 来避免类型名字的多余重复](#Res-auto)
+* [ES.12: 不要在嵌套作用域中重用名字](#Res-reuse)
 * [ES.20: 坚持为对象进行初始化](#Res-always)
 * [ES.21: 不要在确实需要使用变量（或常量）之前就引入它](#Res-introduce)
 * [ES.22: 要等到获得了用以初始化变量的值之后才声明变量](#Res-init)
@@ -8721,7 +8722,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.31: 不要用宏来作为常量或“函数”](#Res-macros2)
 * [ES.32: 对所有的宏名采用 `ALL_CAPS` 命名方式](#Res-ALL_CAPS)
 * [ES.33: 如果必须使用宏的话，请为之提供唯一的名字](#Res-MACROS)
-* [ES.40: 不要定义（C 风格的）变参函数](#Res-ellipses)
+* [ES.34: 不要定义（C 风格的）变参函数](#Res-ellipses)
 
 表达式的规则：
 
@@ -8790,7 +8791,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     for (int i = 0; i < max; ++i)
         sum = sum + v[i];
 
-**例外**: 标准库的很大部分都依赖于动态分配（自由存储）。这些部分，尤其是容器但并不包括算法，并不适用于某些硬实时和嵌入式的应用的。在这些情况下，请考虑提供或使用类似的设施，比如说某个标准库风格的采用池分配器的容器实现。
+##### 例外
+
+标准库的很大部分都依赖于动态分配（自由存储）。这些部分，尤其是容器但并不包括算法，并不适用于某些硬实时和嵌入式的应用的。在这些情况下，请考虑提供或使用类似的设施，比如说某个标准库风格的采用池分配器的容器实现。
 
 ##### 强制实施
 
@@ -8823,7 +8826,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
             is.read(s, maxstring);
             res[elemcount++] = s;
         }
-        nread = elemcount;
+        nread = &elemcount;
         return res;
     }
 
@@ -8866,7 +8869,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
     void use(const string& name)
     {
-        string fn = name+".txt";
+        string fn = name + ".txt";
         ifstream is {fn};
         Record r;
         is >> r;
@@ -8879,7 +8882,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
     Record load_record(const string& name)
     {
-        string fn = name+".txt";
+        string fn = name + ".txt";
         ifstream is {fn};
         Record r;
         is >> r;
@@ -8940,7 +8943,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     template<typename T>    // 好
     void print(ostream& os, const vector<T>& v)
     {
-        for (int i = 0; i < v.end(); ++i)
+        for (int i = 0; i < v.size(); ++i)
             os << v[i] << '\n';
     }
 
@@ -8950,10 +8953,10 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     void print(ostream& target_stream, const vector<Element_type>& current_vector)
     {
         for (int current_element_index = 0;
-                current_element_index < current_vector.end();
+                current_element_index < current_vector.size();
                 ++current_element_index
         )
-        target_stream << current_vector[i] << '\n';
+        target_stream << current_vector[current_element_index] << '\n';
     }
 
 当然，这是一个讽刺，但我们还见过更糟糕的。
@@ -8985,7 +8988,8 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 大型函数的参数的名字实际上可当作是非局部的，因此应当有意义：
 
     void complicated_algorithm(vector<Record>& vr, const vector<int>& vi, map<string, int>& out)
-    // 根据 vi 中的索引，从 vr 中读取事件（并标记所用的 Record），向 out 中放置（名字，索引）对
+    // 根据 vi 中的索引，从 vr 中读取事件（并标记所用的 Record），
+    // 向 out 中放置（名字，索引）对
     {
         // ... 500 行的代码，使用 vr，vi，和 out ...
     }
@@ -9019,9 +9023,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 很古老的头文件中可能会用在相同作用域中用同一个名字同时声明非类型实体和类型。
 
 ##### 强制实施
+
 * 用一个已知的易混淆字母和数字组合的列表来对名字进行检查。
 * 当变量、函数或枚举符的声明隐藏了在相同作用域中所声明的类或枚举时，给出警告。
-
 
 ### <a name="Res-not-CAPS"></a>ES.9: 避免 `ALL_CAPS` 式的名字
 
@@ -9064,9 +9068,11 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例，不好
 
-       char *p, c, a[7], *pp[7], **aa[10];   // 讨厌！
+    char *p, c, a[7], *pp[7], **aa[10];   // 讨厌！
 
-**例外**: 函数声明中可以包含多个函数参数声明。
+##### 例外
+
+函数声明中可以包含多个函数参数声明。
 
 ##### 示例
 
@@ -9079,18 +9085,19 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    double scalbn(double x, int n);   // OK: x*pow(FLT_RADIX, n); FLT_RADIX 通常为 2
+    double scalbn(double x, int n);   // OK: x * pow(FLT_RADIX, n); FLT_RADIX 通常为 2
 
 或者：
 
-    double scalbn(    // 有改善: x*pow(FLT_RADIX, n); FLT_RADIX 通常为 2
+    double scalbn(    // 有改善: x * pow(FLT_RADIX, n); FLT_RADIX 通常为 2
         double x,     // 基数
         int n         // 指数
     );
 
 或者：
 
-    double scalbn(double base, int exponent);   // 有改善: base*pow(FLT_RADIX, exponent); FLT_RADIX 通常为 2
+    // 有改善: base * pow(FLT_RADIX, exponent); FLT_RADIX 通常为 2
+    double scalbn(double base, int exponent);
 
 ##### 强制实施
 
@@ -9121,7 +9128,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     template<class T>
     auto Container<T>::first() -> Iterator;   // Container<T>::Iterator
 
-**例外**: 当使用初始化式列表，而所需要的确切类型是已知的，同时某个初始化式可能需要转换时，应当避免使用 `auto`。
+##### 例外
+
+当使用初始化式列表，而所需要的确切类型是已知的，同时某个初始化式可能需要转换时，应当避免使用 `auto`。
 
 ##### 示例
 
@@ -9139,6 +9148,99 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 对声明中多余的类型名字进行标记。
 
+### <a name="Res-reuse"></a>ES.12: 不要在嵌套作用域中重用名字
+
+##### 理由
+
+这样很容易把所用的是哪个变量搞混。
+会造成维护问题。
+
+##### 示例，不好
+
+    int d = 0;
+    // ...
+    if (cond) {
+        // ...
+        d = 9;
+        // ...
+    }
+    else {
+        // ...
+        int d = 7;
+        // ...
+        d = value_to_be_rerurned;
+        // ...
+    }
+
+    return d;
+
+这是个大型的 `if` 语句，很容易忽视在内部作用域中所引入的新的 `d`。
+这是一种已知的 BUG 来源。
+这种在内部作用域中的名字重用有时候被称为“遮蔽“。
+
+##### 注解
+
+当函数变得过大和过于复杂时，遮蔽是一种主要的问题。
+
+##### 示例
+
+语言不允许在函数的最外层块中遮蔽函数参数：
+
+    void f(int x)
+    {
+        int x = 4;  // 错误：重用函数参数的名字
+
+        if (x) {
+            int x = 7;  // 允许，但不好
+            // ...
+        }
+    }
+
+##### 示例，不好
+
+把成员名重用为局部变量也会造成问题：
+
+    struct S {
+        int m;
+        void f(int x);
+    };
+
+    void S::f(int x)
+    {
+        m = 7;    // 对成员赋值
+        if (x) {
+            int m = 9;
+            // ...
+            m = 99; // 对成员赋值
+            // ...
+        }
+    }
+
+##### 例外
+
+我们经常在派生类中重用基类中的函数名：
+
+    struct B {
+        void f(int);
+    };
+
+    struct D : B {
+        void f(double);
+        using B::f;
+    };
+
+这样做是易错的。
+例如，要是忘了 using 声明式的话，`d.f(1)` 的调用就不会找到 `int` 版本的 `f`。
+
+??? 我们需要为类层次中的遮蔽/隐藏给出专门的规则吗？
+
+##### 强制实施
+
+* 对嵌套局部作用域中的名字重用进行标记。
+* 对成员函数中将成员名重用为局部变量进行标记。
+* 对把全局名字重用为局部变量或成员的名字进行标记。
+* 对在派生类中重用（除函数名之外的）基类成员名进行标记。
+
 ### <a name="Res-always"></a>ES.20: 坚持为对象进行初始化
 
 ##### 理由
@@ -9149,9 +9251,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    void use(int arg)   // 不好: 未初始化的变量
+    void use(int arg)
     {
-        int i;
+        int i;   // 不好: 未初始化的变量
         // ...
         i = 7;   // 初始化 i
     }
@@ -9205,9 +9307,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 假定 `i` 和 `j` 之间存在某种逻辑关联，则这种关联可能应当在函数中予以表达：
 
-    pair<widget,widget> make_related_widgets(bool x)
+    pair<widget, widget> make_related_widgets(bool x)
     {
-        return (x) ? {f1(),f2()} : {f3(),f4() };
+        return (x) ? {f1(), f2()} : {f3(), f4() };
     }
 
     auto init = make_related_widgets(cond);
@@ -9216,13 +9318,13 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 显然，我们其实最想要的是某种可以从一个 `tuple` 来对 n 个变量进行初始化的构造。比如：
 
-    auto {i,j} = make_related_widgets(cond);    // 并非 C++14
+    auto {i, j} = make_related_widgets(cond);    // 并非 C++14
 
 如今，我们则可以近似地使用 `tie()`：
 
     widget i;       // 不好: 未初始化的变量
     widget j;
-    tie(i,j) = make_related_widgets(cond);
+    tie(i, j) = make_related_widgets(cond);
 
 这可能会被当成是下面所列的对于*立即从输入进行初始化*的一种例外。
 
@@ -9241,15 +9343,15 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 当声明一个即将从输入进行初始化的对象时，其初始化就可能导致发生双重初始化。
 不过，应当注意这也可能造成输入之后留下未初始化的数据——而这已经是一种错误和安全攻击的重大来源：
 
-    constexpr int max = 8*1024;
+    constexpr int max = 8 * 1024;
     int buf[max];         // OK, 但是可疑: 未初始化
     f.read(buf, max);
 
 某些情况下，这个数组进行初始化的成本可能是显著的。
 但是，这样的例子确实倾向于留下可访问到的未初始化变量，因而应当严肃对待它们。
 
-    constexpr int max = 8*1024;
-    int buf[max] = {0};   // 某些情况下更好
+    constexpr int max = 8 * 1024;
+    int buf[max] = {};   // 某些情况下更好
     f.read(buf, max);
 
 如果可行的话，应当用某个已知不会溢出的库函数。例如：
@@ -9292,7 +9394,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
         j = f4();
     }
 
-这样的话编译器甚至无法再简单地检测出“设值前使用”。而且我们也在 widget 的状态空间中引入了复杂性：哪些操作对 `unint` 的 widget 是有效的，哪些不是？
+这样的话编译器甚至无法再简单地检测出“设值前使用”。而且我们也在 widget 的状态空间中引入了复杂性：哪些操作对 `uninit` 的 widget 是有效的，哪些不是？
 
 ##### 注解
 
@@ -9386,8 +9488,8 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-       int x {f(99)};
-       vector<int> v = {1, 2, 3, 4, 5, 6};
+    int x {f(99)};
+    vector<int> v = {1, 2, 3, 4, 5, 6};
 
 ##### 例外
 
@@ -9424,7 +9526,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 对以 `auto` 声明的变量用单个值进行的初始化，比如 `{v}`，直到最近之前都还具有令人意外的含义：
 
     auto x1 {7};        // x1 是一个值为 7 的 int
-    auto x2 = {7};      // x2 是一个具有一个元素 7 的 initializer_list<int>
+    // x2 是一个具有一个元素 7 的 initializer_list<int>
+    // （这在 C++17 中将变为“元素 7”）
+    auto x2 = {7};
 
     auto x11 {7, 8};    // 错误: 两个初始化式
     auto x22 = {7, 8};  // x2 是一个具有元素 7 和 8 的 initializer_list<int>
@@ -9434,6 +9538,10 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 如果确实需要一个 `initializer_list<T>` 的话，可以使用 `={...}`：
 
     auto fib10 = {0, 1, 2, 3, 5, 8, 13, 25, 38, 63};   // fib10 是一个列表
+
+##### 注解
+
+老习惯很难纠正，因此这条规则很难统一地进行实施，尤其是当有这么多情况下 `=` 没有问题的时候。
 
 ##### 示例
 
@@ -9606,9 +9714,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
     owner<istream&> in = [&]{
         switch (source) {
-        case default:       owned=false; return cin;
-        case command_line:  owned=true;  return *new istringstream{argv[2]};
-        case file:          owned=true;  return *new ifstream{argv[2]};
+        case default:       owned = false; return cin;
+        case command_line:  owned = true;  return *new istringstream{argv[2]};
+        case file:          owned = true;  return *new ifstream{argv[2]};
     }();
 
 ##### 强制实施
@@ -9651,12 +9759,12 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 示例，不好
 
     #define PI 3.14
-    #define SQUARE(a, b) (a*b)
+    #define SQUARE(a, b) (a * b)
 
 即便我们并未在 `SQUARE` 中留下这个众所周知的 BUG，也存在多种表现好得多的替代方式；比如：
 
     constexpr double pi = 3.14;
-    template<typename T> T square(T a, T b) { return a*b; }
+    template<typename T> T square(T a, T b) { return a * b; }
 
 ##### 强制实施
 
@@ -9670,9 +9778,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    #define forever for(;;)   /* 非常不好 */
+    #define forever for (;;)   /* 非常不好 */
 
-    #define FOREVER for(;;)   /* 仍然很邪恶，但至少对人来说是可见的 */
+    #define FOREVER for (;;)   /* 仍然很邪恶，但至少对人来说是可见的 */
 
 ##### 强制实施
 
@@ -9689,7 +9797,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     #define MYCHAR        /* 不好，最终将会和别人的 MYCHAR 相冲突 */
 
     #define ZCORP_CHAR    /* 还是不好，但冲突的机会较小 */
-    
+
 ##### 注解
 
 如果可能就应当避免使用宏：[ES.30](#Res-macros)，[ES.31](#Res-macros2)，以及 [ES.32](#Res-ALL_CAPS)。
@@ -9700,25 +9808,56 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 对较短的宏名给出警告。
 
-### <a name="Res-ellipses"></a>ES.40: 不要定义（C 风格的）变参函数
+### <a name="Res-ellipses"></a> ES.34: 不要定义（C 风格的）变参函数
 
 ##### 理由
 
-它并非类型安全。而且需要杂乱的满是强制转换和宏的代码才能正确工作。
+它并非类型安全。
+而且需要杂乱的满是强制转换和宏的代码才能正确工作。
 
 ##### 示例
 
-    ??? <vararg>
+    #include<cstdarg>
+
+    // "severity" 后面跟着以零终结的 char* 列表；将 C 风格字符串写入 cerr
+    void error(int severity ...)
+    {
+        va_list ap;             // 一个持有参数的神奇类型
+        va_start(ap, severity); // 参数启动："severity" 是 error() 的第一个参数
+
+        for (;;) {
+            // 将下一个变量看作 char*；没有检查：经过伪装的强制转换
+            char* p = va_arg(ap, char*);
+            if (p == nullptr) break;
+            cerr << p << ' ';
+        }
+
+        va_end(ap);             // 参数清理（不能忘了这个）
+
+        cerr << '\n';
+        if (severity) exit(severity);
+    }
+
+    void use()
+    {
+        error(7, "this", "is", "an", "error", nullptr);
+        error(7); // 崩溃
+        error(7, "this", "is", "an", "error");  // 崩溃
+        const char* is = "is";
+        string an = "an";
+        error(7, "this", "is", an, "error"); // 崩溃
+    }
 
 **替代方案**: 重载。模板。变参模板。
 
 ##### 注解
 
-在 SFINAE 代码中存在少量变参函数的使用，但它们并不真的会执行而且并不需要 `<varargs>` 的杂乱实现。
+这基本上就是 `printf` 的实现方式。
 
 ##### 强制实施
 
-对 C 风格的变参函数的定义作出标记。
+* 对 C 风格的变参函数的定义作出标记。
+* 对 `#include<cstdarg>` 和 `#include<stdarg.h>` 作出标记。
 
 ## ES.stmt: 语句
 
@@ -9754,7 +9893,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 强制实施
 
-对以 if-then-else 链条（仅）和常量进行比较的情况进行标记。
+对以 `if`-`then`-`else` 链条（仅）和常量进行比较的情况进行标记。
 
 ### <a name="Res-for-range"></a>ES.71: 面临选择时，优先采用范围式 `for` 语句而不是普通 `for` 语句
 
@@ -9774,7 +9913,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
         cout << x << '\n';
 
     for (int i = 1; i < v.size(); ++i) // 接触了两个元素：无法作为范围式的 for
-        cout << v[i] + v[i-1] << '\n';
+        cout << v[i] + v[i - 1] << '\n';
 
     for (int i = 0; i < v.size(); ++i) // 可能具有副作用：无法作为范围式的 for
         cout << f(v, &v[i]) << '\n';
@@ -9817,15 +9956,15 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 示例
 
     for (int i = 0; i < vec.size(); i++) {
-     // 干活
+        // 干活
     }
 
 ##### 示例，不好
 
     int i = 0;
     while (i < vec.size()) {
-     // 干活
-     i++;
+        // 干活
+        i++;
     }
 
 ##### 强制实施
@@ -9888,7 +10027,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     int x;
     do {
         cin >> x;
-        x
+        // ...
     } while (x < 0);
 
 ##### 强制实施
@@ -9953,7 +10092,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    switch(eventType)
+    switch (eventType)
     {
     case Information:
         update_status_bar();
@@ -9967,14 +10106,14 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 很容易忽略掉这个直落。应当更明确：
 
-    switch(eventType)
+    switch (eventType)
     {
     case Information:
         update_status_bar();
         break;
     case Warning:
         write_event_log();
-        // 直落 fall through
+        // 直落 fallthrough
     case Error:
         display_error_window(); // 不好
         break;
@@ -10027,11 +10166,10 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
         // 空
     }
     v[i] = f(v[i]);
-    
+
 ##### 强制实施
 
 对并非块语句且不包含注释的空语句进行标记。
-
 
 ### <a name="Res-loop-counter"></a>ES.86: 避免在原生的 `for` 循环中修改循环控制变量
 
@@ -10041,18 +10179,18 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    for (int i=0; i<10; ++i) {
+    for (int i = 0; i < 10; ++i) {
         // 未改动 i -- ok
     }
 
-    for (int i=0; i<10; ++i) {
+    for (int i = 0; i < 10; ++i) {
         //
         if (/* 某种情况 */) ++i; // 不好
         //
     }
 
-    bool skip=false;
-    for (int i=0; i<10; ++i) {
+    bool skip = false;
+    for (int i = 0; i < 10; ++i) {
         if (skip) { skip = false; continue; }
         //
         if (/* 某种情况 */) skip = true;  // 有改善: 为两个概念使用了两个变量。
@@ -10062,8 +10200,6 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 强制实施
 
 如果变量在循环控制的重复表达式和循环体中都潜在地进行更新（存在非 `const` 使用），则进行标记。
-
-
 
 ## ES.expr: 表达式
 
@@ -10077,21 +10213,29 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    while ((c = getc()) != -1)   // 不好: 在子表达式中藏有赋值
+    // 不好: 在子表达式中藏有赋值
+    while ((c = getc()) != -1)
 
-    while ((cin >> c1, cin >> c2), c1 == c2) // 不好: 在一个子表达式中对两个非局部变量进行了赋值
+    // 不好: 在一个子表达式中对两个非局部变量进行了赋值
+    while ((cin >> c1, cin >> c2), c1 == c2)
 
-    for (char c1, c2; cin >> c1 >> c2 && c1 == c2;)   // 有改善，但可能仍然过于复杂
+    // 有改善，但可能仍然过于复杂
+    for (char c1, c2; cin >> c1 >> c2 && c1 == c2;)
 
-    int x = ++i + ++j;    // OK: 当且仅当 i 和 j 并非别名
+    // OK: 当且仅当 i 和 j 并非别名
+    int x = ++i + ++j;
 
-    v[i] = v[j] + v[k];   // OK: 当且仅当 i != j 且 i != k
+    // OK: 当且仅当 i != j 且 i != k
+    v[i] = v[j] + v[k];
 
-    x = a + (b = f()) + (c = g()) * 7;   // 不好: 子表达式中“隐藏”了多个赋值
+    // 不好: 子表达式中“隐藏”了多个赋值
+    x = a + (b = f()) + (c = g()) * 7;
 
-    x = a & b + c * d && e ^ f == 7;     // 不好: 依赖于经常被误解的优先级规则
+    // 不好: 依赖于经常被误解的优先级规则
+    x = a & b + c * d && e ^ f == 7;
 
-    x = x++ + x++ + ++x;   // 不好: 未定义行为
+    // 不好: 未定义行为
+    x = x++ + x++ + ++x;
 
 这些表达式中有几个是无条件不好的（比如说依赖于未定义行为）。其他的只不过过于复杂和不常见，即便是优秀的程序员匆忙中也可能会误解或者忽略其中的某个问题。
 
@@ -10101,9 +10245,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    x=k * y + z;             // OK
+    x = k * y + z;             // OK
 
-    auto t1 = k*y;           // 不好: 不必要的啰嗦
+    auto t1 = k * y;           // 不好: 不必要的啰嗦
     x = t1 + z;
 
     if (0 <= x && x < max)   // OK
@@ -10261,7 +10405,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
     double d = 7.9;
     int i = d;    // 不好: 窄化: i 变为了 7
-    i = (int)d;   // 不好: 我们打算声称这样的做法仍然不够明确
+    i = (int) d;  // 不好: 我们打算声称这样的做法仍然不够明确
 
     void f(int x, long y, double d)
     {
@@ -10374,7 +10518,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 注解
 
 当在类型之间进行没有信息丢失的转换时（比如从 `float` 到
-`double` 或者从 `int32` 到 `int64`），可以代之以使用花括号初始化。
+`double` 或者从 `int64` 到 `int32`），可以代之以使用花括号初始化。
 
     double d{some_float};
     int64_t i{some_int32};
@@ -10388,7 +10532,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 对 C 风格和函数式的强制转换进行标记。
 
-## <a name="Res-casts-const"></a>ES.50: 不要强制掉 `const`
+### <a name="Res-casts-const"></a>ES.50: 不要强制掉 `const`
 
 ##### 理由
 
@@ -10402,7 +10546,91 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    ???
+考虑为昂贵操作将之前所计算的结果保留下来：
+
+    int compute(int x); // 为 x 计算一个值；假设这是昂贵的
+
+    class Cache {   // 为 int->int 操作实现一种高速缓存的某个类型
+    public:
+        pair<bool, int> find(int x) const;   // 有针对 x 的值吗？
+        void set(int x, int v);             // 使 y 成为针对 x 的值
+        // ...
+    private:
+        // ...
+    };
+
+    class X {
+    public:
+        int get_val(int x)
+        {
+            auto p = cache.find(x);
+            if (p.first) return p.second;
+            int val = compute(x);
+            cache.set(x, val); // 插入针对 x 的值
+            return val;
+        }
+        // ...
+    private:
+        Cache cache;
+    };
+
+这里的 `get_val()` 逻辑上是个常量，因此我们想使其成为 `const` 成员。
+为此我们仍然需要改动 `cache`，因此人们有时候会求助于 `const_cast`：
+
+    class X {   // 基于强制转换的可疑的方案
+    public:
+        int get_val(int x) const
+        {
+            auto p = cache.find(x);
+            if (p.first) return p.second;
+            int val = compute(x);
+            const_cast<Cache&>(cache).set(x, val);   // 很难看
+            return val;
+        }
+        // ...
+    private:
+        Cache cache;
+    };
+
+幸运的是，有一种更好的方案：
+将 `cache` 称为即便对于 `const` 对象来说也是可改变的：
+
+    class X {   // 更好的方案
+    public:
+        int get_val(int x) const
+        {
+            auto p = cache.find(x);
+            if (p.first) return p.second;
+            int val = compute(x);
+            cache.set(x, val);
+            return val;
+        }
+        // ...
+    private:
+        mutable Cache cache;
+    };
+
+另一种替代方案是存储指向 `cache` 的指针：
+
+    class X {   // OK，但有点麻烦的方案
+    public:
+        int get_val(int x) const
+        {
+            auto p = cache->find(x);
+            if (p.first) return p.second;
+            int val = compute(x);
+            cache->set(x, val);
+            return val;
+        }
+        // ...
+    private:
+        unique_ptr<Cache> cache;
+    };
+
+这个方案最灵活，但需要显式进行 `*cache` 的构造和销毁
+（最可能发生于 `X` 的构造函数和析构函数中）。
+
+无论采用哪种形式，在多线程代码中都需要保护对 `cache` 的数据竞争，可能需要使用一个 `std::mutex`。
 
 ##### 强制实施
 
@@ -10414,7 +10642,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 无法溢出的构造时不会溢出的（而且通常运行得更快）：
 
-##### Example
+##### 示例
 
     for (auto& x : v)      // 打印 v 的所有元素
         cout << x << '\n';
@@ -10424,7 +10652,6 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 强制实施
 
 查找显式的范围检查，并启发式地给出替代方案建议。
-
 
 ### <a name="Res-move"></a>ES.56: 仅在确实需要明确移动某个对象到别的作用域时才使用 `std::move()`
 
@@ -10444,15 +10671,20 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例，不好
 
-    void sink(X&& r);   // sink 接收 r 的所有权
-    
+    void sink(X&& x);   // sink 接收 x 的所有权
+
     void user()
     {
         X x;
-        sink(r);            // 错误: 无法将作者绑定到右值引用
-        sink(std::move(r));  // OK: sink 接收了 r 的内容，r 随即必须假定为空
+	// 错误: 无法将作者绑定到右值引用
+        sink(x);
+	// OK: sink 接收了 x 的内容，x 随即必须假定为空
+        sink(std::move(x));
+
         // ...
-        use(r);             // 可能是个错误
+
+	// 可能是个错误
+        use(x);
     }
 
 通常来说，`std::move()` 都用做某个 `&&` 形参的实参。
@@ -10460,28 +10692,31 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
     void f() {
         string s1 = "supercalifragilisticexpialidocious";
- 
+
         string s2 = s1;             // ok, 接收了一个副本
-        assert(s1=="supercalifragilisticexpialidocious");  // ok
+        assert(s1 == "supercalifragilisticexpialidocious");  // ok
         
-        string s3 = move(s1);       // 不好, 如果你打算保留 s1 的值的话
-        assert(s1=="supercalifragilisticexpialidocious");  // 不好, assert 很可能会失败, s1 很可能被改动了
+	// 不好, 如果你打算保留 s1 的值的话
+        string s3 = move(s1);
+
+	// 不好, assert 很可能会失败, s1 很可能被改动了
+        assert(s1 == "supercalifragilisticexpialidocious");
     }
 
 ##### 示例
-    
-    void sink( unique_ptr<widget> p );  // 将 p 的所有权传递给 sink()
- 
+
+    void sink(unique_ptr<widget> p);  // 将 p 的所有权传递给 sink()
+
     void f() {
         auto w = make_unique<widget>();
         // ...
-        sink( std::move(w) );               // ok, 交给 sink() 
+        sink(std::move(w));               // ok, 交给 sink()
         // ...
         sink(w);    // 错误: unique_ptr 经过严格设计，你无法复制它
     }
- 
+
 ##### 注解
- 
+
 `std::move()` 经过伪装的向 `&&` 的强制转换；其自身并不会移动任何东西，但会把具名的对象标记为可被移动的候选者。
 语言中已经了解了对象可以被移动的一般情况，尤其是从函数返回时，因此请不要用多余的 `std::move()` 使代码复杂化。
 
@@ -10496,12 +10731,13 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
         // ... 加载 result 的数据
         return std::move(result);       // 不好; 直接写 "return result;" 即可
     }
-    
+
 绝不要写 `return move(local_variable);`，这是因为语言已经知道这个变量是移动的候选了。
 在这段代码中用 `move` 并不会带来帮助，而且可能实际上是有害的，因为它创建了局部变量的一个额外引用别名，而在某些编译器中这回对 RVO（返回值优化）造成影响。
- 
+
+
 ##### 示例，不好
- 
+
     vector<int> v = std::move(make_vector());   // 不好; 这个 std::move 完全是多余的 
 
 绝不在返回值上使用 `move`，如 `x = move(f());`，其中的 `f` 按值返回。
@@ -10510,20 +10746,20 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 示例
 
     void mover(X&& x) {
-        call_something( std::move(x) );         // ok
-        call_something( std::forward<X>(x) );   // 不好, 请勿对右值引用 std::forward
-        call_something( x );                    // 可疑, 为什么不用 std::move?
+        call_something(std::move(x));         // ok
+        call_something(std::forward<X>(x));   // 不好, 请勿对右值引用 std::forward
+        call_something(x);                    // 可疑, 为什么不用 std::move?
     }
 
     template<class T>
     void forwarder(T&& t) {
-        call_something( std::move(t) );         // 不好, 请勿对转发引用 std::move
-        call_something( std::forward<T>(t) );   // ok
-        call_something( t );                    // 可疑, 为什么不用 std::forward?
+        call_something(std::move(t));         // 不好, 请勿对转发引用 std::move
+        call_something(std::forward<T>(t));   // ok
+        call_something(t);                    // 可疑, 为什么不用 std::forward?
     }
 
 ##### 强制实施
- 
+
 * 对于 `std::move(x)` 的使用，当 `x` 是右值，或者语言已经将其当做右值，这包括 `return std::move(local_variable);` 以及在按值返回的函数上的 `std::move(f())`，进行标记
 * 当没有接受 `const S&` 的函数重载来处理左值时，对接受 `S&&` 参数的函数进行标记。
 * 当将经过 `std::move` 的实参传递给某个形参时进行标记，除非形参的类型符合以下各项：`X&&` 右值引用；`T&&` 转发引用，其中 `T` 为模板参数类型；或者按值传递而其类型是只能移动的。
@@ -10532,7 +10768,6 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 * 当对右值引用（`X&&` 其中 `X` 为独立类型）使用 `std::forward` 时进行标记。应当代之以使用 `std::move`。
 * 当对并非转发引用使用 `std::forward` 时进行标记。（这是前一条规则的更一般的情况，以覆盖非移动的情况。）
 * 如果对象潜在地被移动走之后的下一个操作是 `const` 操作的话，则进行标记；首先应当交错进行一个非 `const` 操作，最好是赋值，以首先对对象的值进行重置。
-
 
 ### <a name="Res-new"></a>ES.60: 避免在资源管理函数之外使用 `new` 和 `delete`
 
@@ -10560,7 +10795,6 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 强制实施
 
 对裸的 `new` 和裸的 `delete` 进行标记。
-
 
 ### <a name="Res-del"></a>ES.61: 用 `delete[]` 删除数组，用 `delete` 删除非数组对象
 
@@ -10622,10 +10856,10 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
     class Shape { /* ... */ };
     class Circle : public Shape { /* ... */ Point c; int r; };
-    
-    Circle c {{0,0}, 42};
+
+    Circle c {{0, 0}, 42};
     Shape s {c};    // 复制了 Circle 中的 Shape 部分
-    
+
 这样的结果是无意义的，因为不会把中心和半径从 `c` 复制给 `s`。
 针对这个的第一条防线是[基类 `Shape` 定义为不允许这样做将](#Rc-copy-virtual)。
 
@@ -10640,11 +10874,11 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
         Circle copy_circle();
         // ...
     };
-    
+
     Smiley sm { /* ... */ };
     Circle c1 {sm};  // 理想情况下又 Circle 的定义所禁止
     Circle c2 {sm.copy_circle()};
-    
+
 ##### 强制实施
 
 针对切片给出警告。
@@ -10659,9 +10893,14 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    unsigned x = 100;
-    unsigned y = 102;
-    cout << abs(x-y) << '\n'; // 错误的结果
+    int x = -3;
+    unsigned int y = 7;
+
+    cout << x - y << '\n';  // 无符号结果，可能是 4294967286
+    cout << x + y << '\n';  // 无符号结果：4
+    cout << x * y << '\n';  // 无符号结果，可能是 4294967275
+
+在更实际的例子中，这种问题更难于被发现。
 
 ##### 注解
 
@@ -10680,33 +10919,82 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    ???
+    unsigned char x = 0b1010'1010;
+    unsigned char y = ~x;   // y == 0b0101'0101;
 
-**例外**: 如果你确实需要模算术的话就使用无符号类型——
-根据需要为其添加代码注释以说明其依赖溢出行为，因为这样的
+##### 注解
+
+无符号类型对于模算术也很有用。
+不过，如果你想要进行模算术时，
+应当按需添加代码注释以注明所依赖的回绕行为，因为这样的
 代码会让许多程序员感觉意外。
 
 ##### 强制实施
 
+* 一般来说基本不可能，因为标准库也使用了无符号下标。
 ???
 
 ### <a name="Res-signed"></a>ES.102: 使用有符号类型进行算术运算
 
 ##### 理由
 
-有符号类型支持模算术而不会因缺乏符号位而造成意外。
+因为大多数算术都假定是有符号的；
+当 `y>x` 时，`x-y` 都会产生负数，除了罕见的情况下你确实需要模算术。
 
 ##### 示例
 
-    ???
+当你不期望时，无符号算术会产生奇怪的结果。
+这在混合有符号和无符号算术时有其如此。
 
-**例外**: 如果你确实需要模算术的话就使用无符号类型——
+    template<typename T, typename T2>
+    T subtract(T x, T2 y)
+    {
+        return x-y;
+    }
+
+    void test()
+    {
+        int s = 5;
+        unsigned int us = 5;
+        cout << subtract(s, 7) << '\n';     // -2
+        cout << subtract(us, 7u) << '\n';   // 4294967294
+        cout << subtract(s, 7u) << '\n';    // -2
+        cout << subtract(us, 7) << '\n';    // 4294967294
+        cout << subtract(s, us+2) << '\n';  // -2
+        cout << subtract(us, s+2) << '\n';  // 4294967294
+    }
+
+我们这次非常明确发生了什么。
+但要是你见到 `us-(s+2)` 或者 `s+=2; ... us-s` 时，你确实能够预计到打印的结果将是 `4294967294` 吗？
+
+##### 例外
+
+如果你确实需要模算术的话就使用无符号类型——
 根据需要为其添加代码注释以说明其依赖溢出行为，因为这样的
 代码会让许多程序员感觉意外。
 
+##### 示例
+
+标准库使用无符号类型作为下标。
+内建数组则用有符号类型作为下标。
+这不可避免地带来了意外（以及 BUG）。
+
+    int a[10];
+    for (int i=0; i < 10; ++i) a[i]=i;
+    vector<int> v(10);
+    // 比较有符号和无符号数；有些编译器会警告
+    for (int i=0; v.size() < 10; ++i) v[i]=i;
+
+    int a2[-2];         // 错误：负的大小
+
+    // OK，但 int 的数值（4294967294）过大，应当会造成一个异常
+    vector<int> v2(-2);
+
 ##### 强制实施
 
-???
+* 对混合有符号和无符号算术进行标记。
+* 对将无符号算术的结果作为有符号数赋值或打印进行标记。
+* 对无符号字面量（比如 `-2`）用作容器下标进行标记。
 
 ### <a name="Res-overflow"></a>ES.103: 避免上溢出
 
@@ -10735,7 +11023,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
     auto a = area(10'000'000, 100'000'000);   // 不好
 
-**例外**: 如果你确实需要模算术的话就使用无符号类型。
+##### 例外
+
+如果你确实需要模算术的话就使用无符号类型。
 
 **替代方案**: 对于可以负担一些开销的关键应用，可以使用带有范围检查的整数和/或浮点类型。
 
@@ -10758,7 +11048,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     while (n--)
         a[n - 1] = 9;   // 不好（两次）
 
-**例外**: 如果你确实需要模算术的话就使用无符号类型。
+##### 例外
+
+如果你确实需要模算术的话就使用无符号类型。
 
 ##### 强制实施
 
@@ -10777,18 +11069,21 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 示例，不好
 
     double divide(int a, int b) {
-        return a/b;                 // 不好, 应当进行检查（比如一条前条件）
+	// 不好, 应当进行检查（比如一条前条件）
+        return a / b;
     }
 
 ##### 示例，好
 
     double divide(int a, int b) {
-        Expects(b != 0);            // 好, 通过前条件进行处置（并当 C++ 支持契约后可以进行替换）
-        return a/b;
+	// 好, 通过前条件进行处置（并当 C++ 支持契约后可以进行替换）
+        Expects(b != 0);
+        return a / b;
     }
 
     double divide(int a, int b) {
-        return b ? a/b : quiet_NaN<double>();       // 好, 通过检查进行处置
+	// 好, 通过检查进行处置
+        return b ? a / b : quiet_NaN<double>();
     }
 
 **替代方案**: 对于可以负担一些开销的关键应用，可以使用带有范围检查的整数和/或浮点类型。
@@ -10796,7 +11091,6 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 强制实施
 
 * 对以可能为零的整型值的除法进行标记。
-
 
 # <a name="S-performance"></a>PER: 性能
 
