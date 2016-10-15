@@ -12714,6 +12714,13 @@ C++ 对此的机制是 `atomic` 类型：
 ??? 是否可能检测出这种惯用法？
 
 
+## <a name="SScp-etc"></a>CP.etc: 其他并发规则
+
+这些规则不适于简单的分类：
+
+* [CP.200: `volatile` 仅用于和非 C++ 内存进行通信](#Rconc-volatile2)
+* [CP.201: ??? 信号](#Rconc-signal)
+
 # <a name="S-errors"></a>E: 错误处理
 
 错误处理涉及：
