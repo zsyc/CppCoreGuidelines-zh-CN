@@ -12081,6 +12081,51 @@ C++ 对此的机制是 `atomic` 类型：
 
 
 
+### <a name="Rconc-join-undetached"></a>CP.28: 不要忘记对未 `detach()` 的有作用域 `thread` 进行连接
+
+##### 理由
+
+还未 `detach()` 的 `thread` 在销毁时将终止程序。
+
+##### 示例，不好
+
+    void f() { std::cout << "Hello "; }
+
+    struct F {
+        void operator()() { std::cout << "parallel world "; }
+    };
+
+    int main()
+    {
+        std::thread t1{f};      // f() 在单独的线程中执行
+        std::thread t2{F()};    // F()() 在单独的线程中执行
+    }  // 找到问题
+
+##### 示例
+
+    void f() { std::cout << "Hello "; }
+
+    struct F {
+        void operator()() { std::cout << "parallel world "; }
+    };
+
+    int main()
+    {
+        std::thread t1{f};      // f() 在单独的线程中执行
+        std::thread t2{F()};    // F()() 在单独的线程中执行
+
+        t1.join();
+        t2.join();
+    }  // 留下了一个不好的 BUG
+
+??? `cout` 有同步吗？
+
+##### 强制实施
+
+* 对 `raii_thread` 的 `join` 进行标记 ???
+* 对  `detached_thread` 的 `detach` 进行标记
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
