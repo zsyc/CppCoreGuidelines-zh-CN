@@ -12355,6 +12355,55 @@ C++ 对此的机制是 `atomic` 类型：
 对所有没有条件的 `wait` 进行标记。
 
 
+### <a name="Rconc-time"></a>CP.43: 最小化临界区的时间耗费
+
+##### 理由
+
+获取 `mutex` 时耗费的时间越短，其他 `thread` 不得不等待的机会就会越少，
+而 `thread` 的挂起和恢复是昂贵的。
+
+##### 示例
+
+    void do_something() // 不好
+    {
+        unique_lock<mutex> lck(my_lock);
+        do0();  // 预备：不需要锁定
+        do1();  // 事务：需要锁定
+        do2();  // 清理：不需要锁定
+    }
+
+这里我们持有的锁定比所需的要长：
+我们不应该在必须锁定之前就获取锁定，而且应当在开始清理之前将其释放掉。
+可以将其重写为：
+
+    void do_something() // 不好
+    {
+        do0();  // 预备：不需要锁定
+        my_lock.lock();
+        do1();  // 事务：需要锁定
+        my_lock.unlock();
+        do2();  // 清理：不需要锁定
+    }
+
+但这样损害了安全性并且违反了[使用 RAII](#Rconc-raii) 规则。
+我们可以为临界区添加语句块：
+
+    void do_something() // OK
+    {
+        do0();  // 预备：不需要锁定
+        {
+            unique_lock<mutex> lck(my_lock);
+            do1();  // 事务：需要锁定
+        }
+        do2();  // 清理：不需要锁定
+    }
+
+##### 强制实施
+
+一般来说是不可能的。
+对“裸” `lock()` 和 `unlock()` 进行标记。
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
