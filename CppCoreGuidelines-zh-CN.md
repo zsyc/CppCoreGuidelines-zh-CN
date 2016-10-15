@@ -11834,6 +11834,55 @@ C++ 对此的机制是 `atomic` 类型：
 标记对成员 `lock()` 和 `unlock()` 的调用。 ???
 
 
+### <a name="Rconc-lock"></a>CP.21: 用 `std::lock()` 来获得多个 `mutex`
+
+##### 理由
+
+避免在多个 `mutex` 上造成死锁。
+
+##### 示例
+
+下面将导致死锁：
+
+    // 线程 1
+    lock_guard<mutex> lck1(m1);
+    lock_guard<mutex> lck2(m2);
+
+    // 线程 2
+    lock_guard<mutex> lck2(m2);
+    lock_guard<mutex> lck1(m1);
+
+代之以使用 `lock()`：
+
+    // 线程 1
+    lock_guard<mutex> lck1(m1, defer_lock);
+    lock_guard<mutex> lck2(m2, defer_lock);
+    lock(lck1, lck2);
+
+    // 线程 2
+    lock_guard<mutex> lck2(m2, defer_lock);
+    lock_guard<mutex> lck1(m1, defer_lock);
+    lock(lck2, lck1);
+
+这样，`thread1` 和 `thread2` 的作者们仍然未在 `mutex` 的顺序上达成一致，但顺序不再是问题了。
+
+##### 注解
+
+在实际代码中，`mutex` 的命名很少便于程序员记得某种有意的关系和有意的获取顺序。
+在实际代码中，`mutex` 并不总是便于在连续代码行中依次获取的。
+
+我非常期待可以编写普通的
+
+    lock_guard lck1(m1, defer_lock);
+
+而让 `mutex` 类型被推断出来。
+
+##### 强制实施
+
+检测多个 `mutex` 的获取。
+这一般来说是无法确定的，但找出常见的简单例子（比如上面这个）则比较容易。
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
