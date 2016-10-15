@@ -12721,6 +12721,67 @@ C++ 对此的机制是 `atomic` 类型：
 * [CP.200: `volatile` 仅用于和非 C++ 内存进行通信](#Rconc-volatile2)
 * [CP.201: ??? 信号](#Rconc-signal)
 
+### <a name="Rconc-volatile2"></a>CP.200: `volatile` 仅用于和非 C++ 内存进行通信
+
+##### 理由
+
+`volatile` 用于涉指那些与“非 C++”代码之间共享的对象，或者不遵循 C++ 内存模型的硬件。
+
+##### 示例
+
+    const volatile long clock;
+
+这说明了一个被某个时钟电路不断更新的寄存器。
+`clock` 为 `volatile` 是因为其值将会在没有使用它的 C++ 程序的任何动作下被改变。
+例如，两次读取 `clock` 经常会产生两个不同的值，因此优化器最好不要将下面代码中的第二个读取操作优化掉：
+
+    long t1 = clock;
+    // ... 这里没有对 clock 的使用 ...
+    long t2 = clock;
+
+`clock` 为 `const` 是因为程序不应当试图写入 `clock`。
+
+##### 注解
+
+除非你是在编写直接操作硬件的最底层代码，否则应当把 `volatile` 当做是某种深奥的功能特性并最好避免使用。
+
+##### 示例
+
+通常 C++ 代码接受的 `volatile` 内存是由别处所拥有的（硬件或其他语言）：
+
+    int volatile* vi = get_hardware_memory_location();
+        // 注意：我们获得了指向别人的内存的指针
+        // volatile 说明“请特别尊重地对待”
+
+有时候 C++ 代码会分配 `volatile` 内存，并通过故意地暴露一个指针来将其共享给“别人”（硬件或其他语言）：
+
+    static volatile long vl;
+    please_use_this(&vl);   // 暴露对这个的一个引用给“别人”（不是 C++）
+
+##### 示例，不好
+
+`volatile` 局部变量几乎都是错误的——既然是短暂的，它们如何才能共享给其他语言或硬件呢？
+因为相同的理由，这几乎同样强有力地适用于成员变量。
+
+    void f() {
+        volatile int i = 0; // 不好，volatile 局部变量
+        // etc.
+    }
+
+    class My_type {
+        volatile int i = 0; // 可以的，volatile 成员变量
+        // etc.
+    };
+
+##### 注解
+
+于其他一些语言不通，C++ 中的 `volatile` [和同步没有任何关系](#Rconc-volatile)。
+
+##### 强制实施
+
+* 对 `volatile T` 的局部成员变量进行标记；几乎肯定你应当用 `atomic<T>` 进行代替。
+* ???
+
 # <a name="S-errors"></a>E: 错误处理
 
 错误处理涉及：
