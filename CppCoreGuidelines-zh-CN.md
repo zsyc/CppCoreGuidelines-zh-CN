@@ -12229,6 +12229,62 @@ C++ 对此的机制是 `atomic` 类型：
 ???
 
 
+### <a name="Rconc-create"></a>CP.41: 最小化线程的创建和销毁
+
+##### 理由
+
+线程创建是昂贵的。
+
+##### 示例
+
+    void worker(Message m)
+    {
+        // 处理
+    }
+
+    void master(istream& is)
+    {
+        for (Message m; is >> m; )
+            run_list.push_back(new thread(worker, m));
+    }
+
+这会为每个消息产生一个线程，而 `run_list` 则假定在它们完成后对这些任务进行销毁。
+
+我们可以用一组预先创建的工作线程来处理这些消息：
+
+    Sync_queue<Message> work;
+
+    void master(istream& is)
+    {
+        for (Message m; is >> m; )
+            work.put(n);
+    }
+
+    void worker()
+    {
+        for (Message m; m = work.get(); ) {
+            // 处理
+        }
+    }
+
+    void workers()  // 设立工作线程（这里是 4 个工作线程）
+    {
+        raii_thread w1 {worker};
+        raii_thread w2 {worker};
+        raii_thread w3 {worker};
+        raii_thread w4 {worker};
+    }
+
+##### 注解
+
+如果你的系统有一个好的线程池的话，就请使用它。
+如果你的系统有一个好的消息队列的话，就请使用它。
+
+##### 强制实施
+
+???
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
