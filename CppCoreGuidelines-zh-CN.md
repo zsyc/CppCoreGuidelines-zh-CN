@@ -11650,6 +11650,49 @@ C++11 引入了许多核心并发原语，C++14 对它们进行了改进，
 * 更多地使用栈内存（且不要过多地把指针到处传递）
 * 更多地使用不可变数据（字面量，`constexpr`，以及 `const`）
 
+### <a name="Rconc-data"></a>CP.3: 最小化可写数据的明确共享
+
+##### 理由
+
+如果不共享可写数据的话，就不会发生数据竞争。
+越少进行共享，你就越少有机会忘掉对访问进行同步（而发生数据竞争）。
+越少进行共享，你就越少有机会需要等待锁定（并改进性能）。
+
+##### 示例
+
+    bool validate(const vector<Reading>&);
+    Graph<Temp_node> temperature_gradiants(const vector<Reading>&);
+    Image altitude_map(const vector<Reading>&);
+    // ...
+
+    void process_readings(istream& socket1)
+    {
+        vector<Reading> surface_readings;
+        socket1 >> surface_readings;
+        if (!socket1) throw Bad_input{};
+
+        auto h1 = async([&] { if (!validate(surface_readings) throw Invalide_data{}; });
+        auto h2 = async([&] { return temperature_gradiants(surface_readings); });
+        auto h3 = async([&] { return altitude_map(surface_readings); });
+        // ...
+        auto v1 = h1.get();
+        auto v2 = h2.get();
+        auto v3 = h3.get();
+        // ...
+    }
+
+没有这些 `const` 的话，我们就必须为潜在的数据竞争而为在 `surface_readings` 上的所有异步函数调用进行复审。
+
+##### 注解
+
+不可变数据可以安全并高效地共享。
+无须对其进行锁定：不可能在常量上发生数据竞争。
+
+##### 强制实施
+
+???
+
+
 ## <a name="SScp-con"></a>CP.con: 并发
 
 ???
