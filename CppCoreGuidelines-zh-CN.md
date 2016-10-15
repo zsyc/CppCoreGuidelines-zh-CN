@@ -12623,6 +12623,49 @@ C++ 对此的机制是 `atomic` 类型：
 * Damian Dechev, Peter Pirkelbauer, Nicolas Rouquette, and Bjarne Stroustrup: Semantically Enhanced Containers for Concurrent Real-Time Systems. Proc. 16th Annual IEEE International Conference and Workshop on the Engineering of Computer Based Systems (IEEE ECBS). April 2009.
 
 
+### <a name="Rconc-double"></a>CP.110: 不要为初始化编写你自己的双检查锁定
+
+##### 理由
+
+从 C++11 开始，静态局部变量是以线程安全的方式初始化的。当和 RAII 模式结合时，静态局部变量可以取代为初始化自己编写双检查锁定的需求。`std::call_once` 也可以达成相同的目的。请使用 C++11 的静态局部变量或者 `std::call_once` 来代替自己为初始化编写的双检查锁定。
+
+##### 示例
+
+使用 `std::call_once` 的例子。
+
+    void f()
+    {
+        static std::once_flag my_once_flag;
+        std::call_once(my_once_flag, []()
+        {
+            // 这个只做一次
+        });
+        // ...
+    }
+
+使用 C++11 的线程安全静态局部变量的例子。
+
+    void f()
+    {
+        // 假定编译器遵循 C++11
+        static My_class my_object; // 构造函数仅调用一次
+        // ...
+    }
+    
+    class My_class
+    {
+    public:
+        My_class()
+        {
+            // ...
+        }
+    };
+
+##### 强制实施
+
+??? 是否可能检测出这种惯用法？
+
+
 # <a name="S-errors"></a>E: 错误处理
 
 错误处理涉及：
