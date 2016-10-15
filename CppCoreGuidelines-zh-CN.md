@@ -11769,29 +11769,38 @@ C++ 对此的机制是 `atomic` 类型：
 
 ## <a name="SScp-con"></a>CP.con: 并发
 
-???
+这个部分所关注的是相对比较专门的通过共享数据进行多线程通信的用法。
+
+* 有关并行算法，参见[并行](#SScp-par)。
+* 有关不使用明确共享的任务间，通信参见[消息传递](#SScp-mess)。
+* 有关向量并行代码，参见[向量化](#SScp-vec)。
+* 有关无锁编程，参见[无锁](#SScp-free)。
 
 并发规则概览：
 
-* ???
-* ???
-
-???? 是不是该有某些“使用 X 而不是 `std::async`”，其中 X 是某种使用了更明确指定的线程池的东西？
-
-当提到并发时，是不是应该有针对 `std::atomic` （武器）的危险性的注解？
-许多人（也包括我自己）都喜欢用 `std::memory_order` 来试验，但可能最好能够对产品代码中的这些东西给予更多关注。
-即便是厂商也可能在这方面乱套：Microsoft 不得不修正他们的 `shared_ptr`（如果我没记错的话，其弱引用计数器的减量操作并未同步于其析构函数，虽然这仅在 ARM 上有问题，而不是 Intel），
-而且今年他们每一家（gcc，clang，Microsoft，以及 Intel）都得修正它们的 `compare_exchange_*`，因为一个实现 BUG 导致了某个金融公司的数据随时，而且他们足够好心地让咱们社群了解到了这件事。
-
-而且我们确实应该提到 `volatile` 并不会提供原子性，不会在线程之间同步，而且不会防止指令重排（编译器和硬件都是如此），它根本和并发没有任何关系。
-
-    if (source->pool != YARROW_FAST_POOL && source->pool != YARROW_SLOW_POOL) {
-        THROW(YARROW_BAD_SOURCE);
-    }
-
-??? 鉴于未来（甚或现有的某些程序库）的并行设施，`std::async` 是否还值得使用？指导方针应当如何给需要并行化的人们提出建议，比如说，（在额外的可累加性前置条件下）`std::accumulate` 还是归并排序？
-
-???UNIX 信号处理???. 也许值得提醒异步信号有多不安全，以及如何与信号处理器进行通信（可能最好就“完全不要”）
+* [CP.20: 使用 RAII，绝不使用普通的 `lock()`/`unlock()`](#Rconc-raii)
+* [CP.21: 用 `std::lock()` 来获得多个 `mutex`](#Rconc-lock)
+* [CP.22: 绝不在持有锁的时候调用未知的代码（比如回调）](#Rconc-unknown)
+* [CP.23: 把已连接的 `thread` 看作是作用域内容器](#Rconc-join)
+* [CP.24: 把以分离的 `thread` 看作是全局容器](#Rconc-detach)
+* [CP.25: 优先采用 `gsl::raii_thread` 而不是 `std::thread`，除非你打算 `detach()`](#Rconc-raii_thread)
+* [CP.26: 当你打算 `detach()` 时，优先采用 `gsl::detached_thread` 而不是 `std::thread`](#Rconc-detached_thread)
+* [CP.27: （仅）当需要基于某个运行时条件分离 `thread` 时，使用 `std::thread`](#Rconc-thread)
+* [CP.28: 不要忘记对未 `detach()` 的作用域内 `thread` 进行连接](#Rconc-join-undetached)
+* [CP.30: 不要把指向局部变量的指针传递给非 `raii_thread`](#Rconc-pass)
+* [CP.31: 少量数据在线程之间按值传递，而不是通过引用或指针传递](#Rconc-data-by-value)
+* [CP.32: 用 `shared_ptr` 在无关的 `thread` 之间共享所有权](#Rconc-shared)
+* [CP.40: 最小化上下文切换](#Rconc-switch)
+* [CP.41: 最小化线程的创建和销毁](#Rconc-create)
+* [CP.42: 不要无条件地 `wait`](#Rconc-wait)
+* [CP.43: 最小化临界区的时间耗费](#Rconc-time)
+* [CP.44: 记得为 `lock_guard` 和 `unique_lock` 命名](#Rconc-name)
+* [CP.50: `mutex` 要和其所保护的数据一起定义](#Rconc-mutex)
+* ??? 何时使用 spinlock
+* ??? 何时使用 `try_lock()`
+* ??? 何时应优先使用 `lock_guard` 而不是 `unique_lock`
+* ??? 时序多工
+* ??? 何时/如何使用 `new thread`
 
 ## <a name="SScp-par"></a>CP.par: 并行
 
