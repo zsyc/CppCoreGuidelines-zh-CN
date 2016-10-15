@@ -12285,6 +12285,76 @@ C++ 对此的机制是 `atomic` 类型：
 ???
 
 
+### <a name="Rconc-wait"></a>CP.42: 不要无条件地 `wait`
+
+##### 理由
+
+没有条件的 `wait` 可能会丢失唤醒，或者唤醒时只会发现无事可做。
+
+##### 示例，不好
+
+    std::condition_variable cv;
+    std::mutex mx;
+
+    void thread1()
+    {
+        while (true) {
+            // 做一些工作 ...
+            std::unique_lock<std::mutex> lock(mx);
+            cv.notify_one();    // 唤醒另一个线程
+        }
+    }
+
+    void thread2()
+    {
+        while (true) {
+            std::unique_lock<std::mutex> lock(mx);
+            cv.wait(lock);    // 可能会永远阻塞
+            // 做一些工作 ...
+        }
+    }
+
+这里，如果某个其他 `thread` 消费了 `thread1` 的通知的话，`thread2` 将会永远等待下去。
+
+##### 示例
+
+    template<typename T>
+    class Sync_queue {
+    public:
+        void put(const T& val);
+        void put(T&& val);
+        void get(T& val);
+    private:
+        mutex mtx;
+        condition_variable cond;    // 这用于控制访问
+        list<T> q;
+    };
+
+    template<typename T>
+    void Sync_queue<T>::put(const T& val)
+    {
+        lock_guard<mutex> lck(mtx);
+        q.push_back(val);
+        cond.notify_one();
+    }
+
+    template<typename T>
+    void Sync_queue<T>::get(T& val)
+    {
+        unique_lock<mutex> lck(mtx);
+        cond.wait(lck, [this]{ return !q.empty(); });    // 防止假性唤醒
+        val = q.front();
+        q.pop_front();
+    }
+
+这样当执行 `get()` 的线程被唤醒时，如果队列为空（比如因为别的线程在之前已经 `get()` 过了），
+它将立刻回到睡眠中继续等待。
+
+##### 强制实施
+
+对所有没有条件的 `wait` 进行标记。
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
