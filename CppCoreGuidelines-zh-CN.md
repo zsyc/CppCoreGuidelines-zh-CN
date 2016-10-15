@@ -12030,6 +12030,27 @@ C++ 对此的机制是 `atomic` 类型：
 
 ???
 
+### <a name="Rconc-detached_thread"></a>CP.26: 当你打算 `detach()` 时，优先采用 `gsl::detached_thread` 而不是 `std::thread`
+
+##### 理由
+
+通常，对 `detach` 的需求源自于该 `thread` 的任务。
+注明这点有助于理解，且有助于进行静态分析。
+
+##### 示例
+
+    void heartbeat();
+
+    void use()
+    {
+        gsl::detached_thread t1(heartbeat);    // 显然不需要连接
+        std::thread t2(heartbeat);             // 需要进行连接吗？（要读 heartbeat() 的代码）
+        // ...
+    }
+
+标记对普通 `thread` 的无条件 `detach`。
+
+
 ## <a name="SScp-par"></a>CP.par: 并行
 
 ???
