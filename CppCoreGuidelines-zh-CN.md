@@ -11715,6 +11715,58 @@ C++11 引入了许多核心并发原语，C++14 对它们进行了改进，
 
 ???
 
+### <a name="Rconc-volatile"></a>CP.8 不要为同步而使用 `volatile`
+
+##### 理由
+
+和其他语言不同，C++ 中的 `volatile` 并不提供原子性，不会在线程之间进行同步，
+而且不会防止指令重排（无论编译器还是硬件）。
+它和并发完全没有关系。
+
+##### 示例，不好
+
+    int free_slots = max_slots; // 当前的对象内存的来源
+
+    Pool* use()
+    {
+        if (int n = free_slots--) return &pool[n];
+    }
+
+这里有一个问题：
+这在单线程程序中是完全正确的代码，但若有两个线程执行，
+并且在 `free_slots` 上发生竞争条件时，两个线程就可能拿到相同的值和 `free_slots`。
+这（显然）是不好的数据竞争，受过其他语言训练的人可能会试图这样修正：
+
+    volatile int free_slots = max_slots; // 当前的对象内存的来源
+
+    Pool* use()
+    {
+        if (int n = free_slots--) return &pool[n];
+    }
+
+这并没有同步效果：数据竞争仍然存在！
+
+C++ 对此的机制是 `atomic` 类型：
+
+    atomic<int> free_slots = max_slots; // 当前的对象内存的来源
+
+    Pool* use()
+    {
+        if (int n = free_slots--) return &pool[n];
+    }
+
+现在的 `--` 操作是原子性的，
+而不是可能被另一个线程介入其独立操作之间的读-增量-写序列。
+
+##### 替代方案
+
+在某些其他语言中曾经使用 `volatile` 的地方使用 `atomic` 类型。
+为更加复杂的例子使用 `mutex`。
+
+##### 另见
+
+[`volatile` 的（罕见）恰当用法](#Rconc-volatile2)
+
 ## <a name="SScp-con"></a>CP.con: 并发
 
 ???
