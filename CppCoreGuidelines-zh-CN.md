@@ -12666,6 +12666,54 @@ C++ 对此的机制是 `atomic` 类型：
 ??? 是否可能检测出这种惯用法？
 
 
+### <a name="Rconc-double-pattern"></a>CP.111: 当确实需要双检查锁定时应当采用惯用的模式
+
+##### 理由
+
+双检查锁定是很容易被搞乱的。如果确实需要编写自己的双检查锁定，而不顾规则 [CP.110: 不要为初始化编写你自己的双检查锁定](#Rconc-double)和规则 [CP.100: 除非绝对必要，请勿使用无锁编程](#Rconc-lockfree)，那么应当采用惯用的模式。
+
+##### 示例，不好
+
+即便下面的例子在大多数硬件平台都能正确工作，C++ 标准也不保证其工作。`x_init.load(memory_order_relaxed)` 调用可能会见到在锁定保护之外所获得的值。
+
+    atomic<bool> x_init;
+
+    if (!x_init.load(memory_order_acquire)) {
+        lock_guard<mutex> lck(x_mutex);
+        if (!x_init.load(memory_order_relaxed)) {
+            // ... 初始化 x ...
+            x_init.store(true, memory_order_release);
+        }
+    }
+
+##### 示例，好
+
+如下是一种惯用的模式。
+
+    std::atomic<int> state;
+    
+    // 当 state == SOME_ACTION_NEEDED 时，也许须有某个动作，也许不需要，我们需要
+    // 在锁定时再次检查。不过，如果 state != SOME_ACTION_NEEDED，则我们可以确定
+    // 不需要进行这个动作。这是双检查锁定的
+    // 基本假设。
+    
+    if (state == SOME_ACTION_NEEDED)
+    {
+        std::lock_guard<std::mutex> lock(mutex);
+        if (state == SOME_ACTION_NEEDED)
+        {
+            // 做某些事
+            state = NO_ACTION_NEEDED;
+        }
+    }
+
+在上面的例子中，`(state == SOME_ACTION_NEEDED)` 可以是任何条件。它不必是相等比较。比如它也可以是 `(size > MIN_SIZE_TO_TAKE_ACTION)`。
+
+##### 强制实施
+
+??? 是否可能检测出这种惯用法？
+
+
 # <a name="S-errors"></a>E: 错误处理
 
 错误处理涉及：
