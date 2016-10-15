@@ -11781,12 +11781,12 @@ C++ 对此的机制是 `atomic` 类型：
 * [CP.20: 使用 RAII，绝不使用普通的 `lock()`/`unlock()`](#Rconc-raii)
 * [CP.21: 用 `std::lock()` 来获得多个 `mutex`](#Rconc-lock)
 * [CP.22: 绝不在持有锁的时候调用未知的代码（比如回调）](#Rconc-unknown)
-* [CP.23: 把已连接的 `thread` 看作是作用域内容器](#Rconc-join)
+* [CP.23: 把已连接的 `thread` 看作是有作用域的容器](#Rconc-join)
 * [CP.24: 把以分离的 `thread` 看作是全局容器](#Rconc-detach)
 * [CP.25: 优先采用 `gsl::raii_thread` 而不是 `std::thread`，除非你打算 `detach()`](#Rconc-raii_thread)
 * [CP.26: 当你打算 `detach()` 时，优先采用 `gsl::detached_thread` 而不是 `std::thread`](#Rconc-detached_thread)
 * [CP.27: （仅）当需要基于某个运行时条件分离 `thread` 时，使用 `std::thread`](#Rconc-thread)
-* [CP.28: 不要忘记对未 `detach()` 的作用域内 `thread` 进行连接](#Rconc-join-undetached)
+* [CP.28: 不要忘记对未 `detach()` 的有作用域 `thread` 进行连接](#Rconc-join-undetached)
 * [CP.30: 不要把指向局部变量的指针传递给非 `raii_thread`](#Rconc-pass)
 * [CP.31: 少量数据在线程之间按值传递，而不是通过引用或指针传递](#Rconc-data-by-value)
 * [CP.32: 用 `shared_ptr` 在无关的 `thread` 之间共享所有权](#Rconc-shared)
@@ -11925,6 +11925,45 @@ C++ 对此的机制是 `atomic` 类型：
 
 * 当持有非递归的 `mutex` 时调用虚函数则进行标记。
 * 当持有非递归的 `mutex` 时调用回调则进行标记。
+
+
+### <a name="Rconc-join"></a>CP.23: 把已连接的 `thread` 看作是有作用域的容器
+
+##### 理由
+
+为了维护指针安全性并避免泄漏，需要考虑 `thread` 所使用的指针。
+如果 `thread` 连接了，我们可以安全地把指向这个 `thread` 所在作用域及其外围作用域中的对象的指针传递给它。
+
+##### 示例
+
+    void f(int * p)
+    {
+        // ...
+        *p = 99;
+        // ...
+    }
+    int glob = 33;
+
+    void some_fct(int* p)
+    {
+        int x = 77;
+        raii_thread t0(f, &x);           // OK
+        raii_thread t1(f, p);            // OK
+        raii_thread t2(f, &glob);        // OK
+        auto q = make_unique<int>(99);
+        raii_thread t3(f, q.get());      // OK
+        // ...
+    }
+
+`raii_thread` 是一种 `std::thread`，其析构函数进行连接且不可被 `detached()`。
+这里的“OK”表明对象能够在 `thread` 可以使用指向它的指针时一直处于作用域（“存活”）。
+`thread` 运行的并发性并不会影响这里的生存期或所有权问题；
+这些 `thread` 可以仅仅被看成是从 `some_fct` 中调用的函数对象。
+
+##### 强制实施
+
+确保 `raii_thread` 不会 `detach()`。
+之后，可以实施（针对局部对象的）常规的生存期和所有权强制实施方案。
 
 
 ## <a name="SScp-par"></a>CP.par: 并行
