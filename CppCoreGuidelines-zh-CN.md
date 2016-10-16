@@ -16851,6 +16851,23 @@ C 标准库规则概览：
 * 使用异常和 [RAII](#Re-raii)
 * 对于非 RAII 资源，使用 [`finally`](#Re-finally)。
 
+### <a name="Rnr-protected-data"></a>NR.7: 请勿如此：使所有数据成员 `protected`
+
+##### 理由（请勿遵守本条规则）
+
+`protected` 数据是一种错误来源。
+`protected` 数据可以被各种地方的无界限数量的代码所操纵。
+`protected` 数据是在类层次中等价于全局对象的东西。
+
+##### 示例
+
+    ???
+
+##### 替代方案
+
+* [使成员数据 `public` 或者（更好地）`private`](#Rh-protected)。
+
+
 # <a name="S-references"></a>RF: 参考材料
 
 已经为 C++，尤其是对 C++ 的使用编写过了许多的编码标准、规则和指导方针。
