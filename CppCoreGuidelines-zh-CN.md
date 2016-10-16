@@ -18036,7 +18036,7 @@ CamelCase：多词标识符的每个词首字母大写：
 
     #include < map >
 
-    int main (int argc, char * argv [ ])
+    int main(int argc, char * argv [ ])
     {
         // ...
     }
@@ -18079,7 +18079,14 @@ CamelCase：多词标识符的每个词首字母大写：
 
 ##### 示例
 
-    ???
+    class X {
+    public:
+        // 接口
+    protected:
+        // 供派生类实现使用的不带检查的函数
+    private:
+        // 实现细节
+    };
 
 ##### 注解
 
@@ -18136,7 +18143,7 @@ CamelCase：多词标识符的每个词首字母大写：
         return some_value;
     }
 
-**注意** `if` 和 `(` 之间有一个空格
+注意 `if` 和 `(` 之间有一个空格
 
 ##### 注解
 
