@@ -2144,7 +2144,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
     double simpleFunc(double val, int flag1, int flag2)
         // simpleFunc: 接受一个值并计算所需的 ASIC 值，
-	// 依赖于两个模式标记。
+        // 依赖于两个模式标记。
     {
         double intermediate;
         if (flag1 > 0) {
@@ -2163,7 +2163,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
         }
         switch (flag2 / 10) {
             case 1: if (flag1 == -1) return finalize(intermediate, 1.171);
-	            break;
+                    break;
             case 2: return finalize(intermediate, 13.1);
             default: break;
         }
@@ -2188,12 +2188,12 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
     double simpleFunc(double val, int flag1, int flag2)
         // simpleFunc: 接受一个值并计算所需的 ASIC 值，
-	// 依赖于两个模式标记。
+        // 依赖于两个模式标记。
     {
         if (flag1 > 0)
             return func1_muon(val, flag2);
         if (flag1 == -1)
-	    // 由 func1_tau 来处理: flag1 = -flag1;
+            // 由 func1_tau 来处理: flag1 = -flag1;
             return func1_tau(-val, flag1, flag2);
         return 0.;
     }
@@ -3581,7 +3581,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
     class Date {
     public:
-	// 验证 {yy, mm, dd} 是有效的日期并进行初始化
+        // 验证 {yy, mm, dd} 是有效的日期并进行初始化
         Date(int yy, Month mm, char dd);
         // ...
     private:
@@ -3617,7 +3617,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
         // ... 一些内部表示 ...
     public:
         Date();
-	// 验证 {yy, mm, dd} 是有效的日期并进行初始化
+        // 验证 {yy, mm, dd} 是有效的日期并进行初始化
         Date(int yy, Month mm, char dd);
 
         int day() const;
@@ -4217,7 +4217,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
     void use(Smart_ptr<int> p1)
     {
-	// 错误: p2.p 泄漏了（当其不为 nullptr 且未被其他代码所拥有时）
+        // 错误: p2.p 泄漏了（当其不为 nullptr 且未被其他代码所拥有时）
         auto p2 = p1;
     }
 
@@ -4751,7 +4751,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
     // elem 为 nullptr，否则 elem 指向以 new 分配的 space-elem 个元素
     class Vector1 {
     public:
-	// 设置表示为 {nullptr, nullptr, nullptr}; 不会抛出异常
+        // 设置表示为 {nullptr, nullptr, nullptr}; 不会抛出异常
         Vector1() noexcept {}
         Vector1(int n) :elem{new T[n]}, space{elem + n}, last{elem} {}
         // ...
@@ -5097,7 +5097,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
     public:
         Foo& operator=(const Foo& x)
         {
-	    // 好: 不需要检查自赋值的情况（除非为性能考虑）
+            // 好: 不需要检查自赋值的情况（除非为性能考虑）
             auto tmp = x;
             std::swap(*this, tmp);
             return *this;
@@ -5628,16 +5628,16 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
         Derived()
         {
-	    // 不好: 试图调用未经事先的虚函数
+            // 不好: 试图调用未经事先的虚函数
             f();
 
-	    // 不好: 想要调用 derived::g，但并未发生虚函数分派
+            // 不好: 想要调用 derived::g，但并未发生虚函数分派
             g();
 
-	    // 好: 明确说明想要调用的就是写明的版本
+            // 好: 明确说明想要调用的就是写明的版本
             Derived::g();
 
-	    // ok，不需要进行限定，h 为 final
+            // ok，不需要进行限定，h 为 final
             h();
         }
     };
@@ -5745,8 +5745,8 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
         string name;
         int number;
         bool operator==(const B& a) const {
-	    return name == a.name && number == a.number;
-	}
+            return name == a.name && number == a.number;
+        }
         // ...
     };
 
@@ -8170,7 +8170,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
     {
         // p1 可能是 nullptr
         // *p1 并未初始化；尤其是，
-	// 其中的 string 也还不是一个 string，而是一片和 string 大小相同的字节而已
+        // 其中的 string 也还不是一个 string，而是一片和 string 大小相同的字节而已
         Record* p1 = static_cast<Record*>(malloc(sizeof(Record)));
 
         auto p2 = new Record;
@@ -8662,11 +8662,11 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
     void my_code()
     {
-	// 不好: 传递的是从非局部的智能指针中获得的指针或引用
+        // 不好: 传递的是从非局部的智能指针中获得的指针或引用
         //       而这可能会在 f 或其调用的函数中的某处被不经意地重置掉
         f(*g_p);
 
-	// 不好: 原因相同，只不过将其作为“this”指针传递
+        // 不好: 原因相同，只不过将其作为“this”指针传递
         g_p->func();
     }
 
@@ -8674,13 +8674,13 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
     void my_code()
     {
-	// 很廉价: 一次增量就搞定了整个函数以及下面的所有调用树
+        // 很廉价: 一次增量就搞定了整个函数以及下面的所有调用树
         auto pin = g_p;
 
-	// 好: 传递的是从局部的无别名智能指针中获得的指针或引用
+        // 好: 传递的是从局部的无别名智能指针中获得的指针或引用
         f(*pin);
 
-	// 好: 原因相同
+        // 好: 原因相同
         pin->func();
     }
 
@@ -10676,14 +10676,14 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     void user()
     {
         X x;
-	// 错误: 无法将作者绑定到右值引用
+        // 错误: 无法将作者绑定到右值引用
         sink(x);
-	// OK: sink 接收了 x 的内容，x 随即必须假定为空
+        // OK: sink 接收了 x 的内容，x 随即必须假定为空
         sink(std::move(x));
 
         // ...
 
-	// 可能是个错误
+        // 可能是个错误
         use(x);
     }
 
@@ -10696,10 +10696,10 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
         string s2 = s1;             // ok, 接收了一个副本
         assert(s1 == "supercalifragilisticexpialidocious");  // ok
         
-	// 不好, 如果你打算保留 s1 的值的话
+        // 不好, 如果你打算保留 s1 的值的话
         string s3 = move(s1);
 
-	// 不好, assert 很可能会失败, s1 很可能被改动了
+        // 不好, assert 很可能会失败, s1 很可能被改动了
         assert(s1 == "supercalifragilisticexpialidocious");
     }
 
@@ -11069,20 +11069,20 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 示例，不好
 
     double divide(int a, int b) {
-	// 不好, 应当进行检查（比如一条前条件）
+        // 不好, 应当进行检查（比如一条前条件）
         return a / b;
     }
 
 ##### 示例，好
 
     double divide(int a, int b) {
-	// 好, 通过前条件进行处置（并当 C++ 支持契约后可以进行替换）
+        // 好, 通过前条件进行处置（并当 C++ 支持契约后可以进行替换）
         Expects(b != 0);
         return a / b;
     }
 
     double divide(int a, int b) {
-	// 好, 通过检查进行处置
+        // 好, 通过检查进行处置
         return b ? a / b : quiet_NaN<double>();
     }
 
@@ -13334,7 +13334,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
             // ...
         }
         catch (...) {
-	    // 不做任何事
+            // 不做任何事
             throw;   // 传播异常
         }
     }
@@ -13359,7 +13359,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
         try {
             p = new Gadget(s);
             // ...
-	    delete p;
+            delete p;
         }
         catch (Gadget_construction_failure) {
             delete p;
@@ -17554,7 +17554,7 @@ C 标准库规则概览：
         fill(b, 0);                     // std::fill() + Ranges TS
 
         if ( a == b ) {
-	  // ...
+          // ...
         }
     }
 
@@ -17800,7 +17800,7 @@ IDE 也都会提供某些默认方案和一组替代方案。
 
     void stable_sort(Sortable& c)
         // 对 c 根据由 < 决定的顺序进行排序，保持相等元素（由 == 定义）的
-	// 原始相对顺序
+        // 原始相对顺序
     {
         // ... 相当多的不平常的代码行 ...
     }
@@ -18324,8 +18324,8 @@ C 风格的布局强调其在表达式中的用法和文法，而 C++ 风格强�
 
 我们正在考虑以下这些来自 [GitHub Flavored Markdown (GFM)](https://help.github.com/articles/github-flavored-markdown/) 的扩展：
 
-- 有围栏代码块（正在讨论是否统一使用缩进还是围栏代码块）
-- 表格（我们虽然还没用到，但很需要它们，这是一种 GFM 扩展）
+* 有围栏代码块（正在讨论是否统一使用缩进还是围栏代码块）
+* 表格（我们虽然还没用到，但很需要它们，这是一种 GFM 扩展）
 
 避免使用其他 HTML 标签和其他扩展。
 
@@ -18351,9 +18351,9 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 没有。GSL 的存在只为提供少量标准库中还没有的类型和别名。如果委员会决定了（这些类型或者满足其需要的其他类型的）标准化的版本，就可以将它们从 GSL 中删除了。
 
-### <a name="Faq-gsl-string-view"></a>FAQ.55: 既然你是尽可能使用标准类型，为什么 GSL 的 `string_span` 和 Library Fundamentals 1 Technical Specification 中的 `string_view` 不同呢？为什么不使用委员会采纳的 `string_view`？
+### <a name="Faq-gsl-string-view"></a>FAQ.55: 既然你是尽可能使用标准类型，为什么 GSL 的 `string_span` 同 Library Fundamentals 1 Technical Specification 和 C++17 工作文本中的 `string_view` 不同呢？为什么不使用委员会采纳的 `string_view`？
 
-因为 `string_view` 还在标准化过程中，并处于面向公开评审以获得改进建议的阶段。技术规范（TS）中所出现的类型还不属于国际标准（IS），而将它们首先放入 TS 的原因之一就在于，为了在将它们变为标准之中的最终形式之前，能够获得这种功能的经验。GSL 的几个作者都在把通过开发这些指导方针的过程中所学到的有关 `string_span` 的东西，以及对 `string_view` 和 `string_span` 的区别的讨论，以为下一次 ISO 委员会准备的一篇文章的形式贡献出来，以便和其他的类似文章一同，来让委员会在决定这个功能的最终形式时进行考虑。
+有关 C++ 标准库的视图的分类的统一观点是，“视图（view）”意味着“只读”，而“跨距（span）”意味着“可读写”。只读的 `string_view` 是第一个完成了标准化过程的这种组件，而 `span` 和 `string_span` 现在还在考虑如何标准化。
 
 ### <a name="Faq-gsl-owner"></a>FAQ.56: `owner` 和提案的 `observer_ptr` 一样吗？
 
@@ -18388,6 +18388,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 * 那些在我们的指导方针被建立或者被了解到之前所编写的代码
 * 那些依据老的或者不同的标准所编写的程序库
+* 那些在“不寻常”的约束下编写的代码
 * 那些我们还未来得及使其现代化的代码
 
 如果有上百万行的新代码的话，“立刻改掉它们”的想法一般都是不现实的。
@@ -18417,6 +18418,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * 我们可以“自底向上”转换代码，并最先应用我们估计在给定的代码库上将会带来最大好处和最少麻烦的那些规则。
 * 我们可以从关注接口开始，比如说，保证没有资源的泄漏，没有指针误用等。
   这可能会导致涉及整个代码库的一些改动，不过它们是最可能会带来巨大好处的改动。
+  以后，隐藏在这些接口后面的代码可以渐进地进行现代化而不会影响其他的代码。
 
 无论你选择哪种方式，都要注意，对指导方针的最高度的遵循性才会带来大多数的好处。
 这些指导方针并不是一组无关规则的随机集合，并不能让你随意选取并期望取得成功。
@@ -18451,9 +18453,9 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 如果类定义和构造函数体是在不同文件中的话，这种由成员变量声明顺序对构造函数的正确性造成的远距离影响将更难于发现。
 
-**参考**
+**参考**：
 
-[[Cline99]](#Cline99) §22.03-11, [[Dewhurst03]](Dewhurst03) §52-53, [[Koenig97]](#Koenig97) §4, [[Lakos96]](#Lakos96) §10.3.5, [[Meyers97]](#Meyers97) §13, [[Murray93]](#Murray93) §2.1.3, [[Sutter00]](#Sutter00) §47
+[\[Cline99\]](#Cline99) §22.03-11, [\[Dewhurst03\]](Dewhurst03) §52-53, [\[Koenig97\]](#Koenig97) §4, [\[Lakos96\]](#Lakos96) §10.3.5, [\[Meyers97\]](#Meyers97) §13, [\[Murray93\]](#Murray93) §2.1.3, [\[Sutter00\]](#Sutter00) §47
 
 ### <a name="TBD"></a>使用 `=`，`{}`，和 `()` 作为初始化式
 
@@ -18465,7 +18467,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 * *推卸责任：* 仅仅给出文档说明，要求用户代码在对象构造之后必须立刻调用后初始化函数。
 * *惰性后初始化：* 在第一个调用的成员函数中进行。用基类中的一个布尔标记说明后初始化是否已经执行过。
-* *使用虚基类语义：* 语言规则要求由最终派生类的构造函数来决定调用哪个基类构造函数；你可以利用这点。（参见[[Taligent94]](#Taligent94)。）
+* *使用虚基类语义：* 语言规则要求由最终派生类的构造函数来决定调用哪个基类构造函数；你可以利用这点。（参见[\[Taligent94\]](#Taligent94)。）
 * *使用工厂函数：* 以这种方式，你可以轻易确保进行对后构造函数的调用。
 
 以下是对最后一种选项的一个例子：
@@ -18495,8 +18497,8 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
             return p;
         }
     };
-    
-    
+
+
     class D : public B {                 // 某个派生类
     public:
         void f() override { /* ...  */ };
@@ -18506,8 +18508,8 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
         template<class T>
         friend shared_ptr<T> B::Create();
-    };    
-    
+    };
+
     shared_ptr<D> p = D::Create<D>();    // 创建一个 D 对象
 
 这种设计需要遵守以下纪律：
@@ -18520,7 +18522,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 总之，不存在完美的后构造技巧。最差的方式是完全回避问题而只是让调用方来人工调用后构造函数。即便是最佳方案也需要采用一种不同的对象构造语法（易于进行编译期检查）以及需要派生类的作者的协作（这无法进行编译期进行检查）。
 
-**参考**: [[Alexandrescu01]](#Alexandrescu01) §3, [[Boost]](#Boost), [[Dewhurst03]](#Dewhurst03) §75, [[Meyers97]](#Meyers97) §46, [[Stroustrup00]](#Stroustrup00) §15.4.3, [[Taligent94]](#Taligent94)
+**参考**: [\[Alexandrescu01\]](#Alexandrescu01) §3, [\[Boost\]](#Boost), [\[Dewhurst03\]](#Dewhurst03) §75, [\[Meyers97\]](#Meyers97) §46, [\[Stroustrup00\]](#Stroustrup00) §15.4.3, [\[Taligent94\]](#Taligent94)
 
 ### <a name="Sd-dtor"></a>讨论: 基类的析构函数应当要么是 public 和 virtual，要么是 protected 且非 virtual
 
@@ -18530,27 +18532,27 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 基类的一般情况是为了具有 public 的派生类，因而调用方代码基本上可以确定要用到某种比如 `shared_ptr<base>` 这样的东西：
 
-    class base {
+    class Base {
     public:
-        ~base();                   // 不好, 非 virtual
-        virtual ~base();           // 好
+        ~Base();                   // 不好, 非 virtual
+        virtual ~Base();           // 好
         // ...
     };
 
-    class derived : public base { /* ... */ };
+    class Derived : public Base { /* ... */ };
 
     {
-        unique_ptr<base> pb = make_unique<derived>();
+        unique_ptr<Base> pb = make_unique<Derived>();
         // ...
-    } // 只有当 ~base 是虚函数时 ~pb 才会调用正确的析构函数
+    } // 只有当 ~Base 是虚函数时 ~pb 才会调用正确的析构函数
 
 少数比如策略类这类的情况下，类被用作基类是为方便起见，而并非是其多态行为。建议将它们的析构函数作为 protected 和非 virtual 函数：
 
-    class my_policy {
+    class My_policy {
     public:
-        virtual ~my_policy();      // 不好, public 并且 virtual
+        virtual ~My_policy();      // 不好, public 并且 virtual
     protected:
-        ~my_policy();              // 好
+        ~My_policy();              // 好
         // ...
     };
 
@@ -18566,7 +18568,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 编写一个基类就是在定义一种抽象（参见条款 35 到 37）。注意对于参与这个抽象的每个成员函数来说，你都需要作出以下决定：
 
 * 它是否应当表现为虚函数。
-* 它是应当对所有使用 Base 指针的调用方公开，还是作为隐藏的内部实现细节。
+* 它是应当对所有使用 `Base` 指针的调用方公开，还是作为隐藏的内部实现细节。
 
 如条款 39 中所述，对于普通成员函数来说，其选择可以是：允许通过 `Base` 指针对其进行非虚调用（但当它调用了虚函数时可具有虚行为，比如在 NVI 或者模板方法模式中那样），进行虚调用，或者完全不能调用。NVI 模式是一种避免公开虚函数的技巧。
 
@@ -18591,7 +18593,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 不过，一般来说应当避免具体的基类（参见条款 35）。例如，`unary_function` 不过是聚合了一组 typedef，它不可能会被有意单独实例化。给它提供 public 的析构函数完全没有任何意义；更好的设计应当是遵循本条款的建议来给它一个 protected 非虚析构函数猜到。
 
-**References**: [[C++CS]](#C++CS) Item 50, [[Cargill92]](#Cargill92) pp. 77-79, 207¸ [[Cline99]](#Cline99) §21.06, 21.12-13¸ [[Henricson97]](#Henricson97) pp. 110-114¸ [[Koenig97]](#Koenig97) Chapters 4, 11¸ [[Meyers97]](#Meyers97) §14¸ [[Stroustrup00]](#Stroustrup00) §12.4.2¸ [[Sutter02]](#Sutter02) §27¸ [[Sutter04]](#Sutter04) §18
+**References**: [\[C++CS\]](#C++CS) Item 50, [\[Cargill92\]](#Cargill92) pp. 77-79, 207¸ [\[Cline99\]](#Cline99) §21.06, 21.12-13¸ [\[Henricson97\]](#Henricson97) pp. 110-114¸ [\[Koenig97\]](#Koenig97) Chapters 4, 11¸ [\[Meyers97\]](#Meyers97) §14¸ [\[Stroustrup00\]](#Stroustrup00) §12.4.2¸ [\[Sutter02\]](#Sutter02) §27¸ [\[Sutter04\]](#Sutter04) §18
 
 ### <a name="Sd-noexcept"></a>讨论: noexcept 的用法
 
@@ -18603,51 +18605,51 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 ##### 示例
 
-    class nefarious {
+    class Nefarious {
     public:
-        nefarious()  { /* code that could throw */ }   // 好
-        ~nefarious() { /* code that could throw */ }   // 不好, 可能抛出异常
+        Nefarious()  { /* 可能抛出异常的代码 */ }   // 好
+        ~Nefarious() { /* 可能抛出异常的代码 */ }   // 不好, 可能抛出异常
         // ...
     };
 
-1. `nefarious` 对象很难安全地使用，即便是作为局部变量也是如此：
+1. `Nefarious` 对象很难安全地使用，即便是作为局部变量也是如此：
 
 
         void test(string& s)
         {
-            nefarious n;          // 要有麻烦了
+            Nefarious n;          // 要有麻烦了
             string copy = s;      // 复制 string
         } // 先后销毁 copy 和 n
 
     这里，对 `s` 的复制可能抛出异常，且当其抛出了异常而 `n` 的析构函数也抛出了异常时，程序就会因调用 `std::terminate` 而退出，因为无法同时传播两个异常。
 
-2. 以 `nefarious` 为成员或者基类的类同样很难安全地使用，因为它们的析构函数必须调用 `nefarious` 的析构函数，且同样遭受其低劣的行为的毒害：
+2. 以 `Nefarious` 为成员或者基类的类同样很难安全地使用，因为它们的析构函数必须调用 `Nefarious` 的析构函数，且同样遭受其低劣的行为的毒害：
 
 
-        class innocent_bystander {
-            nefarious member;     // 噢，毒害了外围类的析构函数
+        class Innocent_bystander {
+            Nefarious member;     // 噢，毒害了外围类的析构函数
             // ...
         };
 
         void test(string& s)
         {
-            innocent_bystander i; // 要有更多麻烦了
+            Innocent_bystander i; // 要有更多麻烦了
             string copy2 = s;      // 复制 string
         } // 依次销毁 copy 和 i
 
     这里，当 `copy2` 的构造中抛出了异常时，我们会遇到同样的问题，因为 `i` 的析构函数现在也会抛出异常，且因此会使我们调用 `std::terminate`。
 
-3. 你也无法可靠地创建全局或静态的 `nefarious` 对象：
+3. 你也无法可靠地创建全局或静态的 `Nefarious` 对象：
 
 
-        static nefarious n;       // 噢，无法捕获任何析构函数异常
+        static Nefarious n;       // 噢，无法捕获任何析构函数异常
 
-4. 你无法可靠地创建 `nefarious` 的数组：
+4. 你无法可靠地创建 `Nefarious` 的数组：
 
 
         void test()
         {
-            std::array<nefarious, 10> arr; // 这行代码会导致 std::terminate(!)
+            std::array<Nefarious, 10> arr; // 这行代码会导致 std::terminate(!)
         }
 
     当出现可能抛出异常的析构函数时，数组的行为是未定义的，因为根本不可能发明出合理的回退行为。请想象一下：编译器如何才能生成用来构造 `arr` 的代码，如果第四个对象的构造函数抛出了异常，这段代码必须放弃，且在其清理模式中将试图调用已经构造完成的每个对象的析构函数……而这些析构函数中的一个或更多会抛出异常呢？不存在令人满意的答案。
@@ -18655,9 +18657,9 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 5. 你无法在标准容器中使用 `Nefarious`：
 
 
-        std::vector<nefarious> vec(10);   // 这行代码会导致 std::terminate()
+        std::vector<Nefarious> vec(10);   // 这行代码会导致 std::terminate()
 
-    标准库禁止其所使用的任何析构函数抛出异常。你无法把 `nefarious` 对象存储到标准容器中，或者在标准库的任何其他组件上使用它们。
+    标准库禁止其所使用的任何析构函数抛出异常。你无法把 `Nefarious` 对象存储到标准容器中，或者在标准库的任何其他组件上使用它们。
 
 ##### 注解
 
@@ -18665,9 +18667,9 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 请考虑以下在 C++ 标准中所找到的建议和要求：
 
-> 当在栈展开过程中所调用的析构函数因为异常而退出时，将调用 terminate (15.5.1)。因此析构函数通常应当捕获异常，并防止它们被传播出析构函数。 --[[C++03]](#C++03) §15.2(3)
+> 当在栈展开过程中所调用的析构函数因为异常而退出时，将调用 terminate (15.5.1)。因此析构函数通常应当捕获异常，并防止它们被传播出析构函数。 --[\[C++03\]](#C++03) §15.2(3)
 >
-> C++ 标准库中所定义的任何析构函数（也包括用于实例化标准库模板的任何类型的析构函数）的操作都不会抛出异常。 --[[C++03]](#C++03) §17.4.4.8(3)
+> C++ 标准库中所定义的任何析构函数（也包括用于实例化标准库模板的任何类型的析构函数）的操作都不会抛出异常。 --[\[C++03\]](#C++03) §17.4.4.8(3)
 
 包括专门重载的 `operator delete` 和 `operator delete[]` 在内的回收函数也属于这一类别，因为一般它们也被用在清理过程，尤其是在异常处理过程中，用以对部分完成的工作进行撤回。
 除了析构函数和回收函数之外，一般的错误安全性技术也依赖于永不失败的 `swap` 操作——这种情况下，它们不仅用于实现确保成功的回滚操作，也用于实现确保成功的提交操作。例如，以下是对类型 `T` 的一种惯用的 `operator=` 实现，它在复制构造之后，调用了无失败的 `swap`：
@@ -18683,7 +18685,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 当使用异常作为错误处理机制的时候，请始终明示这种行为，将这些函数声明为 `noexcept`。（参见条款 75。）
 
-**参考**: [[C++CS]](#C++CS) Item 51; [[C++03]](#C++03) §15.2(3), §17.4.4.8(3)¸ [[Meyers96]](#Meyers96) §11¸ [[Stroustrup00]](#Stroustrup00) §14.4.7, §E.2-4¸ [[Sutter00]](#Sutter00) §8, §16¸ [[Sutter02]](#Sutter02) §18-19
+**参考**: [\[C++CS\]](#C++CS) Item 51; [\[C++03\]](#C++03) §15.2(3), §17.4.4.8(3)¸ [\[Meyers96\]](#Meyers96) §11¸ [\[Stroustrup00\]](#Stroustrup00) §14.4.7, §E.2-4¸ [\[Sutter00\]](#Sutter00) §8, §16¸ [\[Sutter02\]](#Sutter02) §18-19
 
 ## <a name="Sd-consistent"></a>统一对复制、移动和销毁操作进行定义
 
@@ -18701,20 +18703,20 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 ##### 示例
 
-    class x {
+    class X {
         // ...
     public:
-        x(const x&) { /* stuff */ }
+        X(const x&) { /* stuff */ }
 
         // 不好: 未同时定义复制赋值运算符
 
-        x(x&&) { /* stuff */ }
+        X(x&&) { /* stuff */ }
 
         // 不好: 未同时定义移动赋值运算符
     };
 
-    x x1;
-    x x2 = x1; // ok
+    X x1;
+    X x2 = x1; // ok
     x2 = x1;   // 陷阱：要么不能通过编译，要么会做出不好的事
 
 一旦定义了析构函数，就不能再使用编译器所生成的复制或移动操作了；你可能需要定义或者抑制掉移动或复制操作。
@@ -18723,7 +18725,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
         HANDLE hnd;
         // ...
     public:
-        ~X() { /* custom stuff, such as closing hnd */ }
+        ~X() { /* 自定义的行为，比如关闭 hnd */ }
         // 可疑: 未提到过复制或移动操作——hnd 会怎么样？
     };
 
@@ -18733,20 +18735,20 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 如果定义了复制操作，且有任何基类或成员的诶性定义了移动操作的话，应当同样定义移动操作。
 
-    class x {
+    class X {
         string s; // 定义了更高效的移动操作
         // ... 其他数据成员 ...
     public:
-        x(const x&) { /* stuff */ }
-        x& operator=(const x&) { /* stuff */ }
+        X(const X&) { /* stuff */ }
+        X& operator=(const X&) { /* stuff */ }
 
         //    不好: 并未一同定义移动构造函数和移动赋值
         //   （为何不把那些自定义的“stuff”重复一下呢？）
     };
 
-    x test()
+    X test()
     {
-        x local;
+        X local;
         // ...
         return local;  // 陷阱：可能会低效甚或产生错误的行为
     }
@@ -18769,7 +18771,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 少数情况下，带有奇怪类型的成员（诸如引用成员）的类也是例外，因为它们的复制语义很古怪。
 在持有引用的类中，你可能需要编写复制构造函数和赋值运算符，但预置的析构函数仍能够做出正确的处理。（需要注意，基本上使用引用成员几乎总是错误的。）
 
-**参考**: [[C++CS]](#C++CS) Item 52; [[Cline99]](#Cline99) §30.01-14¸ [[Koenig97]](#Koenig97) §4¸ [[Stroustrup00]](#Stroustrup00) §5.5, §10.4¸ [[SuttHysl04b]](#SuttHysl04b)
+**参考**: [\[C++CS\]](#C++CS) Item 52; [\[Cline99\]](#Cline99) §30.01-14¸ [\[Koenig97\]](#Koenig97) §4¸ [\[Stroustrup00\]](#Stroustrup00) §5.5, §10.4¸ [\[SuttHysl04b\]](#SuttHysl04b)
 
 资源管理规则概览：
 
@@ -18876,15 +18878,18 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
     string* bad()   // 确实很坏
     {
         vector<string> v = { "this", "will", "cause" "trouble" };
-        return &v[0];   // 导致指向已经销毁的对象（v）的已经销毁的成员的一个指针被泄漏出去
+        // 导致指向已经销毁的对象（v）的已经销毁的成员的一个指针被泄漏出去
+        return &v[0];
     }
 
     void use()
     {
         string* p = bad();
         vector<int> xx = {7, 8, 9};
-        string x = *p;   // 未定义行为: x 可能不是 "this"
-        *p = "Evil!";    // 未定义行为: 我们不知道在位置 p 上分配的到底是什么（如果有的话）
+        // 未定义行为: x 可能不是 "this"
+        string x = *p;
+        // 未定义行为: 我们不知道在位置 p 上分配的到底是什么（如果有的话）
+        *p = "Evil!";
     }
 
 `v` 中的各个 `string` 都在 `bad()` 退出之时被销毁了， `v` 自身也是如此。其所返回的指针指向自由存储上的未分配内存。（由 `p` 所指向的）这块内存，在执行 `*p` 之时可能已经被重新分配了。此时很可能并不存在可以读取的 `string` 对象，而通过 `p` 进行写入则会轻易损坏某些无关类型的对象。
@@ -18930,7 +18935,6 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 检查函数所返回额指针和引用，看看它们是否被赋值给资源句柄（如 `unique_ptr`）。
 
-
 ### <a name="Cr-handle"></a>若类为资源句柄，则它需要构造函数，析构函数，复制以及移动操作
 
 ##### 理由
@@ -18966,11 +18970,11 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
     template<typename T> class Vector {
     public:
-        vector<std::initializer_list<T>>;
+        Vector(std::initializer_list<T>);
         // ...
     };
 
-    Vector<string> vs = { "Nygaard", "Ritchie" };
+    Vector<string> vs { "Nygaard", "Ritchie" };
 
 ##### 强制实施
 
