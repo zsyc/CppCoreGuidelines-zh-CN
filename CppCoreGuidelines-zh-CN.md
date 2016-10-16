@@ -17583,7 +17583,9 @@ C 标准库规则概览：
 * 我们正在考虑为标准库（尤其是 C 标准库）中如 `memcmp` 这样的函数指定边界安全的重载，并在 GSL 中提供它们。
 * 对于标准中没有进行完全的边界检查的现存函数和如 `vector` 这样的类型来说，我们的目标是在启用了边界剖面配置的代码中调用时，这些功能应当进行边界检查，而从遗留代码中调用时则没有检查，可能需要利用契约来实现（正由几个 WG21 成员进行提案工作）。
 
-## <a name="SS-lifetime"></a>生存期安全性剖面配置
+## <a name="SS-lifetime"></a>Pro.lifetime: 生存期安全性剖面配置
+
+???
 
 # <a name="S-gsl"></a>GSL: 指导方针支持库
 
@@ -17592,10 +17594,24 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
 
 核心指导方针支持库是定义在 `gsl` 命名空间中的，其中的名字可能是对标准库和其他著名程序库的名字的别名。通过 `gsl` 命名空间进行的（编译期）间接，使我们可以进行试验，以及对这些支持设施提供局部变体。
 
+GSL 只有头文件，可以在 [GSL: 指导方针支持库](https://github.com/Microsoft/GSL)找到。
 支持库中的设施被设计为极为轻量化（零开销），它们相比于传统方案并不会带来任何开销。
 当需要时，它们还可以用其他功能“工具化”（比如一些检查）来帮助进行诸如调试等任务。
 
-这些指导方针假定有一个 `variant` 类型，但它现在并不在 GSL 之中，因为标准委员会正在积极地对它的设计进行改进中。
+这里的指导方针假定有一个 `variant` 类型。
+最终，请使用[通过表决进入 C++17 的版本](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0088r3.html)。
+
+GSL 组件概览：
+
+* [GSL.view: 视图](#SS-views)
+* [GSL.owner](#Ownership pointers)
+* [GSL.assert: 断言](#SS-assertions)
+* [GSL.util: 工具](#SS-utilities)
+* [GSL.concept: 概念](#SS-gsl-concepts)
+
+我们计划提供一个“ISO C++ 标准风格的”半正式的 GSL 规范。
+
+我们依赖于 ISO C++ 标准库，并希望 GSL 的一些部分能够被吸收到标准库之中。
 
 ## <a name="SS-views"></a>GSL.view: 视图
 
@@ -17608,8 +17624,6 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
 它们的名字基本上遵循 ISO 标准库风格（小写字母和下划线）：
 
 * `T*`      // `T*` 不是所有者，可能为 null；假定为指向单个元素。
-* `char*`   // C 风格字符串（以零结尾的字符数组）；可能为 null。
-* `const char*` 	// C 风格字符串；可能为 null。
 * `T&`      // `T&` 不是所有者，不可能为“null 引用”；引用总是绑定到对象上。
 
 “原生指针”写法（如 `int*`）假定为具有其最常见的含义；亦即指向一个对象的指针，但并不拥有它。
@@ -17634,19 +17648,18 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
 * `not_null<T>`   // `T` 通常是某个指针类型（例如 `not_null<int*>` 和 `not_null<owner<Foo*>>`），且不能为 `nullptr`。
   `T` 可以是 `==nullptr` 有意义的任何类型。
 
-* `span<T>`       // [`p`:`p+n`)，构造函数接受 `{p, q}` 和 `{p, n}`；`T` 为指针类型
-* `span_p<T>`     // `{p, predicate}` [`p`:`q`)，其中 `q` 为首个使 `predicate(*p)` 为真的元素
+* `span<T>`       // \[`p`:`p+n`)，构造函数接受 `{p, q}` 和 `{p, n}`；`T` 为指针类型
+* `span_p<T>`     // `{p, predicate}` \[`p`:`q`)，其中 `q` 为首个使 `predicate(*p)` 为真的元素
 * `string_span`   // `span<char>`
 * `cstring_span`  // `span<const char>`
 
 `span<T>` 指代零或更多可改动的 `T`，除非 `T` 为 `const` 类型。
 
 “指针算术”最好在 `span` 之内进行。
-并非指向 C 风格字符串的 `char*`（比如指向某个输入缓冲区的指针）应当表示为一个 `span`。
-没有太好的办法来说明“指向单个 `char` 的指针”（`string_span{p, 1}` 可以，以及在并未对 C 风格字符串进行特化的模板中的 `T*` 其中 `T` 为 `char`）。
+指向多个 `char` 但并非 C 风格字符串的 `char*`（比如指向某个输入缓冲区的指针）应当表示为一个 `span`。
 
-* `zstring`    // `char*`，假定为 C 风格字符串；亦即以零结尾的 `char` 的序列或者是 `null_ptr`
-* `czstring`   // `const char*`，假定为 C 风格字符串；亦即以零结尾的 `const` `char` 的序列或者是 `null_ptr`
+* `zstring`    // `char*`，假定为 C 风格字符串；亦即以零结尾的 `char` 的序列或者是 `nullptr`
+* `czstring`   // `const char*`，假定为 C 风格字符串；亦即以零结尾的 `const` `char` 的序列或者是 `nullptr`
 
 逻辑上来说，最后两种别名是没有必要的，但我们并不总是依照逻辑的，它们可以在指向单个 `char` 的指针和指向 C 风格字符串的指针之间明确地进行区分。
 并未假定为零结尾的字符序列应当是 `char*`，而不是 `zstring`。
@@ -17669,7 +17682,10 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
                 // `Expect` 处于一组选项的控制之下（强制，错误消息，对终止程序的替代）
 * `Ensures`     // 后条件断言。当前放置于函数体内。今后应当移动到声明中。
 
-现在这些断言还是宏（天呐！）等待标准委员会对于契约和断言语法的确定。
+现在这些断言还是宏（天呐！）而且必须（只）被用在函数定义式之内。
+等待标准委员会对于契约和断言语法的确定。
+参见使用属性语法的[契约提案](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0380r1.pdf)，
+比如说，`Expects(p!=nullptr)` 将变为 `[[expects: p!=nullptr]]`。
 
 ## <a name="SS-utilities"></a>GSL.util: 工具
 
@@ -17681,24 +17697,28 @@ GSL 是一个小型的程序库，其中的设施被设计用于支持本指导�
 
 ## <a name="SS-gsl-concepts"></a>GSL.concept: 概念
 
-这些概念（类型谓词）借用于 Andrew Sutton 的 Origin 程序库，Range 提案，以及 ISO WG21 的 Palo Alto TR。
+这些概念（类型谓词）借用于
+Andrew Sutton 的 Origin 程序库，
+Range 提案，
+以及 ISO WG21 的 Palo Alto TR。
 它们可能会与 ISO C++ 标准中将会提供的概念十分相似。
-它们的写法依照 ISO WG21 Concepts TS (???ref???)。
+它们的写法依照 ISO WG21 的 [Concepts TS](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf)。
+下列概念中的大多数都定义在 [Ranges TS](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4569.pdf) 中。
 
 * `Range`
 * `String`   // ???
 * `Number`   // ???
 * `Sortable`
-* `Pointer`  // 带有 `*`，`->`，`==`，以及默认构造的类型（默认构造被假定为设值为唯一的“null”值） [参见 smartptrconcepts](#Rr-smartptrconcepts)
-* `Unique_ptr`  // 符合 `Pointer` 的类型，具有移动（而不是复制）操作，并符合生存期剖面配置中针对 `unique` 所有者类型的准则 [参见 smartptrconcepts](#Rr-smartptrconcepts)
-* `Shared_ptr`   // 符合 `Pointer` 的类型，具有复制操作，并符合生存期剖面配置中针对 `shared` 所有者类型的准则 [参见 smartptrconcepts](#Rr-smartptrconcepts)
+* `Pointer`  // 带有 `*`，`->`，`==`，以及默认构造的类型（默认构造被假定为设值为唯一的“null”值）；参见[智能指针](#Rr-smartptrconcepts)
+* `Unique_ptr`  // 符合 `Pointer` 的类型，具有移动（而不是复制）操作，并符合生存期剖面配置中针对 `unique` 所有者类型的准则；参见[智能指针](#Rr-smartptrconcepts)
+* `Shared_ptr`   // 符合 `Pointer` 的类型，具有复制操作，并符合生存期剖面配置中针对 `shared` 所有者类型的准则；参见[智能指针](#Rr-smartptrconcepts)
 * `EqualityComparable`   // ???我们非得用 CaMelcAse 吗???
 * `Convertible`
 * `Common`
 * `Boolean`
 * `Integral`
 * `SignedIntegral`
-* `SemiRegular`
+* `SemiRegular` // ??? Copyable?
 * `Regular`
 * `TotallyOrdered`
 * `Function`
