@@ -16405,8 +16405,8 @@ C++ 标准库组件概览：
 
 * [SL.con: 容器](#SS-con)
 * [SL.str: 字符串](#SS-string)
-* [SL.io: I/O 流](#SS-io)
-* [SL.regex: Regex](#SS-regex)
+* [SL.io: I/O 流（iostream）](#SS-io)
+* [SL.regex: 正则表达式](#SS-regex)
 * [SL.chrono: 时间](#SS-chrono)
 * [SL.C: C 标准库](#SS-clib)
 
@@ -16493,24 +16493,35 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 
 * 如果 `vector` 构造之后大小不会改变（比如因为它是 `const` 或者因为没有对它调用过非 `const` 函数），则对其进行标记。修正：代之以使用 `array`。
 
-
-## SL.str: 字符串
-
-???
-
-## SL.io: I/O 流（iostream）
+## <a name="SS-string"></a>SL.str: 字符串
 
 ???
 
-### SL.???: 仅在必要时才使用字符层面的输入； *expr.low*
+## <a name="SS-io"></a>SL.io: I/O 流（iostream）
 
-### SL.???: 当进行读取时，总要考虑非法输入； *expr.low*
+???
 
-### <a name="Rio-endl"></a>SL.50: 避免使用 `endl`
+I/O 流规则概览：
+
+* [SL.io.1: 仅在必要时才使用字符层面的输入](#Rio-low)
+* [SL.io.2: 当进行读取时，总要考虑非法输入](#Rio-validate)
+* [???](#???)
+* [SL.io.50: 避免使用 `endl`](#Rio-endl)
+* [???](#???)
+
+### <a name="Rio-low"></a>SL.io.1: 仅在必要时才使用字符层面的输入
+
+???
+
+### <a name="Rio-validate"></a>SL.io.2: 当进行读取时，总要考虑非法输入
+
+???
+
+### <a name="Rio-endl"></a>SL.io.50: 避免使用 `endl`
 
 ### 理由
 
-`endl` 操纵符大致相当于 `'\\n'` 和 `"\\n"`；
+`endl` 操纵符大致相当于 `'\n'` 和 `"\n"`；
 其最常用的情况只不过会以添加多余的 `flush()` 的方式拖慢程序。
 与 `printf` 式输出相比，这种拖慢程度是比较显著的。
 
@@ -16529,15 +16540,24 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 除了（偶尔会比较重要的）性能问题外，
 从 `"\\n"` 和 `endl` 之间进行选择基本上完全是审美问题。
 
-## SL.regex: 正则表达式
+## <a name="SS-regex"></a>SL.regex: 正则表达式
 
 ???
 
-## SL:c: C 标准库
+## <a name="SS-chrono"></a>SL.chrono: 时间
 
-### SL.???: C 风格的字符串
+???
 
-### SL.???: printf/scanf
+## <a name="SS-clib"></a>SL.C: C 标准库
+
+???
+
+C 标准库规则概览：
+
+* [???](#???)
+* [???](#???)
+* [???](#???)
+
 
 # <a name="S-A"></a>A: 架构设计的观念
 
