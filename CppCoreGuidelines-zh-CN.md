@@ -14906,6 +14906,14 @@ Lambda 会生成函数对象。
     vector<double> v = { 1, 2, 3, 7.9, 15.99 };
     list<Record*> lst;
 
+##### 注解
+
+注意，C++17 强允许模板参数直接从构造函数参数进行推断，而使这条规则变得多余：
+[构造函数的模板形参推断(Rev. 3)](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0091r1.html)。
+例如：
+
+    tuple t1 = {1, "Hamlet"s, 3.14}; // 推断为：tuple<int, string, double>
+
 ##### 强制实施
 
 当显式指定的类型与所使用的类型精确匹配时进行标记。
