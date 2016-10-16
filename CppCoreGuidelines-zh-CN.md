@@ -15222,33 +15222,68 @@ Lambda 会生成函数对象。
 
 ##### 理由
 
-模板定义了通用接口。???
+* 模板定义了通用接口。
+* 标签派发允许我们基于参数类型的特定性质选择不同的实现。
+* 性能。
 
 ##### 示例
 
-    ??? 这正是我们让像 `std::copy` 这样的算法对于适当的参数被编译成对 `memmove` 的调用的实现方式。
+这是 `std::copy` 的一个简化版本（忽略了非连续序列的可能性）
+
+    struct pod_tag {};
+    struct non_pod_tag {};
+
+    template<class T> struct copy_trait { using tag = non_pod_tag; };   // T 不是“朴素数据”
+
+    template<> struct copy_trait<int> { using tag = pod_tag; };         // int 是“朴素数据”
+
+    template<class Iter>
+    Out copy_helper(Iter first, Iter last, Iter out, pod_tag)
+    {
+        // 使用 memmove
+    }
+
+    template<class Iter>
+    Out copy_helper(Iter first, Iter last, Iter out, non_pod_tag)
+    {
+        // 使用调用复制构造函数的循环
+    }
+
+    template<class Itert>
+    Out copy(Iter first, Iter last, Iter out)
+    {
+        return copy_helper(first, last, out, typename copy_trait<Iter>::tag{})
+    }
+
+    void use(vector<int>& vi, vector<int>& vi2, vector<string>& vs, vector<string>& vs2)
+    {
+        copy(vi.begin(), vi.end(), vi2.begin()); // 使用 memmove
+        copy(vs.begin(), vs.end(), vs2.begin()); // 使用调用复制构造函数的循环
+    }
+
+这是一种进行编译时算法选择的通用且有力的技巧。
 
 ##### 注解
 
-当可以使用 `concept` 之后，这样的替代实现就可以直接进行区分了。
+当可以广泛使用 `concept` 之后，这样的替代实现就可以直接进行区分了：
+
+    template<class Iter>
+        requires Pod<Value_type<iter>>
+    Out copy_helper(In, first, In last, Out out)
+    {
+        // 使用 memmove
+    }
+
+    template<class Iter>
+    Out copy_helper(In, first, In last, Out out)
+    {
+        // 使用调用复制构造函数的循环
+    }
 
 ##### 强制实施
 
 ???
 
-### <a name="Rt-enable_if"></a>T.66: 用基于 `enable_if` 的选择来进行可选的函数定义
-
-##### 理由
-
- ???
-
-##### 示例
-
-    ???
-
-##### 强制实施
-
-???
 
 ### <a name="Rt-specialization2"></a>T.67: 用特化来提供不规则类型的其他实现
 
