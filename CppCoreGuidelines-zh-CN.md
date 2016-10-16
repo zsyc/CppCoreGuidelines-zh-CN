@@ -17046,21 +17046,26 @@ C 标准库规则概览：
 这样 `raw_find()` 就可以在内存中到处爬了。
 显然，进行抑制应当是非常罕见的。
 
-## <a name="SS-type"></a>类型安全性剖面配置
+## <a name="SS-type"></a>Pro.safety: 类型安全性剖面配置
 
-这个剖面配置将能够简化正确使用类型的代码编写，并避免因疏忽产生类型双关。它是关注于移除各种主要的类型违例的因素（包括对强制转换和联合的不安全使用）而达成这点的。
+这个剖面配置将能够简化正确使用类型的代码编写，并避免因疏忽产生类型双关。
+它是关注于移除各种主要的类型违例的因素（包括对强制转换和联合的不安全使用）而达成这点的。
 
-针对本部分的目的而言，类型安全性被定义为这样的性质：程序不会使用变量所不具有的类型。通过类型 `T` 所访问的内存，当其保护某个无关类型 `U` 的对象时，不可能是有效的内存。（注意，当和[边界安全性](#SS-bounds)、[生存期安全性](#SS-lifetime)组合起来时，安全性才是完整的。）
-
-下列各项也是被考虑的，但并未包括到以下规则之内，将它们划分到别的剖面配置中可能更好：
-
-* 窄化算术提升/转换（可能应该属于某个单独的安全算术剖面配置）
-* 从负的浮点向无符号整型类型的算术强制转换（同上）
-* 经选取的未定义行为：??? 这是个大块头，可以从 Gaby 的 UB 列表开始着手
-* 经选取的未指明行为：??? 这条真的有关安全性吗，还是更多的是关乎可移植性？
-* 违反常量性？如果我们在安全性上依赖它的话
+针对本部分的目的而言，
+类型安全性被定义为这样的性质：对变量的使用不会不遵守其所定义的类型的规则。
+通过类型 `T` 所访问的内存，不应该是某个实际上包含了无关类型 `U` 的对象的有效内存。
+注意，当和[边界安全性](#SS-bounds)、[生存期安全性](#SS-lifetime)组合起来时，安全性才是完整的。
 
 这个剖面配置的实现应当在源代码中识别出下列模式，将之作为不符合并给出诊断信息。
+
+类型安全性剖面配置概览：
+
+* [Type.1: 请勿使用 `reinterpret_cast`](#Pro-type-reinterpretcast)
+* [Type.2: 请勿使用 `static_cast` 进行向下强制转换。代之以使用 `dynamic_cast`](#Pro-type-downcast)
+* [Type.3: 请勿使用 `const_cast` 强制掉 `const`（亦即不要这样做）](#Pro-type-constcast)
+* [Type.4: 请勿使用  C 风格的强制转换 `(T)expression`，它可能进行 `static_cast` 向下转换，`const_cast`，或者 `reinterpret_cast`](#Pro-type-cstylecast)
+* [Type.5: 请勿在初始化之前使用变量](#Pro-type-init)
+* [Type.6: 坚持初始化成员变量](#Pro-type-memberinit)
 
 ### <a name="Pro-type-reinterpretcast"></a>Type.1: 请勿使用 `reinterpret_cast`
 
@@ -17077,7 +17082,7 @@ C 标准库规则概览：
 
 对所有 `reinterpret_cast` 的使用给出诊断消息。修正：考虑代之以使用一个 `variant`。
 
-### <a name="Pro-type-downcast"></a>Type.2: 请勿使用 `static_cast` 向下强制转换。代之以使用 `dynamic_cast`
+### <a name="Pro-type-downcast"></a>Type.2: 请勿使用 `static_cast` 进行向下强制转换。代之以使用 `dynamic_cast`
 
 ##### 理由
 
@@ -17085,21 +17090,23 @@ C 标准库规则概览：
 
 ##### 示例，不好
 
-    class base { public: virtual ~base() = 0; };
+    class Base { public: virtual ~Base() = 0; };
 
-    class derived1 : public base { };
+    class Derived1 : public Base { };
 
-    class derived2 : public base {
+    class Derived2 : public Base {
         std::string s;
     public:
         std::string get_s() { return s; }
     };
 
-    derived1 d1;
-    base* p = &d1; // ok，隐式转换为基类指针没有问题
+    Derived1 d1;
+    Base* p1 = &d1; // ok，隐式转换为基类指针没有问题
 
-    derived2* p2 = static_cast<derived2*>(p); // 不好，试图把 d1 当作一个 derived2，而它并不是
-    cout << p2->get_s(); // 试图访问 d1 并不存在的字符串成员，它将见到临近 d1 的任意字节数据
+    // 不好，试图把 d1 当作一个 Derived2，而它并不是
+    Derived2* p2 = static_cast<Derived2*>(p);
+    // 试图访问 d1 并不存在的字符串成员，它将见到临近 d1 的任意字节数据
+    cout << p2->get_s();
 
 ##### 示例，不好
 
@@ -17108,7 +17115,7 @@ C 标准库规则概览：
 
     void use(int i, Foo& x)
     {
-        if (0<i) {
+        if (0 < i) {
             Foobar& x1 = dynamic_cast<Foobar&>(x);  // 错误: Foo 并非多态类
             Foobar& x2 = static_cast<Foobar&>(x);   // 不好
             // ...
@@ -17129,7 +17136,7 @@ C 标准库规则概览：
 
 对所有进行向下强制转换（即将某个 `X` 的指针或引用强制转换为某个并非 `X` 或 `X` 的可访问基类的类型的指针或引用）的 `static_cast` 的使用给出诊断消息。修正：若它是一个向下强制转换或交叉强制转换，则代之以 `dynamic_cast`，否则考虑代之以使用一个 `variant`。
 
-### <a name="Pro-type-constcast"></a>Type.3: 请勿用 `const_cast` 强制掉 `const`（亦即不要这样做）
+### <a name="Pro-type-constcast"></a>Type.3: 请勿使用 `const_cast` 强制掉 `const`（亦即不要这样做）
 
 ##### 理由
 
@@ -17152,41 +17159,56 @@ C 标准库规则概览：
 
 有些时候你可能打算诉诸于 `const_cast` 来避免代码重复，比如说两个访问函数由相似的实现而只有 `const` 上有区别。例如：
 
-    class bar;
+    class Bar;
     
-    class foo {
-        bar mybar;
-    public:                         // 不好，逻辑有重复
-              bar& get_bar()       { /* 获得 mybar 的一个非 const 引用的复杂逻辑 */ } 
-        const bar& get_bar() const { /* 获得 mybar 的一个 const 引用的相同的复杂逻辑 */ } 
+    class Foo {
+    public:
+        // 不好，逻辑有重复
+        Bar& get_bar() {
+            /* 获得 my_bar 的一个非 const 引用的复杂逻辑 */
+        }
+
+        const Bar& get_bar() const {
+            /* 获得 my_bar 的一个 const 引用的相同的复杂逻辑 */
+        }
+    private:
+        Bar my_bar;
     };
 
 应当采用公用实现来代替。通常我们可以直接让非 `const` 函数来调用 `const` 函数。不过，当逻辑比较复杂时这将会导致下面的代码模式，它仍然要诉诸于一次 `const_cast`：
 
-    class foo {
-        bar mybar;
-    public:                         // 不太好，非 const 调用了 const 版本，但诉诸于 const_cast
-              bar& get_bar()       { return const_cast<bar&>(static_cast<const foo&>(*this).get_bar()); } 
-        const bar& get_bar() const { /* 获得 mybar 的一个 const 引用的复杂逻辑 */ } 
+    class Foo {
+    public:
+        // 不太好，非 const 调用了 const 版本，但诉诸于 const_cast
+        Bar& get_bar() {
+            return const_cast<Bar&>(static_cast<const Foo&>(*this).get_bar());
+        }
+        const Bar& get_bar() const {
+            /* 获得 mybar 的一个 const 引用的复杂逻辑 */
+        }
+    private:
+        Bar my_bar;
     };
 
 虽然正确应用这个模式是安全的（由于调用方必然有一个非 `const` 对象来进行调用），这种做法并不理想，因为其安全性很难作为检查工具的规则来自动进行加强。
 
 应当替换为将共同的代码放到一个公共辅助函数中——并将其作为模板以使它可以推断 `const`。这样完全不需要使用任何 `const_cast`：
 
-    class foo {
-        bar mybar;
+    class Foo {
+    public:                         // 好
+              Bar& get_bar()       { return get_bar_impl(*this); }
+        const Bar& get_bar() const { return get_bar_impl(*this); }
+    private:
+        Bar my_bar;
 
         template<class T>           // 好，推断出 T 是 const 还是非 const
         static auto get_bar_impl(T& t) -> decltype(t.get_bar())
-            { /* 获得 mybar 的一个可能 const 的引用的复杂逻辑 */ } 
-
-    public:                         // 好
-              bar& get_bar()       { return get_bar_impl(*this); } 
-        const bar& get_bar() const { return get_bar_impl(*this); } 
+            { /* 获得 my_bar 的一个可能 const 的引用的复杂逻辑 */ } 
     };
 
-**例外**: 你可能需要在调用 `const` 不正确的函数时强制掉 `const`。请优先采取将这种函数包装到内联的 `const` 正确的包装函数中的方式，以将其强制转换封装到一处。
+##### 例外
+
+你可能需要在调用 `const` 不正确的函数时强制掉 `const`。请优先采取将这种函数包装到内联的 `const` 正确的包装函数中的方式，以将其强制转换封装到一处。
 
 ##### 强制实施
 
@@ -17202,23 +17224,25 @@ C 标准库规则概览：
 ##### 示例，不好
 
     std::string s = "hello world";
-    double* p = (double*)(&s); // 不好
+    double* p0 = (double*)(&s); // 不好
 
-    class base { public: virtual ~base() = 0; };
+    class Base { public: virtual ~Base() = 0; };
 
-    class derived1 : public base { };
+    class Derived1 : public Base { };
 
-    class derived2 : public base {
+    class Derived2 : public Base {
         std::string s;
     public:
         std::string get_s() { return s; }
     };
 
-    derived1 d1;
-    base* p = &d1; // ok, 隐式转换为基类指针没有问题
+    Derived1 d1;
+    Base* p1 = &d1; // ok, 隐式转换为基类指针没有问题
 
-    derived2* p2 = (derived2*)(p); // 不好，试图把 d1 当作一个 derived2，
-    cout << p2->get_s(); // 试图访问 d1 并不存在的字符串成员，它将见到临近 d1 的任意字节数据
+    // 不好，试图把 d1 当作一个 Derived2，
+    Derived2* p2 = (Derived2*)(p1);
+    // 试图访问 d1 并不存在的字符串成员，它将见到临近 d1 的任意字节数据
+    cout << p2->get_s();
 
     void f(const int& i) {
         (int&)(i) = 42;   // 不好
@@ -17294,7 +17318,7 @@ C 标准库规则概览：
 
     int sum(...) {
         // ...
-        while(/*...*/)
+        while (/*...*/)
             result += va_arg(list, int); // 不好，假定所传递的是 int
         // ...
     }
