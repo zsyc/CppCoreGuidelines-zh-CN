@@ -12827,7 +12827,7 @@ C++ 对此的机制是 `atomic` 类型：
 * [E.18: 最小化对 `try`/`catch` 的显式使用](#Re-catch)
 * [E.19: 当没有合适的资源包装时，使用 `final_action` 对象来表达清理动作](#Re-finally)
 
-* [E.25: 当不能抛出异常时，模拟 RAII 来进行资源管理](Re-no-throw-raii)
+* [E.25: 当不能抛出异常时，模拟 RAII 来进行资源管理](#Re-no-throw-raii)
 * [E.26: 当不能抛出异常时，考虑采取快速失败](#Re-no-throw-crash)
 * [E.27: 当不能抛出异常时，系统化地使用错误代码](#Re-no-throw-codes)
 * [E.28: 避免基于全局状态（比如 `errno`）的错误处理](#Re-no-throw)
@@ -12854,7 +12854,7 @@ C++ 对此的机制是 `atomic` 类型：
 
     void use()
     {
-        Foo bar { {Thing{1}, Thing{2}, Thing{monkey}}, {"my_file", "r"}, "Here we go!"};
+        Foo bar {{Thing{1}, Thing{2}, Thing{monkey}}, {"my_file", "r"}, "Here we go!"};
         // ...
     }
 
@@ -12870,7 +12870,7 @@ C++ 对此的机制是 `atomic` 类型：
         :f{fopen(name.c_str(), mode.c_str())}
     {
         if (!f)
-            throw runtime_error{"File_handle: could not open "S-+ name + " as " + mode"}
+            throw runtime_error{"File_handle: could not open " + name + " as " + mode"}
     }
 
 ##### 注解
@@ -12881,7 +12881,7 @@ C++ 对此的机制是 `atomic` 类型：
 
 * 无法满足的前条件
 * 无法构造对象的构造函数（无法建立类的[不变式](#Rc-struct)）
-* 越界错误（比如 `v[v.size()] =7`）
+* 越界错误（比如 `v[v.size()] = 7`）
 * 无法获得资源（比如网络未连接）
 
 相较而言，终止某个普通的循环则不是意外的。
@@ -12891,7 +12891,9 @@ C++ 对此的机制是 `atomic` 类型：
 
 不要用 `throw` 仅仅作为从函数中返回值的另一种方式。
 
-**例外**: 某些系统，比如在执行开始之前就需要保证以（通常很短的）常量最大时间来执行动作的硬实时系统，这样的系统只有当存在工具可以支持精确地预测从一次 `throw` 中恢复的最大时间时才能使用异常。
+##### 例外
+
+某些系统，比如在执行开始之前就需要保证以（通常很短的）常量最大时间来执行动作的硬实时系统，这样的系统只有当存在工具可以支持精确地预测从一次 `throw` 中恢复的最大时间时才能使用异常。
 
 **参见**: [RAII](#Re-raii)
 
@@ -12899,7 +12901,9 @@ C++ 对此的机制是 `atomic` 类型：
 
 ##### 注解
 
-在你决定你无法负担或者不喜欢基于异常的错误处理之前，请看一看[替代方案](#Re-no-throw-raii)。
+在你决定你无法负担或者不喜欢基于异常的错误处理之前，请看一看[替代方案](#Re-no-throw-raii)；
+它们各自都有自己的复杂性和问题。
+同样地，只要可能的话，就应该进行测量之后再发表有关效率的言论。
 
 ### <a name="Re-errors"></a>E.3: 仅使用异常来进行错误处理
 
@@ -12910,10 +12914,11 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 ##### 示例，请勿如此
 
-    int find_index(vector<string>& vec, const string& x)   // 请勿如此: 异常并未用于错误处理
+    // 请勿如此: 异常并未用于错误处理
+    int find_index(vector<string>& vec, const string& x)
     {
         try {
-            for (int i =0; i < vec.size(); ++i)
+            for (int i = 0; i < vec.size(); ++i)
                 if (vec[i] == x) throw i;  // 找到了 x
         } catch (int i) {
             return i;
@@ -12923,6 +12928,11 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 这种代码要比显然的替代方式更加复杂，而且极可能运行慢得多。
 在 `vector` 中寻找一个值是没什么意外情况的。
+
+##### 强制实施
+
+可能应该是启发式措施。
+查找从 `catch` 子句“漏掉”的异常值。
 
 ### <a name="Re-design-invariants"></a>E.4: 围绕不变式来设计错误处理策略
 
@@ -12934,6 +12944,10 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 [不变式](#Rc-struct)是对象的成员的逻辑条件，构造函数必须进行建立，且为公开的成员函数所假定。
 
+##### 强制实施
+
+???
+
 ### <a name="Re-invariant"></a>E.5: 让构造函数建立不变式，若其无法做到则抛出异常
 
 ##### 理由
@@ -12943,13 +12957,28 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 ##### 示例
 
-    ???
+    class Vector {  // 非常简单的 double 向量
+        // 当 elem != nullptr 时 elem 指向 sz 个 double
+    public:
+        Vector() : elem{nullptr}, sz{0}{}
+        Vector(int s) : elem{new double}, sz{s} { /* 元素的初始化 */ }
+        ~Vector() { delete elem; }
+        double& operator[](int s) { return elem[s]; }
+        // ...
+    private:
+        owner<double*> elem;
+        int sz;
+    };
+
+类不变式——这里以代码注释说明——是由构造函数建立的。
+当 `new` 无法分配所需的内存时将抛出异常。
+各运算符，尤其是下标运算符，都是依赖于这个不变式的。
 
 **参见**: [当构造函数无法构造有效对象时，应当抛出异常](#Rc-throw)
 
 ##### 强制实施
 
-???
+对带有 `private` 状态但没有（公开，受保护或私有的）构造函数的类进行标记。
 
 ### <a name="Re-raii"></a>E.6: 使用 RAII 来避免泄漏
 
@@ -12974,7 +13003,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
         int* p = new int[12];
         // ...
         if (i < 17) {
-            delete p;
+            delete[] p;
             throw Bad {"in f()", i};
         }
         // ...
@@ -13024,6 +13053,9 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 * 我们所在的是硬实时系统，而且我们没有工具能保证异常会在所需时间内处理掉。
 * 我们所在的系统中有成吨的遗留代码以难于理解的方式大量地使用指针
   （尤其是没有可识别的所有权策略），因此异常可能会造成泄露。
+* 我们的 C++ 异常机制的实现不合理地糟糕
+  （很慢，很耗内存，对于动态链接库无法正确工作，等等）。
+  请向你的实现的供应商提出意见；如果没有用户提出意见，就不会出现改进。
 * 如果我们质疑经理的古老智慧的话会被炒鱿鱼。
 
 以上原因中只有第一条才是基础问题，因此一旦可能的话，还是要用异常来实现 RAII，或者设计你的 RAII 对象永不失败。
@@ -13038,7 +13070,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
             // 处理错误或退出
         }
 
-        Ifstream fs("foo");   // 非 std::ifstream: 添加了 valid()
+        ifstream fs("foo");   // 非 std::ifstream: 添加了 valid()
         if (!fs.valid()) {
             // 处理错误或退出
         }
@@ -13049,7 +13081,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 显然这样做增加了代码大小，不允许隐式的“异常”（`valid()` 检查）传播，而且 `valid()` 检查可能被忘掉。
 优先采用异常。
 
-**参见**: [讨论](#Sd-noexcept).
+**参见**: [`noexcept` 的用法](#Se-noexcept)。
 
 ##### 强制实施
 
@@ -13084,7 +13116,8 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
         return log(sqrt(d <= 0 ? 1 : d));
     }
 
-这里，我们已知 `compute` 不会抛出异常，因为它仅由不会抛出异常的操作所组成。通过将 `compute` 声明为 `noexcept`，让编译器和人类阅读者获得信息，使其更容易理解和操作 `compute`。
+这里，我们已知 `compute` 不会抛出异常，因为它仅由不会抛出异常的操作所组成。
+通过将 `compute` 声明为 `noexcept`，让编译器和人类阅读者获得信息，使其更容易理解和操作 `compute`。
 
 ##### 注解
 
@@ -13113,7 +13146,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
     void leak(int x)   // 请勿如此: 可能泄漏
     {
         auto p = new int{7};
-        if (x < 0) throw Get_me_out_of_here{}  // 可能泄漏 *p
+        if (x < 0) throw Get_me_out_of_here{};  // 可能泄漏 *p
         // ...
         delete p;   // 可能不会执行到这里
     }
@@ -13126,6 +13159,14 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
         if (x < 0) throw Get_me_out_of_here{};  // 将按需删除 *p
         // ...
         // 无须 delete p
+    }
+
+另一种（通常更好）的方案是使用一个局部变量来消除指针的显式使用：
+
+    void no_leak_simplified(int x)
+    {
+        vector<int> v(7);
+        // ...
     }
 
 **参见**: ??? 资源规则 ???
@@ -13253,7 +13294,12 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 ##### 注解
 
-许多人都曾试图编写违反这条规则的可靠代码，比如当网络连接“拒绝关闭”的情形。尽我们所知，没人曾找到一个做到这点的通用方案，虽然偶尔对于非常特殊的例子，你可以通过设置某个状态以便进行将来的清理的方式绕过它。我们见过的每个这种例子都是易错的，专门的，而且通常有 BUG。
+许多人都曾试图编写违反这条规则的可靠代码，比如当网络连接“拒绝关闭”的情形。
+尽我们所知，没人曾找到一个做到这点的通用方案。
+虽然偶尔对于非常特殊的例子，你可以通过设置某个状态以便进行将来的清理的方式绕过它。
+比如说，我们可能将一个不打算关闭的 socket 放入一个“故障 socket”列表之中， 
+让其被某个定期的系统状态清理所检查处理。
+我们见过的每个这种例子都是易错的，专门的，而且通常有 BUG。
 
 ##### 注解
 
@@ -13261,11 +13307,14 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 ##### 注解
 
-回收函数，包括 `operator delete`，必须为 `noexcept`。`swap` 函数必须为 `noexcept`。大多数的析构函数都是缺省隐含为 `noexcept` 的。
+回收函数，包括 `operator delete`，必须为 `noexcept`。`swap` 函数必须为 `noexcept`。
+大多数的析构函数都是缺省隐含为 `noexcept` 的。
+而且，[应该使移动操作为 `noexcept`](##Rc-move-noexcept)。
 
 ##### 强制实施
 
-识别会 `throw` 的析构函数，回收操作，和 `swap`。识别不为 `noexcept` 的这类操作。
+识别会 `throw` 的析构函数，回收操作，和 `swap`。
+识别不为 `noexcept` 的这类操作。
 
 **参见**: [讨论](#Sd-never-fail)
 
@@ -13285,6 +13334,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
             // ...
         }
         catch (...) {
+	    // 不做任何事
             throw;   // 传播异常
         }
     }
@@ -13309,16 +13359,17 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
         try {
             p = new Gadget(s);
             // ...
+	    delete p;
         }
         catch (Gadget_construction_failure) {
             delete p;
             throw;
         }
     }
-    
+
 这段代码很混乱。
 可能在 `try` 块中的裸指针上发生泄漏。
-并未处理所有的异常。
+不是所有的异常都被处理了。
 `delete` 一个构造失败的对象几乎肯定是一个错误。
 更好的是：
 
@@ -13326,7 +13377,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
     {
         Gadget g {s};
     }
-    
+
 ##### 替代方案
 
 * 合适的资源包装以及 [RAII](#Re-raii)
@@ -13355,6 +13406,15 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 `finally` 没有 `try`/`catch` 那样混乱，但它仍然比较专门化。
 优先采用[适当的资源管理对象](#Re-raii)。
+
+##### 注解
+
+相对于老式的 [`goto exit;` 技巧](##Re-no-throw-codes)来说，使用 `finally` 是处理并非系统化的资源管理中的清理工作的
+更加系统化并且相当简洁的方案。
+
+##### 强制实施
+
+启发式措施：检测 `goto exit;`。
 
 ### <a name="Re-no-throw-raii"></a>E.25: 当不能抛出异常时，模拟 RAII 来进行资源管理
 
@@ -13385,28 +13445,30 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 而且向其引入简单且系统化的错误处理的做法不可行。
 
 在宣称不能使用异常或者抱怨它们成本过高之前，应当考虑一下使用[错误代码](#Re-no-throw-codes)的例子。
+请考虑使用错误代码的成本和复杂性。
+如果你担心性能的话，请进行测量。
 
 ##### 示例
 
 假定你想要编写
 
-    void func(int n)
+    void func(zstring arg)
     {
-        Gadget g(n);
+        Gadget g {arg};
         // ...
     }
 
 当这个 `g` 并未正确构造时，`func` 将以一个异常退出。
 当无法抛出异常时，我们可以通过向 `Gadget` 添加 `valid()` 成员函数来模拟 RAII 风格的资源包装：
 
-    error_indicator func(int n)
+    error_indicator func(zstring arg)
     {
-        Gadget g(n);
+        Gadget g {arg};
         if (!g.valid()) return gadget_construction_error;
         // ...
         return 0;   // 零代表“正常”
     }
-    
+
 显然问题现在变成了调用者必须记得测试其返回值。
 
 **参见**: [讨论](#Sd-???)。
@@ -13415,8 +13477,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 （仅）对于这种想法的特定版本是可能的：比如检查资源包装的构造后进行系统化的 `valid()` 测试。
 
-
-## <a name="Re-no-throw-crash"></a>E.26: 当不能抛出异常时，考虑采取快速失败
+### <a name="Re-no-throw-crash"></a>E.26: 当不能抛出异常时，考虑采取快速失败
 
 ##### 理由
 
@@ -13436,22 +13497,22 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 ##### 示例
 
-    void do_something(int n)
+    void f(int n)
     {
-           // ...
-           p = static_cast<X*>(malloc(n,X));
-           if (p==nullptr) abort();     // 当内存耗尽时 abort
-           // ...
-     }
+        // ...
+        p = static_cast<X*>(malloc(n, X));
+        if (p == nullptr) abort();     // 当内存耗尽时 abort
+        // ...
+    }
 
-大多数系统都无法得体地处理内存耗尽。这大略上等价于
+大多数程序都无法得体地处理内存耗尽。这大略上等价于
 
-    void do_something(Int n)
+    void f(int n)
     {
-           // ...
-           p = new X[n];    // 当内存耗尽时抛出异常（默认情况会调用 terminate）
-           // ...
-     }
+        // ...
+        p = new X[n];    // 当内存耗尽时抛出异常（默认情况会调用 terminate）
+        // ...
+    }
 
 通常，在退出之前将“崩溃”的原因记录日志是个好主意。
 
@@ -13459,7 +13520,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 
 很难对付
 
-## <a name="Re-no-throw-codes"></a>E.27: 当不能抛出异常时，系统化地使用错误代码
+### <a name="Re-no-throw-codes"></a>E.27: 当不能抛出异常时，系统化地使用错误代码
 
 ##### 理由
 
@@ -13485,7 +13546,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
     {
         // ...
     }
-    
+
     void user()
     {
         Gadget g = make_gadget(17);
@@ -13494,7 +13555,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
         }
         // ...
     }
-    
+
 这种方案符合[模拟 RAII 资源管理](#Re-no-throw-raii)。
 `valid()` 函数可以返回一个 `error_indicator`（比如说 `error_indicator` 枚举的某个成员）。
 
@@ -13504,18 +13565,18 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 这种情况下，我们只能返回一对值。
 例如：
 
-    std::pair<Gadget,error_indicator> make_gadget(int n)
+    std::pair<Gadget, error_indicator> make_gadget(int n)
     {
         // ...
     }
-    
+
     void user()
     {
         auto r = make_gadget(17);
         if (!r.second) {
                 // 错误处理
         }
-        Gadget& g = r.first; 
+        Gadget& g = r.first;
         // ...
     }
 
@@ -13527,93 +13588,97 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
     {
         // ...
     }
-    
+
     void user()
     {
         auto r = make_gadget(17);
         if (!r.err) {
                 // 错误处理
         }
-        Gadget& g = r.val; 
+        Gadget& g = r.val;
         // ...
     }
 
 倾向于专门返回类型的一种原因是为其成员提供命名，而不是使用多少有些隐秘的 `first` 和 `second`,
 而且可以避免与 `std::pair` 的其他使用相混淆。
 
-###### 示例
+##### 示例
 
 通常，在错误退出之前必须进行清理。
 这样做是很混乱的：
 
-    std::pair<int,error_indicator> user()
+    std::pair<int, error_indicator> user()
     {
         Gadget g1 = make_gadget(17);
         if (!g1.valid()) {
-                return {0,g1_error};
+                return {0, g1_error};
         }
-        
+
         Gadget g2 = make_gadget(17);
         if (!g2.valid()) {
                 cleanup(g1);
-                return {0,g2_error};
+                return {0, g2_error};
         }
-        
+
         // ...
-        
-        if (all_foobar(g1,g2)) {
+
+        if (all_foobar(g1, g2)) {
             cleanup(g1);
             cleanup(g2);
-            return {0,foobar_error};
+            return {0, foobar_error};
         // ...
-        
+
         cleanup(g1);
         cleanup(g2);
-        return {res,0};
+        return {res, 0};
     }
 
 模拟 RAII 可能不那么简单，尤其是在带有多个资源和多种可能错误的函数之中。
 一种较为常见的技巧是把清理都集中到函数末尾以避免重复：
 
-    std::pair<int,error_indicator> user()
+    std::pair<int, error_indicator> user()
     {
         error_indicator err = 0;
-        
+
         Gadget g1 = make_gadget(17);
         if (!g1.valid()) {
-                err = g2_error;
+                err = g1_error;
                 goto exit;
         }
-        
+
         Gadget g2 = make_gadget(17);
         if (!g2.valid()) {
                 err = g2_error;
                 goto exit;
         }
-        
-        if (all_foobar(g1,g2)) {
+
+        if (all_foobar(g1, g2)) {
             err = foobar_error;
             goto exit;
         }
         // ...
-  exit:      
-        if (g1.valid()) cleanup(g1);
-        if (g1.valid()) cleanup(g2);
-        return {res,err};
+
+    exit:      
+      if (g1.valid()) cleanup(g1);
+      if (g1.valid()) cleanup(g2);
+      return {res,err};
     }
 
 函数越大，这种技巧就越有吸引力。
+`finally` 可以[略微缓解这个问题](#Re-finally)。
 而且，程序变得越大，系统化地采用一中基于错误指示的错误处理策略就越加困难。
 
 我们[优先采用基于异常的错误处理](#Re-throw)，并建议[保持函数短小](#Rf-single)。
 
 **参见**: [讨论](#Sd-???)。
 
+**参见**: [返回多个值](#Rf-out-multi)。
+
 ##### 强制实施
 
 很难对付。
 
-## <a name="Re-no-throw"></a>E.28: 避免基于全局状态（比如 `errno`）的错误处理
+### <a name="Re-no-throw"></a>E.28: 避免基于全局状态（比如 `errno`）的错误处理
 
 ##### 理由
 
@@ -13625,7 +13690,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
 ##### 示例，不好
 
     ???
-    
+
 ##### 注解
 
 C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不可能完全避免这种风格。
@@ -13633,7 +13698,6 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 ##### 强制实施
 
 很难对付。
-
 
 # <a name="S-const"></a>Con: 常量与不可变性
 
