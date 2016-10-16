@@ -15992,6 +15992,9 @@ C++ 提供更好的类型检查和更多的语法支持。
     int* pi = pv;   // 非 C++
     *pi = 999;      // 覆盖了 &ch 附近的 sizeof(int) 个字节
 
+针对在 C 中从 `void*` 或向它进行的隐式强制转换的相关规则比较麻烦而且并未强制实施。
+特别是，这个例子违反了禁止把类型转换为具有更严格对齐的类型的规则。
+
 ##### 强制实施
 
 使用 C++ 编译器。
@@ -16007,7 +16010,7 @@ C++ 提供更好的类型检查和更多的语法支持。
     int* p1 = malloc(10 * sizeof(int));                      // 非 C++
     int* p2 = static_cast<int*>(malloc(10 * sizeof(int)));   // 非 C, C 风格的 C++
     int* p3 = new int[10];                                   // 非 C
-    int* p4 = (int*)malloc(10 * sizeof(int));                // C 和 C++ 均可
+    int* p4 = (int*) malloc(10 * sizeof(int));               // C 和 C++ 均可
 
 ##### 强制实施
 
