@@ -14184,8 +14184,8 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 ##### 示例
 
     template<typename Iter, typename Val>
-        requires Input_iterator<Iter>
-                 && Equality_comparable<Value_type<Iter>, Val>
+    //    requires Input_iterator<Iter>
+    //             && Equality_comparable<Value_type<Iter>, Val>
     Iter find(Iter b, Iter e, Val v)
     {
         // ...
@@ -14194,7 +14194,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 也可以等价地用更为简洁的方式：
 
     template<Input_iterator Iter, typename Val>
-        requires Equality_comparable<Value_type<Iter>, Val>
+    //    requires Equality_comparable<Value_type<Iter>, Val>
     Iter find(Iter b, Iter e, Val v)
     {
         // ...
@@ -14202,11 +14202,15 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 ##### 注解
 
-在编译器支持概念的语言功能特性之前，我们可以在注释中使用概念：
+“概念”是在一份 ISO 技术规范中定义的：[concepts](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf)。
+而一组标准库概念的草案则可以在另一份 ISO TS 中找到：[ranges](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4569.pdf)。
+当前（2016 年 7 月），只有 GCC 6.1 支持了概念。
+因此，我们在例子中将概念注释掉了；就是说我们仅把它们当成形式化的注释。
+如果你使用 GCC 6.1，那么你就可以取消它们的注释。
 
     template<typename Iter, typename Val>
-        // requires Input_iterator<Iter>
-        //       && Equality_comparable<Value_type<Iter>, Val>
+        requires Input_iterator<Iter>
+               && Equality_comparable<Value_type<Iter>, Val>
     Iter find(Iter b, Iter e, Val v)
     {
         // ...
