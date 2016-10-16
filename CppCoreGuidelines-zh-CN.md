@@ -16912,11 +16912,8 @@ C 标准库规则概览：
 * Facebook: ???
 * [GCC Coding Conventions](https://gcc.gnu.org/codingconventions.html).
   C++03 以及（相当）一部分向后兼容。
-* [Google C++ Style Guide](http://google-styleguide.googlecode.com/svn/trunk/cppguide.html).
-  过于保守，且反映了其源自 1990 年代的背景。
-  [A critique from 2014](https://www.linkedin.com/pulse/20140503193653-3046051-why-google-style-guide-for-c-is-a-deal-breaker).
-  Google 正忙于更新它们的代码库，我们无法得知其所公布的指导方针有多确切地反应了它们的实际代码。
-  这一组建议正在演进中。
+* [Google C++ Style Guide](https://google.github.io/styleguide/cppguide.html).
+  面向 C++03 和（同样）较老的代码库。Google 的专家们现在正展开活跃的合作，以改进这里的各项指导方针，有希望能够合并这些成果，以使它们能够成为他们也同样推荐采纳的一组现代的通用指导方针。
 * [JSF++: JOINT STRIKE FIGHTER AIR VEHICLE C++ CODING STANDARDS](http://www.stroustrup.com/JSF-AV-rules.pdf).
   文档编号 2RDU00001 Rev C. December 2005.
   针对飞行控制软件。
@@ -16965,18 +16962,23 @@ C 标准库规则概览：
 
 ## <a name="SS-Cplusplus"></a>RF.C++: C++ 编程 (C++11/C++14)
 
-* TC++PL4
-* Tour++
-* Programming: Principles and Practice using C++
+* [TC++PL4](http://www.stroustrup.com/4th.html):
+  面向有经验的程序员的，对 C++ 语言和标准库的全面彻底的描述。
+* [Tour++](http://www.stroustrup.com/Tour.html):
+  面向有经验的程序员的，对 C++ 语言和标准库的简介。
+* [Programming: Principles and Practice using C++](http://www.stroustrup.com/programming.html):
+  面向初学者和新手们的教材。
 
 ## <a name="SS-web"></a>RF.web: 网站
 
-* [isocpp.org](http://www.isocpp.com)
+* [isocpp.org](https://isocpp.org)
 * [Bjarne Stroustrup 的个人主页](http://www.stroustrup.com)
 * [WG21](http://www.open-std.org/jtc1/sc22/wg21/)
 * [Boost](http://www.boost.org)<a name="Boost"></a>
 * [Adobe open source](http://www.adobe.com/open-source.html)
 * [Poco libraries](http://pocoproject.org/)
+* Sutter's Mill?
+* ???
 
 ## <a name="SS-vid"></a>RS.video: 有关“当代 C++”的视频
 
@@ -16985,15 +16987,19 @@ C 标准库规则概览：
 * [CppCon '14](https://isocpp.org/blog/2014/11/cppcon-videos-c9) 的全部演讲
 * Bjarne Stroustrup: [The essence of C++](https://www.youtube.com/watch?v=86xWVb4XIyE) 在爱丁堡大学。2014
 * Sutter: ???
+* CppCon 15
+* ??? C++ Next
+* ??? Meting C++
 * ??? more ???
 
 ## <a name="SS-man"></a>RF.man: 手册
 
-* ISO C++ Standard C++11
-* ISO C++ Standard C++14
-* Palo Alto "Concepts" TR
-* ISO C++ Concepts TS
-* WG21 Ranges report
+* ISO C++ Standard C++11.
+* ISO C++ Standard C++14.
+* [ISO C++ Standard C++17 CD](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4606.pdf). 委员会草案。
+* [Palo Alto "Concepts" TR](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3351.pdf).
+* [ISO C++ Concepts TS](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf).
+* [WG21 Ranges report](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4569.pdf). 草案。
 
 ## <a name="SS-ack"></a>鸣谢
 
@@ -17006,6 +17012,8 @@ C 标准库规则概览：
 * Gabriel Dos Reis
 * Zhuang, Jiangang (Jeff)
 * Sergey Zubkov
+
+请查看 github 的贡献者列表。
 
 # <a name="S-profile"></a>剖面配置
 
