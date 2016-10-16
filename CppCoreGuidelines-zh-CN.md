@@ -16823,6 +16823,34 @@ C 标准库规则概览：
 * 始终在构造函数中建立类不变式。
 * 不要在需要对象之前就定义它。
 
+### <a name="Rnr-goto-exit"></a>NR.6: 请勿如此：把所有清理操作放在函数末尾并使用 `goto exit`
+
+##### 理由（请勿遵守本条规则）
+
+`goto` 是易错的。
+这种技巧是进行 RAII 式的资源和错误处理的前异常时代的技巧。
+
+##### 示例，不好
+
+    void do_something(int n)
+    {
+        if (n < 100) goto exit;
+        // ...
+        int* p = (int*) malloc(n);
+        // ...
+        if (some_ error) goto_exit;
+        // ...
+    exit:
+        free(p);
+    }
+
+请找出其中的 BUG。
+
+##### 替代方案
+
+* 使用异常和 [RAII](#Re-raii)
+* 对于非 RAII 资源，使用 [`finally`](#Re-finally)。
+
 # <a name="S-references"></a>RF: 参考材料
 
 已经为 C++，尤其是对 C++ 的使用编写过了许多的编码标准、规则和指导方针。
