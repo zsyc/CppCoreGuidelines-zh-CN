@@ -14232,18 +14232,18 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 ##### 理由
 
-“标准”（即由 GSL，ISO concepts TS，以及希望尽快出现的 ISO 标准自身所提供的）概念，
+“标准”概念（即由 [GSL](#S-GSL) 和 [Ranges TS](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4569.pdf)，以及希望近期 ISO 标准自身所提供的）概念，
 避免了我们思考自己的概念，它们比我们匆忙中能够想出来的要好得多，而且还提升了互操作性。
 
 ##### 注解
 
 如果你不是要创建一个新的泛型程序库的话，大多数所需的概念都已经在标准库中定义过了。
 
-##### 示例
+##### 示例（采用 TS 版本的概念）
 
-    concept<typename T>
-    // 请勿定义这个: GSL 中已经有 Sortable
-    Ordered_container = Sequence<T> && Random_access<Iterator<T>> && Ordered<Value_type<T>>;
+    template<typename T>
+        // 请勿定义这个: GSL 中已经有 Sortable
+    concept Ordered_container = Sequence<T> && Random_access<Iterator<T>> && Ordered<Value_type<T>>;
 
     void sort(Ordered_container& s);
 
@@ -14255,7 +14255,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 ##### 注解
 
-“标准”概念的集合是在我们推进真正的（ISO 的）标准化过程中不断演进的。
+在我们推进一个包含概念的 ISO 标准的过程中，“标准”概念的集合是不断演进的。
 
 ##### 注解
 
@@ -14274,11 +14274,11 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 `auto` 是最弱的概念。概念的名字会比仅用 `auto` 传达出更多的意义。
 
-##### 理由
+##### 示例（采用 TS 版本的概念）
 
     vector<string> v;
     auto& x = v.front();     // 不好
-    String& s = v.begin();   // 好
+    String& s = v.begin();   // 好（String 是 GSL 的一个概念）
 
 ##### 强制实施
 
@@ -14290,20 +14290,28 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 可读性。直接表达意图。
 
-##### 示例
+##### 示例（采用 TS 版本的概念）
 
 这样来表达“`T` 是一种 `Sortable`”：
 
     template<typename T>       // 正确但很啰嗦：“参数的类型
-        requires Sortable<T>   // 为 T，这是某个 Sortable
+    //    requires Sortable<T>   // 为 T，这是某个 Sortable
     void sort(T&);             // 类型的名字”
 
-    template<Sortable T>       // 有改善：“参数的类型
+    template<Sortable T>       // 有改善（假定支持概念）：“参数的类型
     void sort(T&);             // 为 Sortable 的类型 T”
 
-    void sort(Sortable&);      // 最佳方式：“参数为 Sortable”
+    void sort(Sortable&);      // 最佳方式（假定支持概念）：“参数为 Sortable”
 
 越简练的版本越符合我们的说话方式。注意许多模板不在需要使用 `template` 关键字了。
+
+##### 注解
+
+“概念”是在一份 ISO 技术规范中定义的：[concepts](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf)。
+而一组标准库概念的草案则可以在另一份 ISO TS 中找到：[ranges](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4569.pdf)。
+当前（2016 年 7 月），只有 GCC 6.1 支持了概念。
+因此，我们在例子中将概念注释掉了；就是说我们仅把它们当成形式化的注释。
+如果你使用支持概念的编译器（比如 GCC 6.1），那么你就可以删掉 `//`。
 
 ##### 强制实施
 
