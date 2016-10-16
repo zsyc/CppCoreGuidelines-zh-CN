@@ -14719,22 +14719,22 @@ GSL 中的概念都具有恰当定义的语义；请参见 Palo Alto TR 和 Rang
 函数对象比“普通”的函数指针能够向接口传递更多的信息。
 一般来说，传递函数对象比传递函数指针能带来更好的性能。
 
-##### 示例
+##### 示例（采用 TS 版本的概念）
 
-    bool greater(double x, double y) { return x>y; }
-    sort(v, greater);                                  // 函数指针：可能较慢
-    sort(v, [](double x, double y) { return x>y; });   // 函数对象
-    sort(v, greater<>);                                // 函数对象
+    bool greater(double x, double y) { return x > y; }
+    sort(v, greater);                                    // 函数指针：可能较慢
+    sort(v, [](double x, double y) { return x > y; });   // 函数对象
+    sort(v, std::greater<>);                             // 函数对象
 
-    bool greater_than_7(double x) { return x>7; }
-    auto x = find_if(v, greater_than_7);               // 函数指针：不灵活
-    auto y = find_if(v, [](double x) { return x>7; }); // 函数对象：携带所需数据
-    auto z = find_if(v, Greater_than<double>(7));      // 函数对象：携带所需数据
+    bool greater_than_7(double x) { return x > 7; }
+    auto x = find_if(v, greater_than_7);                 // 函数指针：不灵活
+    auto y = find_if(v, [](double x) { return x > 7; }); // 函数对象：携带所需数据
+    auto z = find_if(v, Greater_than<double>(7));        // 函数对象：携带所需数据
 
 当然，也可以使用 `auto` 或（当可用时）概念来使这些函数通用化。例如：
 
-    auto y1 = find_if(v, [](Ordered x) { return x>7; }); // 要求一种有序类型
-    auto z1 = find_if(v, [](auto x) { return x>7; });    // 期望类型带有 >
+    auto y1 = find_if(v, [](Ordered x) { return x > 7; }); // 要求一种有序类型
+    auto z1 = find_if(v, [](auto x) { return x > 7; });    // 期望类型带有 >
     
 ##### 注解
 
