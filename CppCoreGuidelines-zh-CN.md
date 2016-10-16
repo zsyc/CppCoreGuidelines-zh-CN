@@ -15764,7 +15764,7 @@ C++ 是不支持这样做的。
 
 ## <a name="SS-temp-other"></a>其他模板规则
 
-### <a name="Rt-name"></a>T.140: 对所有的非平凡的操作命名
+### <a name="Rt-name"></a>T.140: 对所有的可能会被重用的操作命名
 
 ##### 理由
 
@@ -15772,11 +15772,48 @@ C++ 是不支持这样做的。
 
 ##### 示例
 
-    ???
+    struct Rec {
+        string name;
+        string addr;
+        int id;         // 唯一标识符
+    };
 
-##### 示例，好
+    bool same(const Rec& a, const Rec& b)
+    {
+        return a.id == b.id;
+    }
 
-    ???
+    vector<Rec*> find_id(const string& name);    // 寻找“name”的所有记录
+
+    auto x = find_if(vr.begin(), vr.end(),
+        [&](Rec& r) {
+            if (r.name.size() != n.size()) return false; // 要比较的名字都在 n 里
+            for (int i = 0; i < r.name.size(); ++i)
+                if (tolower(r.name[i]) != tolower(n[i])) return false;
+            return true;
+        }
+    );
+
+这里蕴含着一个有用的函数（大小写无关的字符串比较），因为它通常会导致 lambda 参数变大。
+
+    bool compare_insensitive(const string& a, const string& b)
+    {
+        if (a.size() != b.size()) return false;
+        for (int i = 0; i < a.size(); ++i) if (tolower(a[i]) != tolower(b[i])) return false;
+        return true;
+    }
+
+    auto x = find_if(vr.begin(), vr.end(),
+        [&](Rec& r) { compare_insensitive(r.name, n); }
+    );
+
+或者也可以这样（如果你更希望避免对 n 进行隐式的名字绑定的话）：
+
+    auto cmp_to_n = [&n](const string& a) { return compare_insensitive(a, n); };
+
+    auto x = find_if(vr.begin(), vr.end(),
+        [](const Rec& r) { return cmp_to_n(r.name); }
+    );
 
 ##### 注解
 
@@ -15789,7 +15826,8 @@ C++ 是不支持这样做的。
 
 ##### 强制实施
 
-???
+* 【困难】 标记出相似的 lambda。
+* ???
 
 ### <a name="Rt-lambda"></a>T.141: 当仅在一个地方需要一个简单的函数对象时，使用无名的 lambda
 
