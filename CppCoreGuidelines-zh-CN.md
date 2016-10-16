@@ -13961,17 +13961,17 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 概念上说，以下要求是错误的，因为我们所要求的 `T` 不止是如“可以增量”或“可以进行加法”这样的非常低级的概念：
 
-    template<typename T, typename A>
+    template<typename T>
         // requires Incrementable<T>
-    A sum1(vector<T>& v, A s)
+    T sum1(vector<T>& v, T s)
     {
-        for (auto x : v) s+=x;
+        for (auto x : v) s += x;
         return s;
     }
 
-    template<typename T, typename A>
+    template<typename T>
         // requires Simple_number<T>
-    A sum2(vector<T>& v, A s)
+    T sum2(vector<T>& v, T s)
     {
         for (auto x : v) s = s + x;
         return s;
@@ -13982,11 +13982,11 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 ##### 示例
 
-    template<typename T, typename A>
+    template<typename T>
         // requires Arithmetic<T>
-    A sum(vector<T>& v, A s)
+    T sum(vector<T>& v, T s)
     {
-        for (auto x : v) s+=x;
+        for (auto x : v) s += x;
         return s;
     }
 
@@ -14006,6 +14006,14 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 可以用模板来表现几乎任何东西（它是图灵完备的），但（利用模板进行）泛型编程的目标在于，
 使操作和算法对于一组带有相似语义性质的类型有效地进行通用化。
+
+##### 注解
+
+代码注释中的 `requires` 是 `concept` 的用法。
+“概念”是在一份 ISO 技术规范中定义的：[concepts](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf)。
+当前（2016 年 7 月），只有 GCC 6.1 支持了概念。
+因此，我们在例子中将概念注释掉了；就是说我们仅把它们当成形式化的注释。
+如果你使用 GCC 6.1，那么你就可以取消它们的注释。
 
 ##### 强制实施
 
