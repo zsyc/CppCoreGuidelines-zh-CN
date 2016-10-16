@@ -14939,7 +14939,7 @@ Lambda 会生成函数对象。
         ~X();
         // ... 没有别的构造函数了 ...
     };
-    
+
     X x {1};    // 没问题
     X y = x;      // 没问题
     std::vector<X> v(10); // 错误: 没有默认构造函数
@@ -14963,21 +14963,21 @@ Lambda 会生成函数对象。
 ##### 示例
 
     namespace Bad {
-	   struct S { int m; };
-	   template<typename T1, typename T2>
-	   bool operator==(T1, T2) { cout << "Bad\n"; return true; }
+        struct S { int m; };
+        template<typename T1, typename T2>
+        bool operator==(T1, T2) { cout << "Bad\n"; return true; }
     }
 
     namespace T0 {
-	   bool operator==(int, Bad::S) { cout << "T0\n"; return true; }  // 与 int 比较
-    
-	   void test()
-	   {
-		  Bad::S bad{ 1 };
-		  vector<int> v(10);
-		  bool b = 1==bad;
-		  bool b2 = v.size()==bad;
-	   }
+        bool operator==(int, Bad::S) { cout << "T0\n"; return true; }  // 与 int 比较
+
+        void test()
+        {
+            Bad::S bad{ 1 };
+            vector<int> v(10);
+            bool b = 1 == bad;
+            bool b2 = v.size() == bad;
+        }
     }
 
 这将会打印出 `T0` 和 `Bad`。
@@ -14987,9 +14987,23 @@ Lambda 会生成函数对象。
 而 `Bad` 中的 `=` 则不需要任何转换。
 实际的类型，比如标准库的迭代器，也可以被弄成类似的反社会倾向。
 
+##### 注解
+
+如果在相同的命名空间中定义了一个无约束模板类型，
+这个无约束模板是可以通过 ADL 所找到的（如例子中所发生的一样）。
+就是说，它是高度可见的。
+
+##### 注解
+
+这条规则应当是没有必要的，不过委员会在是否将无约束模板从 ADL 中排除上无法达成一致。
+
+不幸的是，这会导致大量的误报；标准库也大量地违反了这条规则，它将许多无约束模板和类型都放入了单一的命名空间 `std` 之中。
+
+
 ##### 强制实施
 
-????
+如果定义模板的命名空间中同样定义了具体的类型，就对其进行标记（可能在我们有概念支持之前都是不可行的）。
+
 
 ### <a name="Rt-concept-def"></a>T.48: 如果你的编译器不支持概念的话，可以用 `enable_if` 来模拟
 
