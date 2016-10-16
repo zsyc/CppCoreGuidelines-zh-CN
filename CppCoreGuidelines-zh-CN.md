@@ -14394,26 +14394,96 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 * 对在其他 `concept` 的定义之外使用的但操作 `concept` 进行标记。
 * 对表现为模拟单操作 `concept` 的 `enable_if` 的使用进行标记。
 
-### <a name="Rt-complete"></a>T.21: 通过定义概念来定义完整的操作集合
+
+### <a name="ations"></a>T.21: 为概念提出一组完整的操作要求
 
 ##### 理由
 
-提升互操作性。帮助实现者和维护者。
+易于理解。
+提升互操作性。
+帮助实现者和维护者。
 
-##### 示例，不好
+##### 注解
 
-    template<typename T> Subtractable = requires(T a, T, b) { a-b; }   // 语法正确吗？
+这是对一般性规则[必须让概念有语义上的意义](#Rt-low)的一个专门的变体。
 
-这个是没有语义作用的。你至少还需要 `+` 来让 `-` 有意义和有用处。
+##### 示例，不好（采用 TS 版本的概念）
+
+    template<typename T> concept Subtractable = requires(T a, T, b) { a-b; };
+
+这个是没有语义作用的。
+你至少还需要 `+` 来让 `-` 有意义和有用处。
 
 完整集合的例子有
 
 * `Arithmetic`: `+`, `-`, `*`, `/`, `+=`, `-=`, `*=`, `/=`
 * `Comparable`: `<`, `>`, `<=`, `>=`, `==`, `!=`
 
+##### 注解
+
+无论我们是否使用了概念的直接语言支持，本条规则都适用。
+这是一种一般性的设计规则，即便对于非模板也同样适用：
+
+    class Minimal {
+        // ...
+    };
+
+    bool operator==(const Minimal&, const Minimal&);
+    bool operator<(const Minimal&, const Minimal&);
+
+    Minimal operator+(const Minimal&, const Minimal&);
+    // 没有其他运算符
+
+    void f(const Minimal& x, const Minimal& y)
+    {
+        if (!(x == y) { /* ... */ }     // OK
+        if (x != y) { /* ... */ }       // 意外！错误
+
+        while (!(x < y)) { /* ... */ }  // OK
+        while (x >= y) { /* ... */ }    // 意外！错误
+
+        x = x + y;        // OK
+        x += y;             // 意外！错误
+    }
+
+这是最小化的设计，但会使用户遇到意外或受到限制。
+可能它还会比较低效。
+
+这条规则支持这样的观点：概念应当反映（数学上）协调的一组操作。
+
+##### 示例
+
+    class Convenient {
+        // ...
+    };
+
+    bool operator==(const Convenient&, const Convenient&);
+    bool operator<(const Convenient&, const Convenient&);
+    // ... 其他比较运算符 ...
+
+    Minimal operator+(const Convenient&, const Convenient&);
+    // .. 其他算术运算符 ...
+
+    void f(const Convenient& x, const Convenient& y)
+    {
+        if (!(x == y) { /* ... */ }     // OK
+        if (x != y) { /* ... */ }       // OK
+
+        while (!(x < y)) { /* ... */ }  // OK
+        while (x >= y) { /* ... */ }    // OK
+
+        x = x + y;     // OK
+        x += y;      // OK
+    }
+
+定义所有的运算符也许很麻烦，但并不困难。
+理想情况下，语言应当默认提供比较运算符以支持这条规则。
+
 ##### 强制实施
 
-???
+* 如果类所支持的运算符是运算符集合的“奇异”子集，比如有 `==` 但没有 `!=` 或者有 `+` 但没有 `-`，就对其进行标记。
+  确实，`std::string` 也是“奇异”的，但要修改它太晚了。
+
 
 ### <a name="Rt-axiom"></a>T.22: 为概念指明公理
 
