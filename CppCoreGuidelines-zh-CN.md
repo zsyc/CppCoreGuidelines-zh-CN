@@ -13723,17 +13723,17 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 ##### 示例
 
     for (const string& s : c) cout << s << '\n';    // 仅进行读取: const
-    
+
     for (string& s : c) cout << s << '\n';    // 不好: 仅进行读取
-    
-    for (string& s: c) cin>>s;  // 需要写入: 非 const
- 
+
+    for (string& s : c) cin >> s;  // 需要写入: 非 const
+
 ##### 例外
 
 函数参数时很少改动的，但也很少被声明为 `const`。
 为了避免造成混淆和大量的误报，不要对函数参数参数实施这条规则。。
 
-    void f(const char*const p); // 迂腐
+    void f(const char* const p); // 迂腐
     void g(const int i);        // 迂腐
 
 注意，函数参数时局部变量，其改动也是局部的。
@@ -13757,11 +13757,11 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
         int getx() { return x; }    // 不好，应当为 const，它并不改变对象的状态
         // ...
     };
-    
+
     void f(const Point& pt) {
         int x = pt.getx();          // 错误，无法通过编译，因为 getx 并未标记为 const
     }
-    
+
 ##### 注解
 
 [请勿强制掉 `const`](#Res-casts-const)。
@@ -13769,7 +13769,6 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 ##### 强制实施
 
 * 如果未标记为 `const` 的成员函数并未对任何成员变量实施非 `const` 操作的话，对其进行标记。
-
 
 ### <a name="Rconst-ref"></a>Con.3: 缺省情况下，应当传递指向 `const` 对象的指针或引用
 
@@ -13809,13 +13808,13 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
     {
         int x = 7;
         const int y = 9;
-        
+
         for (;;) {
             // ...
         }
         // ...
     }
-    
+
 既然 `x` 并非 `const`，我们就必须假定它可能在循环中的某处会被修改。
 
 ##### 强制实施
@@ -13831,8 +13830,8 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 ##### 示例
 
     double x = f(2);            // 可能在运行时求值
-    const double x = f(2);      // 可能在运行时求值
-    constexpr double y = f(2);  // 除非 f(2) 可在编译期求值，否则会报错
+    const double y = f(2);      // 可能在运行时求值
+    constexpr double z = f(2);  // 除非 f(2) 可在编译期求值，否则会报错
 
 ##### 注解
 
