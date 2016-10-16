@@ -14682,9 +14682,24 @@ GSL 中的概念都具有恰当定义的语义；请参见 Palo Alto TR 和 Rang
 其定义更可读，而且更直接地对应于用户需要编写的代码。
 其中同时兼顾了类型转换。你再不需要记住所有的类型特征的名字。
 
-##### 示例
+##### 示例（采用 TS 版本的概念）
 
-    ???
+你可能打算这样来定义概念 `Equality`：
+
+    template<typename T> concept Equality = has_equal<T> && has_not_equal<T>;
+
+显然，直接使用标准的 `EqualityComparable` 要更好而且更容易，
+但是——只是一个例子——如果你不得不定义这样的概念的话，应当这样：
+
+    template<typename T> concept Equality = requires(T a, T b) {
+        bool == { a == b }
+        bool == { a != b }
+        // axiom { !(a == b) == (a != b) }
+        // axiom { a = b; => a == b }  // => 的意思是“意味着”
+    }
+
+而不是定义两个无意义的概念 `has_equal` 和 `has_not_equal` 仅用于帮助 `Equality` 的定义。
+“无意义”的意思是我们无法独立地指定 `has_equal` 的语义。
 
 ##### 强制实施
 
