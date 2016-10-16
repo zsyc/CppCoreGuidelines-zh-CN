@@ -15121,7 +15121,7 @@ Lambda 会生成函数对象。
     };
 
     List<int> lst1;
-    List<int, my_allocator> lst2;
+    List<int, My_allocator> lst2;
 
     ???
 
@@ -15138,7 +15138,6 @@ Lambda 会生成函数对象。
         // requires Regular<T> && Allocator<A>
     class List2 {
     public:
-
         using iterator = Link<T>*;
 
         iterator first() const { return head; }
@@ -15149,7 +15148,7 @@ Lambda 会生成函数对象。
     };
 
     List<int> lst1;
-    List<int, my_allocator> lst2;
+    List<int, My_allocator> lst2;
 
     ???
 
@@ -15158,11 +15157,11 @@ Lambda 会生成函数对象。
 * 对并未依赖于全部模板参数的成员类型进行标记。
 * 对并未依赖于全部模板参数的成员函数进行标记。
 
-### <a name="Rt-nondependent"></a>T.62: 将无依赖的模板成员置于一个非模板基类之中
+### <a name="Rt-nondependent"></a>T.62: 将无依赖的类模板成员置于一个非模板基类之中
 
 ##### 理由
 
- ???
+可以在使用基类成员时不需要指定模板参数，也不需要模板实例化。
 
 ##### 示例
 
@@ -15190,7 +15189,7 @@ Lambda 会生成函数对象。
 
 这条规则的更一般化的版本是，
 “如果模板类的成员依赖于 M 个模板参数中的 N 个，就将它置于只有 N 个参数的基类之中。”
-当 N == 1 时，可以如同 [T.41](#Rt-scary) 一样在一个基类和其外围作用域中的一个类之间进行选择。
+当 N == 1 时，可以如同 [T.61](#Rt-scary) 一样在一个基类和其外围作用域中的一个类之间进行选择。
 
 ??? 常量的情况如何？类的静态成员呢？
 
