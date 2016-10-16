@@ -16652,6 +16652,76 @@ C 标准库规则概览：
 * [坚持为对象进行初始化](#Res-always)。
 * [ES.21: 不要在确实需要使用变量（或常量）之前就引入它](#Res-introduce)。
 
+### <a name="Rnr-single-return"></a>NR.2: 请勿如此：函数中只保留一个 `return` 语句
+
+##### 理由（请勿遵守本条规则）
+
+单返回规则会导致不必要地复杂的代码，并引入多余的状态变量。
+特别是，单返回规则导致更难在函数开头集中进行错误检查。
+
+##### 示例
+
+    template<class T>
+    //  requires Number<T>
+    string sign(T x)
+    {
+        if (x < 0)
+            return "negative";
+        else if (x > 0)
+            return "positive";
+        return "zero";
+    }
+
+为仅使用一个返回语句，我们得做类似这样的事：
+
+    template<class T>
+    //  requires Number<T>
+    string sign(T x)        // 不好
+    {
+        string res;
+        if (x < 0)
+            res = "negative";
+        else if (x > 0)
+            res = "positive";
+        else
+            res = "zero";
+        return res;
+    }
+
+这不仅更长，而且很可能效率更差。
+越长越复杂的函数，对其进行变通就越是痛苦。
+当然许多简单的函数因为它们本来就简单的逻辑都天然就只有一个 `return`。
+
+##### 示例
+
+    int index(const char* p)
+    {
+        if (p == nullptr) return -1;  // 错误指标：替代方案是 "throw nullptr_error{}"
+        // ... 进行查找以找出 p 的索引
+        return i;
+    }
+
+如果我们采纳这条规则的话，得做类似这样的事：
+
+    int index2(const char* p)
+    {
+        int i;
+        if (p == nullptr)
+            i = -1;  // 错误指标
+        else {
+            // ... 进行查找以找出 p 的索引
+        }
+        return i;
+    }
+
+注意我们（故意地）违反了禁止未初始化变量的规则，因为这种风格通常都会导致这样。
+而且，这种风格也会倾向于采用 [goto exit](#Rnr-goto-exit) 伪规则。
+
+##### 替代方案
+
+* 保持函数短小简单。
+* 随意使用多个 `return` 语句（以及抛出异常）。
+
 # <a name="S-references"></a>RF: 参考材料
 
 已经为 C++，尤其是对 C++ 的使用编写过了许多的编码标准、规则和指导方针。
