@@ -14809,12 +14809,15 @@ Lambda 会生成函数对象。
 
 ##### 理由
 
-提升可读性。隐藏实现。注意，模板别名取代了许多用于计算类型的特征。它们也可以用于封装一个特征。
+提升可读性。
+隐藏实现。
+注意，模板别名取代了许多用于计算类型的特征。
+它们也可以用于封装一个特征。
 
 ##### 示例
 
     template<typename T, size_t N>
-    class matrix {
+    class Matrix {
         // ...
         using Iterator = typename std::vector<T>::iterator;
         // ...
@@ -14825,9 +14828,30 @@ Lambda 会生成函数对象。
 ##### 示例
 
     template<typename T>
+    void user(T& c)
+    {
+        // ...
+        typename container_traits<T>::value_type x; // 不好，啰嗦
+        // ...
+    }
+
+    template<typename T>
     using Value_type = typename container_traits<T>::value_type;
 
+
 这免除了 `Value_type` 的用户必须了解用于实现 `value_type` 的技术。
+
+    template<typename T>
+    void user2(T& c)
+    {
+        // ...
+        Value_type<T> x;
+        // ...
+    }
+
+##### 注解
+
+一种简洁的常用说法是：“包装特征！”
 
 ##### 强制实施
 
