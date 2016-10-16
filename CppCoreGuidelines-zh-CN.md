@@ -15939,6 +15939,33 @@ C++ 是不支持这样做的。
 
 * 标记出所有的函数模板特化。代之以函数重载。
 
+
+### <a name="Rt-check-class"></a>T.150: 用 `static_assert` 来检查类是否与概念相符
+
+##### 理由
+
+当你打算使一个类符合某个概念时，应该提早进行验证以减少麻烦。
+
+###### 示例
+
+    class X {
+        X() = delete;
+        X(const X&) = default;
+        X(X&&) = default;
+        X& operator=(const X&) = default;
+        // ...
+    };
+
+在别的地方，也许是某个实现文件中，可以让编译器来检查 `X` 的所需各项性质：
+
+    static_assert(Default_constructible<X>);    // 错误: X 没有默认构造函数
+    static_assert(Copyable<X>);                 // 错误: 忘记定义 X 的移动构造函数了
+
+
+###### 强制实施
+
+不可行。
+
 # <a name="S-cpl"></a>CPL: C 风格的编程
 
 C 和 C++ 是联系很紧密的两门语言。
