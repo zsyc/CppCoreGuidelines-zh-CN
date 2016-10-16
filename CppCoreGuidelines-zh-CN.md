@@ -15840,7 +15840,10 @@ C++ 是不支持这样做的。
     auto earlyUsersEnd = std::remove_if(users.begin(), users.end(),
                                         [](const User &a) { return a.id > 100; });
 
-**例外**: 为 lambda 命名是有用的，即便它可能只会一次性使用也是如此。
+
+##### 例外
+
+为 lambda 命名是有用的，即便它可能只会一次性使用也是如此。
 
 ##### 强制实施
 
@@ -15878,35 +15881,37 @@ C++ 是不支持这样做的。
         // ...
     }
 
-当然，范围式 for 在符合需求的时候当然是更好的选择。
+当然，范围式 `for` 在符合需求的时候当然是更好的选择。
 
 ##### 示例
 
 使用能够提供所需功能的最接近基类的类。
 
-    class base {
+    class Base {
     public:
-        void f();
-        void g();
+        Bar f();
+        Bar g();
     };
 
-    class derived1 : public base {
+    class Derived1 : public Base {
     public:
-        void h();
+        Bar h();
     };
 
-    class derived2 : public base {
+    class Derived2 : public Dase {
     public:
-        void j();
+        Bar j();
     };
 
-    void myfunc(derived1& param)  // 不好，除非确实有特别的原因来将之仅限制为 derived1 对象
+    // 不好，除非确实有特别的原因来将之仅限制为 Derived1 对象
+    void my_func(Derived1& param)
     {
         use(param.f());
         use(param.g());
     }
 
-    void myfunc(base& param)   // 号，仅使用 base 的接口，且保证了这个类型
+    // 好，仅使用 Base 的接口，且保证了这个类型
+    void my_func(Base& param)
     {
         use(param.f());
         use(param.g());
