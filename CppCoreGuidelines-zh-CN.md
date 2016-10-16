@@ -18986,7 +18986,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 （基于 [Programming: Principles and Practice using C++](http://www.stroustrup.com/programming.html) 中的词汇表）。
 
 * *抽象类（abstract class）*: 不能直接用于创建对象的类；通常用于为派生类定义接口。
-  当类带有纯虚函数或受保护的构造函数是，它就是抽象的。
+  当类带有纯虚函数或只有受保护的构造函数时，它就是抽象的。
 * *抽象（abstraction）*: 对事物的描述，有选择并有意忽略（隐藏）了细节（如实现细节）；选择性忽略。
 * *地址（address）*: 用以在计算机的内存中找到某个对象的值。
 * *算法（algorithm）*: 用以解决某个问题的过程或公式；有限的一系列计算步骤以产生一个结果。
@@ -18995,7 +18995,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * *近似（approximation）*: 事物（比如值或者设计），接近于完美的或者理想的（值或设计）。
   通常近似都是在理想情形中进行各种权衡的结果。
 * *参数/实参（argument）*: 传递给函数或模板的值，其中以形参来进行访问。
-* *数组（array）*: 同质元素序列，通常是数值，例如 [0:max)。
+* *数组（array）*: 同质元素序列，通常是数值，例如 \[0:max)。
 * *断言（assertion）*: 插入到程序中的语句，以声称（断言）在程序的这个位置某事物必定为真。
 * *基类（base class）*: 用作类层次的基础的类。通常基类带有一个或更多的虚函数。
 * *位（bit）*: 计算机中信息的基本单位。一个位的值可以为 0 或 1。
@@ -19022,8 +19022,8 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * *定制点（customization point）*: ???
 * *数据（data）*: 计算中所用到的值。
 * *调试（debugging）*: 寻找并移除程序中的错误的行为；通常远没有测试那样系统化。
-* *声明（declaration）*: 程序中对一个名字及其类型的说明。
-* *定义（definition）*: 实体的声明，提供了程序使用该实体所需的所有信息。
+* *声明式（declaration）*: 程序中对一个名字及其类型的说明。
+* *定义式（definition）*: 实体的声明式，提供了程序使用该实体所需的所有信息。
   简化版定义：分配了内存额声明。
 * *派生类（derived class）*: 派生自一个或多个基类的类。
 * *设计（design）*: 对软件的某个片段应当如何运作以满足其说明的一个总体描述。
@@ -19037,7 +19037,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * *函数（function）*: 命名的代码单元，可以从程序的不同部分执行（调用）；计算的逻辑单元。
 * *泛型编程（generic programming）*: 关注于算法的设计和高效实现的一种编程风格。
   泛型算法能够对所有符合其要求的参数类型正确工作。在 C++ 中，泛型编程通常使用模板进行。
-* *全局变量（Global variable）*: 技术上说，命名空间作用域中的具名对象。
+* *全局变量（global variable）*: 技术上说，命名空间作用域中的具名对象。
 * *句柄（handle）*: 一个类，允许通过一个成员指针或引用来访问另一个对象。另见资源，复制，移动。
 * *头文件（header）*: 包含用于在程序的各个部分中共享接口的声明的文件。
 * *隐藏（hiding）*: 防止一个信息片段被直接看到或访问的行为。
@@ -19061,7 +19061,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * *字面量（literal）*: 直接指定一个值的写法，比如 12 指定的是整数值“十二”。
 * *循环（loop）*: 重复执行的代码片段；在 C++ 中，通常是 for 语句或者 while 语句。
 * *移动（move）*: 将值从一个对象转移到另一个对象，并遗留一个表示“空”的值的操作。另见复制。
-* *可变的（mutable）*: 可以改动；不可变、常量和变量的反义词。
+* *可变的（mutable）*: 可以改动；不可变、常量和不变量的反义词。
 * *对象（object）*: (1) 已经初始化的一块具有已知类型的内存区域，持有该类型的一个值；(2) 一块内存区域。
 * *目标代码（object code）*: 编译器的输出，预备作为连接器的输入（连接器以其产生可执行代码）。
 * *目标文件（object file）*: 包含目标代码的文件。
@@ -19083,10 +19083,10 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * *伪代码（pseudo code）*: 以非正式的写法而非编程语言所编写的对计算的一种描述。
 * *纯虚函数（pure virtual function）*: 必须在派生类中予以覆盖的虚函数。
 * *RAII*: （“资源获取即初始化，Resource Acquisition Is Initialization”）一种基于作用域进行资源管理的基本技术。
-* *范围（range）*: 值的序列，可以以一个开始点和一个结尾点进行描述。例如，[0:5) 的意思是值 0，1，2，3，和 4。
-* *正则表达式（regular expression）*: 对字符串的模式的一种表示法。
+* *范围（range）*: 值的序列，可以以一个开始点和一个结尾点进行描述。例如，\[0:5) 的意思是值 0，1，2，3，和 4。
 * *递归（recursion）*: 函数调用其自身的行为；另见重复。
 * *引用（reference）*: (1) 一种值，描述内存中具有类型的值的位置；(2) 持有这种值的变量。
+* *正则表达式（regular expression）*: 对字符串的模式的一种表示法。
 * *要求（requirement）*: (1) 对程序或程序的一部分的预期行为的描述；(2) 对函数或模板对其参数所作出的假设的描述。
 * *资源（resource）*: 获取而得的并随后必须被释放的事物，比如文件句柄，锁，或者内存。另见句柄，所有者。
 * *舍入（rounding）*: 将一个值转换为某个较不精确类型的数学上最接近的值。
@@ -19118,9 +19118,6 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * *虚函数（virtual function）*: 可在派生类中进行覆盖的成员函数。
 * *字（word）*: 计算机中内存的基本单元，通常是用以持有一个整数的单元。
 
-
-
-
 # <a name="S-unclassified"></a>To-do: 未分类的规则原型
 
 这是我们的未完成列表。
@@ -19133,9 +19130,9 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * 命名空间应当有什么粒度？是（如 Sutter/Alexandrescu 所定义的）所有被设计为一同工作或者一同发布的类和函数，还是应该更窄或是更宽？
 * 应该用内联命名空间吗（比如 `std::literals::*_literals`）？
 * 避免隐式转换
-* Const 成员函数应当是线程安全的 "¦ aka, 但我并不想真的改掉变量，只是在第一次调用它的时候向它赋一个值 "¦ argh
+* Const 成员函数应当是线程安全的……aka, 但我并不想真的改掉变量，只是在第一次调用它的时候向它赋一个值……argh
 * 始终初始化变量，为成员变量使用初始化列表。
-* 无论谁编写了接受或返回 void\* 的公开接口，都应该上火刑。我曾经好多年都以它作为自己的个人喜好来着。 :)
+* 无论谁编写了接受或返回 `void*` 的公开接口，都应该上火刑。我曾经好多年都以它作为自己的个人喜好来着。 :)
 * 尽可能应用 `const`：成员函数，变量，以及 `const_iterators`
 * 使用 `auto`
 * `(size)` vs. `{initializers}` vs. `{Extent{size}}`
@@ -19174,56 +19171,56 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * 当使用 `condition_variable` 时，始终用一个互斥体来保护它（在互斥体外面设置原子 bool 的值的做法是错误的！），并对条件变量自身使用同一个互斥体。
 * 绝不对 `std::atomic<user-defined-struct>` 使用 `atomic_compare_exchange_strong`（填充位中的区别会造成影响，而在循环中使用 `compare_exchange_weak` 则能够归于稳定的填充位）
 * 单独的 `shared_future` 对象不是线程安全的：两个线程不能等待同一个 `shared_future` 对象（它们可以等待指代相同共享状态的 `shared_future` 的副本）
-* 单独的 `shared_ptr` 对象不是线程安全的：不同的线程可以调用指代相同共享对象的_不同_ `shared_ptr` 的非 `const` 成员函数，但当一个线程访问一个 `shared_ptr` 对象时，另一个线程不能调用相同 `shared_ptr` 对象的非 `const` 成员函数（如果确实需要，考虑代之以 `atomic_shared_ptr`）
+* 单独的 `shared_ptr` 对象不是线程安全的：不同的线程可以调用指代相同共享对象的*不同* `shared_ptr` 的非 `const` 成员函数，但当一个线程访问一个 `shared_ptr` 对象时，另一个线程不能调用相同 `shared_ptr` 对象的非 `const` 成员函数（如果确实需要，考虑代之以 `atomic_shared_ptr`）
 
 * 算术相关规则
 
 # 参考文献
 
 * <a name="Alexandrescu01"></a>
-  \[Alexandrescu01\]:  A. Alexandrescu. Modern C++ Design (Addison-Wesley, 2001).
+  \[Alexandrescu01]:  A. Alexandrescu. Modern C++ Design (Addison-Wesley, 2001).
 * <a name="Cplusplus03"></a>
-  \[C++03\]:           ISO/IEC 14882:2003(E), Programming Languages — C++ (updated ISO and ANSI C++ Standard including the contents of (C++98) plus errata corrections).
+  \[C++03]:           ISO/IEC 14882:2003(E), Programming Languages — C++ (updated ISO and ANSI C++ Standard including the contents of (C++98) plus errata corrections).
 * <a name="CplusplusCS"></a>
-  \[C++CS\]:
+  \[C++CS]:
 * <a name="Cargill92"></a>
-  \[Cargill92\]:       T. Cargill. C++ Programming Style (Addison-Wesley, 1992).
+  \[Cargill92]:       T. Cargill. C++ Programming Style (Addison-Wesley, 1992).
 * <a name="Cline99"></a>
-  \[Cline99\]:         M. Cline, G. Lomow, and M. Girou. C++ FAQs (2ndEdition) (Addison-Wesley, 1999).
+  \[Cline99]:         M. Cline, G. Lomow, and M. Girou. C++ FAQs (2ndEdition) (Addison-Wesley, 1999).
 * <a name="Dewhurst03"></a>
-  \[Dewhurst03\]:      S. Dewhurst. C++ Gotchas (Addison-Wesley, 2003).
+  \[Dewhurst03]:      S. Dewhurst. C++ Gotchas (Addison-Wesley, 2003).
 * <a name="Henricson97"></a>
-  \[Henricson97\]:     M. Henricson and E. Nyquist. Industrial Strength C++ (Prentice Hall, 1997).
+  \[Henricson97]:     M. Henricson and E. Nyquist. Industrial Strength C++ (Prentice Hall, 1997).
 * <a name="Koenig97"></a>
-  \[Koenig97\]:        A. Koenig and B. Moo. Ruminations on C++ (Addison-Wesley, 1997).
+  \[Koenig97]:        A. Koenig and B. Moo. Ruminations on C++ (Addison-Wesley, 1997).
 * <a name="Lakos96"></a>
-  \[Lakos96\]:         J. Lakos. Large-Scale C++ Software Design (Addison-Wesley, 1996).
+  \[Lakos96]:         J. Lakos. Large-Scale C++ Software Design (Addison-Wesley, 1996).
 * <a name="Meyers96"></a>
-  \[Meyers96\]:        S. Meyers. More Effective C++ (Addison-Wesley, 1996).
+  \[Meyers96]:        S. Meyers. More Effective C++ (Addison-Wesley, 1996).
 * <a name="Meyers97"></a>
-  \[Meyers97\]:        S. Meyers. Effective C++ (2nd Edition) (Addison-Wesley, 1997).
+  \[Meyers97]:        S. Meyers. Effective C++ (2nd Edition) (Addison-Wesley, 1997).
 * <a name="Meyers15"></a>
-  \[Meyers15\]:        S. Meyers. Effective Modern C++ (O'Reilly, 2015).
+  \[Meyers15]:        S. Meyers. Effective Modern C++ (O'Reilly, 2015).
 * <a name="Murray93"></a>
-  \[Murray93\]:        R. Murray. C++ Strategies and Tactics (Addison-Wesley, 1993).
+  \[Murray93]:        R. Murray. C++ Strategies and Tactics (Addison-Wesley, 1993).
 * <a name="Stroustrup00"></a>
-  \[Stroustrup00\]:    B. Stroustrup. The C++ Programming Language (Special 3rdEdition) (Addison-Wesley, 2000).
+  \[Stroustrup00]:    B. Stroustrup. The C++ Programming Language (Special 3rdEdition) (Addison-Wesley, 2000).
 * <a name="Stroustrup05"></a>
-  \[Stroustrup05\]:    B. Stroustrup. [A rationale for semantically enhanced library languages](http://www.stroustrup.com/SELLrationale.pdf).
+  \[Stroustrup05]:    B. Stroustrup. [A rationale for semantically enhanced library languages](http://www.stroustrup.com/SELLrationale.pdf).
 * <a name="Stroustrup13"></a>
-  \[Stroustrup13\]:    B. Stroustrup. [The C++ Programming Language (4th Edition)](http://www.stroustrup.com/4th.html). Addison Wesley 2013.
+  \[Stroustrup13]:    B. Stroustrup. [The C++ Programming Language (4th Edition)](http://www.stroustrup.com/4th.html). Addison Wesley 2013.
 * <a name="Stroustrup14"></a>
-  \[Stroustrup14\]:    B. Stroustrup. [A Tour of C++](http://www.stroustrup.com/Tour.html).
+  \[Stroustrup14]:    B. Stroustrup. [A Tour of C++](http://www.stroustrup.com/Tour.html).
   Addison Wesley 2014.
 * <a name="SuttHysl04b"></a>
-  \[SuttHysl04b\]:     H. Sutter and J. Hyslop. "Collecting Shared Objects" (C/C++ Users Journal, 22(8), August 2004).
+  \[SuttHysl04b]:     H. Sutter and J. Hyslop. "Collecting Shared Objects" (C/C++ Users Journal, 22(8), August 2004).
 * <a name="SuttAlex05"></a>
-  \[SuttAlex05\]:      H. Sutter and  A. Alexandrescu. C++ Coding Standards. Addison-Wesley 2005.
+  \[SuttAlex05]:      H. Sutter and  A. Alexandrescu. C++ Coding Standards. Addison-Wesley 2005.
 * <a name="Sutter00"></a>
-  \[Sutter00\]:        H. Sutter. Exceptional C++ (Addison-Wesley, 2000).
+  \[Sutter00]:        H. Sutter. Exceptional C++ (Addison-Wesley, 2000).
 * <a name="Sutter02"></a>
-  \[Sutter02\]:        H. Sutter. More Exceptional C++ (Addison-Wesley, 2002).
+  \[Sutter02]:        H. Sutter. More Exceptional C++ (Addison-Wesley, 2002).
 * <a name="Sutter04"></a>
-  \[Sutter04\]:        H. Sutter. Exceptional C++ Style (Addison-Wesley, 2004).
+  \[Sutter04]:        H. Sutter. Exceptional C++ Style (Addison-Wesley, 2004).
 * <a name="Taligent94"></a>
-  \[Taligent94\]: Taligent's Guide to Designing Programs (Addison-Wesley, 1994).
+  \[Taligent94]: Taligent's Guide to Designing Programs (Addison-Wesley, 1994).
