@@ -14554,23 +14554,23 @@ GSL 中的概念都具有恰当定义的语义；请参见 Palo Alto TR 和 Rang
 
 否则编译器是无法自动对它们进行区分的。
 
-##### 示例
+##### 示例（采用 TS 版本的概念）
 
     template<typename I>
-    concept bool Input_iter = requires (I iter) { ++iter; };
+    concept bool Input_iter = requires(I iter) { ++iter; };
 
     template<typename I>
-    concept bool Fwd_iter = Input_iter<I> && requires (I iter) { iter++; }
+    concept bool Fwd_iter = Input_iter<I> && requires(I iter) { iter++; }
 
-编译器可以基于所要求的操作的集合来确定提炼关系。
-如果两个概念具有完全相同的要求的话，它们在逻辑上就是等价的（不存在提炼）。
-
-这样做也减少了这些类型的实现者的负担，
+编译器可以基于所要求的操作的集合（这里为前缀 `++`）来确定提炼关系。
+这样做减少了这些类型的实现者的负担，
 因为他们不再需要任何特殊的声明来“打入概念内部”了。
+如果两个概念具有完全相同的要求的话，它们在逻辑上就是等价的（不存在提炼）。
 
 ##### 强制实施
 
-* 对与已经出现的另一个概念具有完全相同的要求的概念进行标记（它们中不存在更精炼的概念）。为对它们进行区分，参见 [T.24](#Rt-tag)。
+* 对与已经出现的另一个概念具有完全相同的要求的概念进行标记（它们中不存在更精炼的概念）。
+  为对它们进行区分，参见 [T.24](#Rt-tag)。
 
 ### <a name="Rt-tag"></a>T.24: 用标签类或特征类来区分仅在语义上存在差别的概念
 
