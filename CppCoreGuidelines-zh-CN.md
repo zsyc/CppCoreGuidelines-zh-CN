@@ -14578,14 +14578,23 @@ GSL 中的概念都具有恰当定义的语义；请参见 Palo Alto TR 和 Rang
 
 要求相同的语法但具有不同语义的两个概念之间会造成歧义，除非程序员对它们进行区分。
 
-##### 示例
+##### 示例（采用 TS 版本的概念）
 
     template<typename I>    // 提供随机访问的迭代器
     concept bool RA_iter = ...;
 
     template<typename I>    // 提供对连续数据的随机访问的迭代器
     concept bool Contiguous_iter =
-        RA_iter<I> && is_contiguous<I>::value;  // ??? 为什么不用 is_contiguous<I>() 或 is_contiguous_v<I>?
+        RA_iter<I> && is_contiguous<I>::value;  // 使用 is_contiguous 特征
+
+程序员（在程序库中）必须适当地定义（特征） `is_contiguous`。
+
+把标签类包装到概念中可以得到这个方案的更简单的表达方式：
+
+    template<typename I> concept Contiguous = is_contiguous<I>::value;
+
+    template<typename I>
+    concept bool Contiguous_iter = RA_iter<I> && Contiguous<I>;
 
 程序员（在程序库中）必须适当地定义（特征） `is_contiguous`。
 
