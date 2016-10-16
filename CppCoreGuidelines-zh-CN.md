@@ -17341,7 +17341,7 @@ C 标准库规则概览：
 * 为 `va_list`，`va_start`，或 `va_arg` 的使用给出诊断。修正：代之以使用可变模板参数列表。
 * 如果 vararg 参数的函数并未提供重载以为该参数位置指定更加特定的类型，则当其传递参数时给出诊断。修正：使用别的函数，或标明 `[[suppress(types)]]`。
 
-## <a name="SS-bounds"></a>边界安全性剖面配置
+## <a name="SS-bounds"></a>Pro.bounds: 边界安全性剖面配置
 
 这个剖面配置将能简化对于在分配的内存块的边界之中进行操作的编码工作。它是通过关注于移除边界违例的主要根源——即指针算术和数组索引——而做到这点的。这个剖面配置的核心功能之一就是限制指针只能指向单个对象而不是数组。
 
@@ -17427,14 +17427,14 @@ C 标准库规则概览：
     // 替代方案 A: 使用 span
 
     // A1: 将参数类型改为使用 span
-    void f(span<int, 10> a, int pos)
+    void f1(span<int, 10> a, int pos)
     {
         a[pos / 2] = 1; // OK
         a[pos - 1] = 2; // OK
     }
 
     // A2: 增加局部的 span 并使用之
-    void f(array<int, 10> arr, int pos)
+    void f2(array<int, 10> arr, int pos)
     {
         span<int> a = {arr, pos}
         a[pos / 2] = 1; // OK
@@ -17442,7 +17442,7 @@ C 标准库规则概览：
     }
 
     // 替代方案 B: 用 at() 进行访问
-    void f(array<int, 10> a, int pos)
+    void f3(array<int, 10> a, int pos)
     {
         at(a, pos / 2) = 1; // OK
         at(a, pos - 1) = 2; // OK
@@ -17517,10 +17517,10 @@ C 标准库规则概览：
     void f()
     {
         int a[5];
-        span av = a;
+        span<int> av = a;
 
-        g(a.data(), a.length());   // OK, 如果没有其他选择的话
-        g1(a);                     // OK - 这里没有衰变，而是使用了隐式的 span 构造函数
+        g(av.data(), av.length());   // OK, 如果没有其他选择的话
+        g1(a);                       // OK - 这里没有衰变，而是使用了隐式的 span 构造函数
     }
 
 ##### 强制实施
@@ -17554,6 +17554,7 @@ C 标准库规则概览：
         fill(b, 0);                     // std::fill() + Ranges TS
 
         if ( a == b ) {
+	  // ...
         }
     }
 
