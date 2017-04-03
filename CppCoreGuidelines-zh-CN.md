@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/3/17
+2017/4/2
 
 
 编辑：
@@ -273,7 +273,7 @@
 
 实现这些规则的工具应当遵循下面的语法以明确抑制一条规则：
 
-    [[suppress(tag)]]
+    [[gsl::suppress(tag)]]
     
 其中的 "tag" 是包含强制规则的条目的锚定名字（例如，[C.134](#Rh-public) 的锚定名字为 "Rh-public"），
 剖面配置的规则组的名字（如 "type"，"bounds"，或 "lifetime"），
@@ -1071,7 +1071,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 ##### 示例
 
-    std::sort(begin(v),end(v),std::greater<>());
+    std::sort(begin(v), end(v), std::greater<>());
 
 如果你不是排序算法方面的专家而且有大量时间的话，
 这样的代码比你为特定的应用所编写的任何代码都更可能正确并且运行得更快。
@@ -1868,14 +1868,28 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 大量参数会带来更大的出现混乱的机会。大量传递参数与其他替代方案相比也通常是代价比较大的。
 
+##### 讨论
+
+两个最常见的使得函数具有过多参数的原因是：
+
+    1. *缺乏抽象* 缺少一种抽象，使得一个组合值被以
+    一组独立的元素的方式进行传递，而不是以一个单独的保证了不变式的对象来传递。
+    这不仅使其参数列表变长，而且会导致错误，
+    因为各个成分值无法再被某种获得保证的不变式进行保护。
+
+    2. *违反了“函数单一职责”原则* 这个函数试图完成多项任务，
+    它可能应当被重构。
+
 ##### 示例
 
-标准库的 `merge()` 函数达到了我们可以自如处理的界限
+标准库的 `merge()` 函数达到了我们可以自如处理的界限：
 
     template<class InputIterator1, class InputIterator2, class OutputIterator, class Compare>
     OutputIterator merge(InputIterator1 first1, InputIterator1 last1,
                          InputIterator2 first2, InputIterator2 last2,
                          OutputIterator result, Compare comp);
+
+注意，这属于上面的第一种问题：缺乏抽象。STL 传递的不是范围（抽象），而是一对迭代器（未封装的成分值）。
 
 其中有四个模板参数和留个函数参数。
 为简化最常用和最简单的用法，比较器参数可以缺省使用 `<`：
@@ -1898,12 +1912,24 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
     Mergeable{In1 In2, Out}
     OutputIterator merge(In1 r1, In2 r2, Out result);
 
+##### 示例
+
+安全性剖面配置中建议将以下代码
+
+    void f(int* some_ints, int some_ints_length);  // 不好：C 风格，不安全
+
+替换为
+
+    void f(gsl::span<int> some_ints);              // 好：安全，有边界检查
+
+这样，使用一种抽象可以获得安全性和健壮性的好处，而且自然地减少了参数的数量。
+
 ##### 注解
 
 多少参数算很多？请使用少于四个参数。
 有些函数确实最好表现为四个独立的参数，但这样的函数并不多。
 
-**替代方案**: 把参数归集为由意义的对象，然后（按值或按引用）传递这些对象。
+**替代方案**: 使用更好的抽象：把参数归集为由意义的对象，然后（按值或按引用）传递这些对象。
 
 **替代方案**: 利用默认实参或者重载来让最常见的调用方式可以用比较少的实参来进行。
 
@@ -2877,14 +2903,22 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
 
 ##### 注解
 
-许多情况下，返回某种像 `variant<T,error_code>` 这样的，用户定义的某个专门的 `Value or error` 类型，
+许多情况下，返回某种用户定义的某个专门的类型是有好处的。
 例如：
 
-    struct
+    struct Distance {
+        int value;
+        int unit = 1;   // 1 表示一米
+    };
+
+    Distance d1 = measure(obj1);        // 访问 d1.value 和 d1.unit
+    auto d2 = measure(obj2);            // 访问 d2.value 和 d2.unit
+    auto [value, unit] = measure(obj3);   // 访问 value 和 unit；对于了解 measure() 的人来说有点多余
+    auto [x,y] = measure(obj4);         // 请勿如此；这很可能造成混乱
 
 只有当返回的值表现的是几个无关实体而不是某个抽象的时候，才应使用过于通用的 `pair` 和 `tuple`。
 
-而不使用通用的 `tuple` 是有好处的。
+作为另一个例子，应当使用像 `variant<T, error_code>` 这样的专门的类型，而不使用通用的 `tuple`。
 
 ##### 强制实施
 
@@ -3751,7 +3785,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 语言规定 `virtual` 函数为成员函数，而并非所有的 `virtual` 函数都会直接访问数据。
 特别是，抽象类的成员很少这样做。
 
-注意 [multimethods](https://parasol.tamu.edu/~yuriys/papers/OMM10.pdf)。
+注意 [multi methods](https://parasol.tamu.edu/~yuriys/papers/OMM10.pdf)。
 
 ##### 例外
 
@@ -4555,7 +4589,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 ##### 强制实施
 
-【简单】 析构函数应当声明为 `noexcept`。
+【简单】 如果析构函数可能抛出异常，就应当将其声明为 `noexcept`。
 
 ### <a name="Rc-dtor-noexcept"></a>C.37: 使析构函数 `noexcept`
 
@@ -4565,11 +4599,11 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 ##### 注解
 
-当类中的所有成员都带有 `noexcept` 析构函数时，析构函数（无论是自定义的还是编译器生成的）将被隐含地声明为 `noexcept`（这与其函数体中的代码无关）。
+当类中的所有成员都带有 `noexcept` 析构函数时，析构函数（无论是自定义的还是编译器生成的）将被隐含地声明为 `noexcept`（这与其函数体中的代码无关）。通过将析构函数明确标记为 `noexcept`，程序员可以防止由于添加或修改类的成员而导致析构函数变为隐含的 `noexcept(false)`。
 
 ##### 强制实施
 
-【简单】 析构函数应当声明为 `noexcept`。
+【简单】 如果析构函数可能抛出异常，就应当将其声明为 `noexcept`。
 
 ## <a name="SS-ctor"></a>C.ctor: 构造函数
 
@@ -6425,7 +6459,6 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 现在 `Shape` 是一个贫乏的具有一个实现的类的例子，
 但还请谅解，因为这只是用来展现一种针对更复杂的类层次的技巧的简单例子。
 
-
     class Impl::Circle : public Circle, public Impl::Shape {   // 实现
     public:
         // 构造函数，析构函数
@@ -6538,7 +6571,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ##### 注解
 
-把内部类型转换成某个接口类型的取值或设值函数并非是无意义的（它提供了一种信息隐藏形式）。
+这条规则的关键在于取值和设值函数的语义是否是平凡的。虽然并非是对“平凡”的完整定义，但我们考虑在取值/设值函数，以及当使用公开数据成员之间除了语法上的差别之外是否存在什么差别。非平凡的语义的例子可能有：维护类的不变式，或者在某种内部类型和接口类型之间进行的转换。
 
 ##### 强制实施
 
@@ -6674,6 +6707,13 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 ##### 注解
 
 这是一种相对少见的用法，因为实现通常都可以被组织到一个单根层次之中。
+
+##### 示例
+
+有时候，“实现特性”更像是“混元”，决定实现的行为，
+并向其中注入成员以使该实现提供其所要求的策略。
+相关的例子可以参考 `std::enable_shared_from_this`
+或者 boost.intrusive 中的各种基类（例如 `list_base_hook` 和 `intrusive_ref_counter`）。
 
 ##### 强制实施
 
@@ -8245,7 +8285,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 * 【简单】 对在并非 `owner<T>` 的原生指针上进行的 `delete` 给出警告。
 * 【中等】 对一个 `owner<T>` 指针，当并非每个代码路径中都要么进行 `reset` 要么明确 `delete`，则给出警告。
-* 【简单】 当 `new` 的返回值，或者指针类型的函数调用返回值被赋值给原生指针时，给出警告。
+* 【简单】 当 `new` 的返回值被赋值给原生指针时，给出警告。
 * 【简单】 当函数所返回的对象是在函数中所分配的，并且它具有移动构造函数时，给出警告。
   建议代之以按值返回。
 
@@ -8676,14 +8716,14 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 ##### 示例
 
     // 使用 Boost 的 intrusive_ptr
-    #include<boost/intrusive_ptr.hpp>
+    #include <boost/intrusive_ptr.hpp>
     void f(boost::intrusive_ptr<widget> p)  // 根据 'sharedptrparam' 规则是错误的
     {
         p->foo();
     }
 
     // 使用 Microsoft 的 CComPtr
-    #include<atlbase.h>
+    #include <atlbase.h>
     void f(CComPtr<widget> p)               // 根据 'sharedptrparam' 规则是错误的
     {
         p->foo();
@@ -9109,7 +9149,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 注：C++17 还增加了 `if` 和 `switch` 的初始化式语句。以下代码要求支持 C++17。
 
-    map<int,string> mymap;
+    map<int, string> mymap;
 
     if (auto result = mymap.insert(value); result.second) {
         // 本代码块中，插入成功且 result 有效
@@ -9293,9 +9333,15 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     // 有改善: base * pow(FLT_RADIX, exponent); FLT_RADIX 通常为 2
     double scalbn(double base, int exponent);
 
+##### 示例
+
+    int a=7, b=9, c, d=10, e=3;
+
+在较长的声明符列表中，很容易忽视某个未能初始化的变量。
+
 ##### 强制实施
 
-非函数参数的声明中，若有多个声明符，并且设计了声明符运算符（比如 `int* p, q;`），则进行标记。
+对具有多个声明符的变量或常量的声明式（比如 `int* p, q;`）进行标记。
 
 ### <a name="Res-auto"></a>ES.11: 使用 `auto` 来避免类型名字的多余重复
 
@@ -9512,7 +9558,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 显然，我们其实最想要的是某种可以从一个 `tuple` 来对 n 个变量进行初始化的构造。比如：
 
-    auto [i,j] = make_related_widgets(cond);    // C++17，并非 C++14
+    auto [i, j] = make_related_widgets(cond);    // C++17，并非 C++14
 
 如今，我们则可以近似地使用 `tie()`：
 
@@ -10031,7 +10077,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 示例
 
-    #include<cstdarg>
+    #include <cstdarg>
 
     // "severity" 后面跟着以零终结的 char* 列表；将 C 风格字符串写入 cerr
     void error(int severity ...)
@@ -10071,7 +10117,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 ##### 强制实施
 
 * 对 C 风格的变参函数的定义作出标记。
-* 对 `#include<cstdarg>` 和 `#include<stdarg.h>` 作出标记。
+* 对 `#include <cstdarg>` 和 `#include <stdarg.h>` 作出标记。
 
 ## ES.stmt: 语句
 
@@ -12004,12 +12050,12 @@ C++ 对此的机制是 `atomic` 类型：
 但我们可以提一些：
 
 * 静态强制实施工具：[clang](http://clang.llvm.org/docs/ThreadSafetyAnalysis.html)
- 和一些老版本的 [GCC](https://gcc.gnu.org/wiki/ThreadSafetyAnnotation)
- 都提供了一些针对线程安全性性质的静态代码标注。
- 统一地采用这项技术可以将许多种类的线程安全性错误变为编译时的错误。
- 这些代码标注一般都是局部的（将某个特定成员变量标记为又一个特定的互斥体进行防护），
- 且一般都易于学习使用。但与许多的静态工具一样，它经常会造成漏报；
- 这些情况应当被发现但却被其忽略了。
+和一些老版本的 [GCC](https://gcc.gnu.org/wiki/ThreadSafetyAnnotation)
+都提供了一些针对线程安全性性质的静态代码标注。
+统一地采用这项技术可以将许多种类的线程安全性错误变为编译时的错误。
+这些代码标注一般都是局部的（将某个特定成员变量标记为又一个特定的互斥体进行防护），
+且一般都易于学习使用。但与许多的静态工具一样，它经常会造成漏报；
+这些情况应当被发现但却被其忽略了。
 
 * 动态强制实施工具：Clang 的 [Thread Sanitizer](http://clang.llvm.org/docs/ThreadSanitizer.html)（即 TSAN）
 是动态工具的一个强有力的例子：它改变你的程序的构建和执行，向其中添加对内存访问的簿记工作，
@@ -12035,7 +12081,7 @@ C++ 对此的机制是 `atomic` 类型：
 并发规则概览：
 
 * [CP.20: 使用 RAII，绝不使用普通的 `lock()`/`unlock()`](#Rconc-raii)
-* [CP.21: 用 `std::lock()` 来获得多个 `mutex`](#Rconc-lock)
+* [CP.21: 用 `std::lock()` 或 `std::scoped_lock` 来获得多个 `mutex`](#Rconc-lock)
 * [CP.22: 绝不在持有锁的时候调用未知的代码（比如回调）](#Rconc-unknown)
 * [CP.23: 把连接的 `thread` 看作是有作用域的容器](#Rconc-join)
 * [CP.24: 把分离的 `thread` 看作是全局容器](#Rconc-detach)
@@ -12090,7 +12136,7 @@ C++ 对此的机制是 `atomic` 类型：
 标记对成员 `lock()` 和 `unlock()` 的调用。 ???
 
 
-### <a name="Rconc-lock"></a>CP.21: 用 `std::lock()` 来获得多个 `mutex`
+### <a name="Rconc-lock"></a>CP.21: 用 `std::lock()` 或 `std::scoped_lock` 来获得多个 `mutex`
 
 ##### 理由
 
@@ -12111,14 +12157,22 @@ C++ 对此的机制是 `atomic` 类型：
 代之以使用 `lock()`：
 
     // 线程 1
+    lock(lck1, lck2);
     lock_guard<mutex> lck1(m1, defer_lock);
     lock_guard<mutex> lck2(m2, defer_lock);
-    lock(lck1, lck2);
 
     // 线程 2
+    lock(lck2, lck1);
     lock_guard<mutex> lck2(m2, defer_lock);
     lock_guard<mutex> lck1(m1, defer_lock);
-    lock(lck2, lck1);
+
+或者（这样更佳，但仅为 C++17）：
+
+    // 线程 1
+    scoped_lock<mutex, mutex> lck1(m1, m2);
+
+    // 线程 2
+    scoped_lock<mutex, mutex> lck2(m2, m1);
 
 这样，`thread1` 和 `thread2` 的作者们仍然未在 `mutex` 的顺序上达成一致，但顺序不再是问题了。
 
@@ -12127,9 +12181,9 @@ C++ 对此的机制是 `atomic` 类型：
 在实际代码中，`mutex` 的命名很少便于程序员记得某种有意的关系和有意的获取顺序。
 在实际代码中，`mutex` 并不总是便于在连续代码行中依次获取的。
 
-我非常期待可以编写普通的
+在 C++17 中，可以编写普通的
 
-    lock_guard lck1(m1, defer_lock);
+    lock_guard lck1(m1, adopt_lock);
 
 而让 `mutex` 类型被推断出来。
 
@@ -12260,6 +12314,12 @@ C++ 对此的机制是 `atomic` 类型：
 “bad”则表示 `thread` 可能在对象销毁之后使用指向它的指针。
 `thread` 运行的并发性并不会影响这里的生存期或所有权问题；
 这些 `thread` 可以仅仅被看成是从 `some_fct` 中调用的函数对象。
+
+##### 注解
+
+即便具有静态存储期的对象，在分离的线程中的使用也会造成问题：
+若是这个线程持续到程序终止，则它的运行可能与具有静态存储期的对象的销毁过程发生并发，
+而这样对这些对象的访问就可能发生竞争。
 
 ##### 强制实施
 
@@ -12680,17 +12740,27 @@ C++ 对此的机制是 `atomic` 类型：
 
 
 
-### <a name="Rconc-mutex"></a>CP.50: `mutex` 要和其所保护的数据一起定义
+### <a name="Rconc-mutex"></a>P.50: `mutex` 要和其所保护的数据一起定义，只要可能就使用 `synchronized_value<T>`
 
 ##### 理由
 
-对于读者来说，数据应该且如何被保护应当是显而易见的。
+对于读者来说，数据应该且如何被保护应当是显而易见的。这可以减少锁定错误的互斥体，或者互斥体未能被锁定的机会。
+
+使用 `synchronized_value<T>` 保证了数据都带有互斥体，并且当访问数据时锁定正确的互斥体。
+参见向某个未来的 TS 或 C++ 标准的修订版添加 `synchronized_value` [WG21 提案](http://wg21.link/p0290)。
 
 ##### 示例
 
     struct Record {
         std::mutex m;   // 访问其他成员之前应当获取这个 mutex
         // ...
+    };
+
+    class MyClass {
+        struct DataRecord {
+           // ...
+        };
+        synchronized_value<DataRecord> data; // 用互斥体保护数据
     };
 
 ##### 强制实施
@@ -14032,7 +14102,9 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 * 如果倾向于长期解决方案的话，将程序库更新为 `const` 正确的；
 * “强制掉 `const`”（[最好避免这样做](#Res-casts-const)）；
-* 提供包装函数；例如：
+* 提供包装函数。
+
+例如：
 
     void f(int* p);   // 老代码：f() 并不会修改 `*p`
     void f(const int* p) { f(const_cast<int*>(p); } // 包装函数
@@ -15798,8 +15870,8 @@ C++ 是不支持这样做的。
 这个应当是基类：
 
     struct Link_base {   // 稳定
-        Link* suc;
-        Link* pre;
+        Link_base* suc;
+        Link_base* pre;
     };
 
     template<typename T>   // 模板化的包装带来了类型安全性
@@ -16345,7 +16417,7 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 * [SF.3: 对在多个源文件中使用的任何声明，都应使用 `.h` 文件](#Rs-declaration-header)
 * [SF.4: 在文件中的其他所有声明之前包含 `.h` 文件](#Rs-include-order)
 * [SF.5: `.cpp` 文件必须包含定义了它的接口的一个或多个 `.h` 文件](#Rs-consistency)
-* [SF.6: `using namespace` 指令，可以为迁移而使用，可以为基础程序库使用（比如 `std`），或者在局部作用域中使用](#Rs-using)
+* [SF.6: `using namespace` 指令，（仅）可以为迁移而使用，可以为基础程序库使用（比如 `std`），或者在局部作用域中使用](#Rs-using)
 * [SF.7: 请勿在头文件中使用 `using namespace` 指令](#Rs-using-directive)
 * [SF.8: 为所有的 `.h` 文件使用 `#include` 防卫宏](#Rs-guards)
 * [SF.9: 避免源文件的循环依赖](#Rs-cycles)
@@ -16394,7 +16466,7 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
     int a;   // 定义
     void foo() { ++a; }
 
-一个程序中两次 `#include<foo.h>` 将导致因为对唯一定义规则的两次违反而出现一个连接错误。
+一个程序中两次 `#include <foo.h>` 将导致因为对唯一定义规则的两次违反而出现一个连接错误。
 
 ##### 强制实施
 
@@ -16416,11 +16488,11 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
     }
 
     // file1.cpp:
-    #include<file.h>
+    #include <file.h>
     // ... 更多代码 ...
 
      // file2.cpp:
-    #include<file.h>
+    #include <file.h>
     // ... 更多代码 ...
 
 当连接 `file1.cpp` 和 `file2.cpp` 时将出现两个连接器错误。
@@ -16472,20 +16544,20 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
 ##### 示例
 
-    #include<vector>
-    #include<algorithm>
-    #include<string>
+    #include <vector>
+    #include <algorithm>
+    #include <string>
 
     // ... 我自己的代码 ...
 
 ##### 示例，不好
 
-    #include<vector>
+    #include <vector>
 
     // ... 我自己的代码 ...
 
-    #include<algorithm>
-    #include<string>
+    #include <algorithm>
+    #include <string>
 
 ##### 注解
 
@@ -16535,7 +16607,7 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
     int foobar(int);
 
     // foo.cpp:
-    #include<foo.h>
+    #include <foo.h>
 
     void foo(int) { /* ... */ }
     int bar(double) { /* ... */ }
@@ -16548,19 +16620,60 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
 ???
 
-### <a name="Rs-using"></a>SF.6: `using namespace` 指令，可以为迁移而使用，可以为基础程序库使用（比如 `std`），或者在局部作用域中使用
+### <a name="Rs-using"></a>SF.6: `using namespace` 指令，（仅）可以为迁移而使用，可以为基础程序库使用（比如 `std`），或者在局部作用域中使用
 
 ##### 理由
 
- ???
+`using namespace` 可能造成名字冲突，因而应当节制使用。
+然而，将用户代码中的每个命名空间中的名字都进行限定并不总是能够做到（比如在转换过程中）
+而且有时候命名空间非常基础，并且在代码库中广为使用，坚持进行限定将使其既啰嗦又分散注意力。
 
 ##### 示例
 
-    ???
+    #include<string>
+    #include<vector>
+    #include<iostream>
+    #include<memory>
+    #include<algorithm>
 
+    using namespace std;
+
+    // ...
+
+显然地，大量使用了标准库，而且貌似没使用别的程序库，因此要求每一处带有使用 `std::`
+会使人分散注意力。
+
+##### 示例
+
+使用 `using namespace std;` 导致程序员可能面临与标准库中的名字造成名字冲突
+
+    #include<cmath>
+    using namespace std;
+
+    int g(int x)
+    {
+        int sqrt = 7;
+        // ...
+        return sqrt(x); // 错误
+    }
+
+不过，不大可能导致并非错误的名字解析，
+假定使用 `using namespace std` 的人们都了解 `std` 以及这种风险。
+
+##### 注解
+
+`.cpp` 文件也是一种形式的局部作用域。
+包含一条 `using namespace X` 的 N 行的 `.cpp` 文件中发生名字冲突的机会，
+和包含一条 `using namespace X` 的 N 行的函数，
+以及每个都包含一条 `using namespace X` 的总行数为 N 行的 M 个函数，没有多少差别。
+
+##### 注解
+
+[请勿在头文件中使用 `using namespace`](#Rs-using-directive)。
+ 
 ##### 强制实施
 
-???
+对于单个源文件中，对不同命名空间的多个 `using namespace` 指令进行标记。
 
 ### <a name="Rs-using-directive"></a>SF.7: 请勿在头文件中使用 `using namespace`
 
@@ -16577,10 +16690,10 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
     // user.cpp
     #include "bad.h"
     
-    bool copy( /*... some parameters ...*/);    // some function that happens to be named copy
+    bool copy(/*... some parameters ...*/);    // some function that happens to be named copy
 
     int main() {
-        copy( /*...*/ );    // now overloads local ::copy and std::copy, could be ambiguous
+        copy(/*...*/);    // now overloads local ::copy and std::copy, could be ambiguous
     }
 
 ##### 强制实施
@@ -17709,9 +17822,9 @@ C 标准库规则概览：
     {
         if (a.length() < 2) return;
 
-        int n = *a++; // OK
+        int n = a[0]; // OK
 
-        span<int> q = a + 1; // OK
+        span<int> q = a.subspan(1); // OK
 
         if (a.length() < 6) return;
 
@@ -17786,6 +17899,16 @@ C 标准库规则概览：
         span<int> av = arr;
         for (int i = 0; i < COUNT; ++i)
             av[i] = i;
+    }
+
+    // 替代方案 Aa: 使用 span 和基于范围的 for
+    void f1a()
+    {
+         int arr[COUNT];
+         span<int, COUNT> av = arr;
+         int i = 0;
+         for (auto& e : av)
+             e = i++;
     }
 
     // 替代方案 B: 使用 at() 进行访问
@@ -18362,7 +18485,7 @@ CamelCase：多词标识符的每个词首字母大写：
 
 ##### 示例
 
-    #include<map>
+    #include <map>
 
     int main(int argc, char* argv[])
     {
@@ -19304,12 +19427,16 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 这是在指导方针中用到的一些术语的相对非正式的定义
 （基于 [Programming: Principles and Practice using C++](http://www.stroustrup.com/programming.html) 中的词汇表）。
 
+有关 C++ 的许多主题的更多信息，可以在[标准 C++ 基金会的网站](https://isocpp.org) 找到。
+
+* *ABI*: 应用二进制接口，对于特定硬件平台与操作系统的组合的一种规范。与 API 相对。
 * *抽象类（abstract class）*: 不能直接用于创建对象的类；通常用于为派生类定义接口。
   当类带有纯虚函数或只有受保护的构造函数时，它就是抽象的。
 * *抽象（abstraction）*: 对事物的描述，有选择并有意忽略（隐藏）了细节（如实现细节）；选择性忽略。
 * *地址（address）*: 用以在计算机的内存中找到某个对象的值。
 * *算法（algorithm）*: 用以解决某个问题的过程或公式；有限的一系列计算步骤以产生一个结果。
 * *别名（alias）*: 指代某个对象的替代方式；通常为名字，指针，或者引用。
+* *API*: 应用编程接口，一组构成不同软件之间之间的交互的方法。与 ABI 相对。
 * *应用程序（application）*: 程序或程序的集合，用户将其看作一个实体。
 * *近似（approximation）*: 事物（比如值或者设计），接近于完美的或者理想的（值或设计）。
   通常近似都是在理想情形中进行各种权衡的结果。
@@ -19374,6 +19501,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * *不变式（invariant）*: 程序中的某些点必然总为真的事物；通常用于描述对象的状态（值的集合），或者循环进入其重复的语句之前的状态。
 * *重复（iteration）*: 重复执行代码片段的行为；参见递归。
 * *迭代器（iterator）*: 用以标识序列中的一个元素的对象。
+* *ISO*: 国际标准化组织。C++ 语言是一项 ISO 标准：ISO/IEC 14882。更多信息请参考 [iso.org](iso.org)。
 * *程序库（library）*: 类型、函数、类等等的集合，它们实现了一组设施（抽象），预备可能被用作不止一个程序的组成部分。
 * *生存期（lifetime）*: 从对象的初始化直到它变为不可用（离开作用域，被删除，或程序终止）的时间。
 * *连接器（linker）*: 用以将目标代码文件和程序库合并构成一个可执行程序的程序。
@@ -19424,6 +19552,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * *子类型（subtype）*: 派生类型；一个类型具有另一个类型的所有（可能更多）的性质。
 * *超类型（supertype）*: 基类型；一个类型具有另一个类型的性质的子集。
 * *系统（system）*: (1) 用以在计算机上实施某种任务的一个或一组程序；(2) 对“操作系统”的简称，即计算机的基本执行环境及工具。
+* *TS*: [技术规范](https://www.iso.org/deliverables-all.html?type=ts)。技术规范所处理的是仍处于技术开发之中的工作，或者是认为这项工作以后可能会被同意采纳为国际标准，但并不会立即处理。技术规范的出版是为了其立即可用，也是为了提供一种获得反馈的方法。其目标是最终能够被转化并重新作为国际标准来出版。
 * *模板（template）*: 由一个或多个的类型或（编译时）值进行参数化的类或函数；支持泛型编程的基本 C++ 语言构造。
 * *测试（testing）*: 系统化地查找程序中的错误。
 * *权衡（trade-off）*: 对多个设计和实现准则进行平衡的结果。
