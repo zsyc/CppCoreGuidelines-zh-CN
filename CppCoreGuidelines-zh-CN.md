@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/4/22
+2017/4/30
 
 
 编辑：
@@ -4073,7 +4073,11 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
     class Dir : public Foo {
         //...
-        int mem(int x, int y) { /* ... 做一些事 ... */ return do_bar(x+y); }  // OK：派生类可以略过检查
+        int mem(int x, int y)
+        {
+            /* ... 做一些事 ... */
+            return do_bar(x+y); // OK：派生类可以略过检查
+        }
     }
 
     void user(Foo& x)
@@ -9183,7 +9187,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.21: 不要在确实需要使用变量（或常量）之前就引入它](#Res-introduce)
 * [ES.22: 要等到获得了用以初始化变量的值之后才声明变量](#Res-init)
 * [ES.23: 优先使用 `{}` 初始化语法](#Res-list)
-* [ES.24: 在可能会抛出异常的代码中，用 `unique_ptr<T>` 来保存指针](#Res-unique)
+* [ES.24: 用 `unique_ptr<T>` 来保存指针](#Res-unique)
 * [ES.25: 应当将对象声明为 `const` 或 `constexpr`，除非后面需要修改其值](#Res-const)
 * [ES.26: 不要用一个变量来达成两个不相关的目的](#Res-recycle)
 * [ES.27: 使用 `std::array` 或 `stack_array` 作为栈上的数组](#Res-stack)
@@ -13618,6 +13622,9 @@ C++ 对此的机制是 `atomic` 类型：
 * [E.27: 当不能抛出异常时，系统化地使用错误代码](#Re-no-throw-codes)
 * [E.28: 避免基于全局状态（比如 `errno`）的错误处理](#Re-no-throw)
 
+* [E.30: 请勿使用异常说明](#Re-specifications)
+* [E.31: 恰当地对 `catch` 子句排序](#Re_catch)
+
 ### <a name="Re-design"></a>E.1: 在设计中尽早开发错误处理策略
 
 ##### 理由
@@ -13922,9 +13929,16 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
         // ... 做一些事 ...
     }
 
-这里的 `noexcept` 表明我不希望或无法处理无法构造局部的 `vector` 对象的情形。也就是说，我认为内存耗尽是一种严重的设计错误（类比于硬件故障），因此我希望当其发生时让程序崩溃。
+这里的 `noexcept` 表明我不希望或无法处理无法构造局部的 `vector` 对象的情形。
+也就是说，我认为内存耗尽是一种严重的设计错误（类比于硬件故障），因此我希望当其发生时让程序崩溃。
 
-**参见**: [讨论](#Sd-noexcept)。
+##### 注解
+
+请勿使用传统的[异常说明](#Re-specifications)。
+
+##### 参见
+
+[讨论](#Sd-noexcept)。
 
 ### <a name="Re-never-throw"></a>E.13: 不要在作为某个对象的直接所有者时抛出异常
 
@@ -13960,7 +13974,11 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
         // ...
     }
 
-**参见**: ??? 资源规则 ???
+##### 注解
+
+如果有需要清理的一些局部“东西”，但并未表示为带用析构函数的对象，则这样的清理
+也必须在 `throw` 之前完成。
+有时候，[`finally()](#Re-finally) 可以把这种不系统的清理变得更加可管理一些。
 
 ### <a name="Re-exception-types"></a>E.14: 应当使用为目的所设计的自定义类型（而不是内建类型）作为异常
 
@@ -14490,6 +14508,79 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 ##### 强制实施
 
 很难对付。
+
+
+### <a name="Re-specifications"></a>E.30: 请勿使用异常说明
+
+##### 理由
+
+异常说明使得错误处理变得脆弱，隐含一些运行时开销，并且已经从 C++ 标准中被删除了。
+
+##### 示例
+
+    int use(int arg)
+        throw(X, Y)
+    {
+        // ...
+        auto x = f(arg);
+        // ...
+    }
+
+当 `f()` 抛出了不同于 `X` 和 `Y` 的异常时将会执行未预期异常处理器，其默认将终止程序。
+这没什么问题，但假定我们检查过着并不会发生而 `f` 则被改写为抛出某个新异常 `Z`，
+这样将导致程序崩溃，除非我们改写 `use()`（并重新测试所有东西）。
+障碍在于 `f()` 可能在某个我们无法控制的程序库中，而对于新的异常 `use()`
+没办法对其做任何事，或者对其完全不感兴趣。
+我们可以改写 `use()` 使其传递 `Z` 出去，但这样的话 `use()` 的调用方可能也需要被改写。
+如此事态将很快变得无法掌控。
+或者，我们可以在 `use()` 中添加一个 `try`-`catch` 以将 `Z` 映射为某种可以接受的异常。
+这种方法也会很快变得无法掌控。
+注意，对异常集合的改动通常都发生在系统的最底层
+（比如说，当改换了网络库或者某种中间件时），因此改变将沿着冗长的调用链“冒泡上浮”。
+在大型代码库中，这将意味着直到最后一个使用方也被改写之前，没人可以更新某个库到新版本。
+如果 `use()` 是某个库的一部分，则也许不可能对其进行更新，因为其改动可能影响到未知的客户代码。
+
+而让异常继续传递直到其到达某个潜在可以处理它的函数的策略，已经在多年的实践中得到了证明。
+
+##### 注解
+
+静态强制检查异常说明并不会带来任何好处。
+相关例子请参见 [Stroustrup94](#Stroustrup94)。
+
+##### 注解
+
+当不会抛出异常时，请使用 [`noexcept`](#Re-noexcept) 或其等价的 `throw()`。
+
+##### 强制实施
+
+标记每个异常说明。
+
+### <a name="Re_catch"></a>E.31: 恰当地对 `catch` 子句排序
+
+##### 理由
+
+`catch` 子句是以其出现顺序依次求值的，而其中一个可能会隐藏掉另一个。
+
+##### 示例
+
+    void f()
+    {
+        // ...
+        try {
+                // ...
+        }
+        catch (Base& b) { /* ... */ }
+        catch (Derived& d) { /* ... */ }
+        catch (...) { /* ... */ }
+        catch (std::exception& e){ /* ... */ }
+    }
+
+若 `Derived` 派生自 `Base` 则 `Derived` 的处理器永远不会被执行。
+“捕获任何东西”的处理器保证 `std::exception` 的处理器永远不会被执行。
+
+##### 强制实施
+
+标记出所有的“隐藏处理器”。
 
 # <a name="S-const"></a>Con: 常量与不可变性
 
@@ -17279,6 +17370,7 @@ C++ 标准库组件概览：
 
 * [SL.1: 尽可能使用程序库](#Rsl-lib)
 * [SL.2: 优先使用标准库而不是其他程序库](#Rsl-sl)
+* [SL.3: 请勿向命名空间 `std` 中添加非标准实体](#sl-std)
 * ???
 
 ### <a name="Rsl-lib"></a>SL.1:  尽可能使用程序库
@@ -17296,6 +17388,23 @@ C++ 标准库组件概览：
 
 了解标准库的人更多。
 相对于你自己的代码或者大多数其他程序库来说，标准库更加倾向于稳定，进行了良好维护，而且广泛可用。
+
+
+### <a name="sl-std"></a>SL.3: 请勿向命名空间 `std` 中添加非标准实体
+
+##### 理由
+
+向 `std` 中添加东西可能会改变本来是遵循标准的代码的含义。
+添加到 `std` 的东西可能会与未来版本的标准产生冲突。
+
+##### 示例
+
+    ???
+
+##### 强制实施
+
+有可能，但很麻烦而且在一些平台上很可能导致一些问题。
+
 
 ## <a name="SS-con"></a>SL.con: 容器
 
@@ -17477,7 +17586,7 @@ C++17 中，我们可以使用 `string_view` 而不是 `const string` 作为参�
 
 ##### 注解
 
-???
+`std::string_view`（C++17）是只读的。
 
 ##### 强制实施
 
@@ -17635,30 +17744,112 @@ C++17
 
 ## <a name="SS-io"></a>SL.io: I/O 流（iostream）
 
-???
+`iostream` 是一种类型安全的，可扩展的，带格式的和无格式的流式 I/O 的 I/O 程序库。
+它支持多种（且用户可扩展的）缓冲策略以及多种文化地域。
+它可以用于进行便利的 I/O，内存读写（字符串流），
+以及用户定义的扩展，诸如跨网络的流（asio：尚未标准化）。
 
 I/O 流规则概览：
 
 * [SL.io.1: 仅在必要时才使用字符层面的输入](#Rio-low)
 * [SL.io.2: 当进行读取时，总要考虑非法输入](#Rio-validate)
-* [???](#???)
+* [SL.io.3: 优先使用 iostream 进行 I/O](#Rio-streams)
 * [SL.io.10: 除非你使用了 `printf` 族函数，否则要调用 `ios_base::sync_with_stdio(false)`](#Rio-sync) 
 * [SL.io.50: 避免使用 `endl`](#Rio-endl)
 * [???](#???)
 
 ### <a name="Rio-low"></a>SL.io.1: 仅在必要时才使用字符层面的输入
 
+##### 理由
+
+除非你确实仅处理单个的字符，否则使用字符级的输入将导致用户代码实施潜在易错的
+且潜在低效的从字符进行标记组合的工作。
+
+##### 示例
+
+    char c;
+    char buf[128];
+    int i = 0;
+    while (cin.get(c) && !isspace(c) && i < 128)
+        buf[i++] = c;
+    if (i == 128) {
+        // ... 处理过长的字符串 ....
+    }
+
+更好的做法（简单得多而且可能更快）：
+
+    string s;
+    s.reserve(128);
+    cin>>s;
+
+而且额能并不需要 `reserve(128)`。
+
+##### 强制实施
+
 ???
+
 
 ### <a name="Rio-validate"></a>SL.io.2: 当进行读取时，总要考虑非法输入
 
+##### 理由
+
+错误通常最好尽快处理。
+如果输入无效，所有的函数都必须编写为对付不良的数据（而这并不现实）。
+
+###### 示例
+
+    ???
+
+##### 强制实施
+
 ???
+
+### <a name="Rio-streams"></a>SL.io.3: 优先使用 iostream 进行 I/O
+
+##### 理由
+
+`iosteam` 安全，灵活，并且可扩展。
+
+##### 示例
+
+    // 写出一个复数：
+    complex<double> z{ 3,4 };
+    cout << z << '\n';
+
+`complex` 是一个用户定义的类型，而其 I/O 的定义无需改动 `iostream` 库。
+
+##### 示例
+
+    // 读取一系列复数：
+    for (complex<double> z; cin>>z)
+        v.push_back(z);
+
+##### 例外
+
+??? 性能 ???
+
+##### 讨论：`iostream` vs. `printf()` 家族
+
+人们通常说（并且通常是正确的）`printf` 家族比 `iostream` 由两个优势：
+格式化的灵活性和性能。
+这需要与 `iostream` 在处理用户定义类型方面的扩展性，针对安全性的违反方面的韧性，
+隐含的内存管理，以及 `locale` 处理等优势之间进行权衡。
+
+如果需要 I/O 性能的话，你几乎总能做到比 `printf()` 更好。
+
+`gets()` `scanf()` 使用 `s`，而 `printf()` 使用 `%s` 是安全性的冒险（容易遭受缓冲区溢出问题而且通常很易错）。
+C11 中，它们被替换为 `gets_s()`，`scanf_s()`，和 `printf_s()` 作为更安全的替代方案，但它们仍然并非是类型安全的。
+ 
+##### 强制实施
+
+可选地标记 `<cstdio>` 和 `<stdio.h>`。
 
 ### <a name="Rio-sync"></a>SL.io.10: 除非你使用了 `printf` 族函数，否则要调用 `ios_base::sync_with_stdio(false)`
 
 ##### 理由
 
 `iostreams` 和 `printf` 风格的 I/O 之间的同步是由代价的。
+`cin` 和 `cout` 默认是与 `printf` 相同步的。
 
 ##### 示例
 
@@ -17697,11 +17888,14 @@ I/O 流规则概览：
 
 ## <a name="SS-regex"></a>SL.regex: 正则表达式
 
-???
+`<regex>` 是标准 C++ 的正则表达式库。
+它支持许多正则表达式的模式约定。
 
 ## <a name="SS-chrono"></a>SL.chrono: 时间
 
-???
+`<chrono>`（在命名空间 `std::chrono` 中定义）提供了 `time_point` 和 `duration`，并同时提供了
+用于以各种不同单位输出时间的函数。
+它还提供了用于注册 `time_point` 的时钟。
 
 ## <a name="SS-clib"></a>SL.C: C 标准库
 
@@ -17807,23 +18001,23 @@ C 标准库规则概览：
 
 ##### 示例，不好
 
-   int use(int x)
-   {
-       int i;
-       char c;
-       double d;
+    int use(int x)
+    {
+        int i;
+        char c;
+        double d;
 
-       // ... 做一些事 ...
+        // ... 做一些事 ...
 
-       if (x < i) {
-           // ...
-           i = f(x, d);
-       }
-       if (i < x) {
-           // ...
-           i = g(x, c);
-       }
-       return i;
+        if (x < i) {
+            // ...
+            i = f(x, d);
+        }
+        if (i < x) {
+            // ...
+            i = g(x, c);
+        }
+        return i;
     }
 
 未初始化变量和其使用点的距离越长，出现 BUG 的机会就越大。
@@ -20504,6 +20698,8 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
   \[Meyers15]:        S. Meyers. Effective Modern C++ (O'Reilly, 2015).
 * <a name="Murray93"></a>
   \[Murray93]:        R. Murray. C++ Strategies and Tactics (Addison-Wesley, 1993).
+* <a name="Stroustrup94"></a>
+  \[Stroustrup94]:    B. Stroustrup. The Design and Evolution of C++ (Addison-Wesley, 1994).
 * <a name="Stroustrup00"></a>
   \[Stroustrup00]:    B. Stroustrup. The C++ Programming Language (Special 3rdEdition) (Addison-Wesley, 2000).
 * <a name="Stroustrup05"></a>
