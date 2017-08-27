@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/5/1
+2017/5/8
 
 
 编辑：
@@ -1141,7 +1141,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 还有许多其他种类的工具，诸如源代码仓库和构建工具等等，
 但这些超出了本指导方针的范围。
 
-###### 注解
+##### 注解
 
 当心不要变得对过于详细定制的或者过于专门的工具链产生依赖。
 它们会使得你本来可移植的代码变得不可移植。
@@ -1820,7 +1820,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 ##### 强制实施
 
-* 【简单】 当对并非 `owner` 的原始指针进行 `delete` 就发出警告。
+* 【简单】 当对并非 `owner<T>` 的原始指针进行 `delete` 就发出警告。建议使用标准库的资源包装或者使用 `owner<T>`。
 * 【简单】 当任何代码路径上遗漏了对 `owner` 指针的 `reset` 或者显式的 `delete` 时就发出警告。
 * 【简单】 当把 `new` 或者返回值为 `owner` 的函数的返回值赋值给原始指针或非 `ower` 的引用时就发出警告。
 
@@ -3902,7 +3902,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 语言规定运算符 `=`，`()`，`[]` 和 `->` 是成员函数。
 
-###### 示例
+##### 示例
 
 一个重载集合中的一些成员可能不会直接访问 `private` 数据：
 
@@ -4991,7 +4991,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
     };
 
     vector<Date> vd1(1000);   // 需要默认的 Date
-    vector<Date> vd2(1000, Date{Month::october, 7, 1885});   // 替代方式
+    vector<Date> vd2(1000, Date{Month::October, 7, 1885});   // 替代方式
 
 仅当没有用户声明的构造函数时，默认构造函数才会自动生成，因此上面的例子中的 vector `vdl` 是无法进行初始化的。
 
@@ -6255,8 +6255,8 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 * [C.145: 通过指针和引用来访问多态对象](#Rh-poly)
 * [C.146: 当无法避免在类层次上进行导航时应使用 `dynamic_cast`](#Rh-dynamic_cast)
-* [C.147: 当查找所需类的失败被当做一种错误时，应当对引用类型使用 `dynamic_cast`](#Rh-ptr-cast)
-* [C.148: 当查找所需类的失败被当做一种有效的可能情况时，应当对指针类型使用 `dynamic_cast`](#Rh-ref-cast)
+* [C.147: 当查找所需类的失败被当做一种错误时，应当对引用类型使用 `dynamic_cast`](#Rh-ref-cast)
+* [C.148: 当查找所需类的失败被当做一种有效的可能情况时，应当对指针类型使用 `dynamic_cast`](#Rh-ptr-cast)
 * [C.149: 用 `unique_ptr` 或 `shared_ptr` 来避免忘记对以 `new` 所创建的对象进行 `delete` 的情况](#Rh-smart)
 * [C.150: 用 `make_unique()` 来构建由 `unique_ptr` 所拥有的对象](#Rh-make_unique)
 * [C.151: 用 `make_shared()` 来构建由 `shared_ptr` 所拥有的对象](#Rh-make_shared)
@@ -6987,7 +6987,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 很明显，这个例子过于“理论化”，但确实很难找到一个*小型*的现实例子出来。
 `Interface` 是一个[接口层次](#Rh-abstract)的根，
 而 `Utility` 则是一个[实现层次](Rh-kind)的根。
-[一个稍微更现实的例子](https://www.quora.com/What-are-the-uses-and-advantages-of-virtual-base-class-in-C%2B%2B/answer/Lance-Diduck?srid=tzNb)，有一些解释。
+[一个稍微更现实的例子](https://www.quora.com/What-are-the-uses-and-advantages-of-virtual-base-class-in-C%2B%2B/answer/Lance-Diduck)，有一些解释。
 
 ##### 注解
 
@@ -7231,13 +7231,13 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 考虑：
 
     struct B {
-        const char * name {"B"};
+        const char* name {"B"};
         virtual const char* id() const { return name; }
         // ...
     };
 
     struct D : B {
-        const char * name {"D"};
+        const char* name {"D"};
         const char* id() const override { return name; }
         // ...
     };
@@ -7282,7 +7282,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 对所有用 `static_cast` 来进行向下转换进行标记，其中也包括实施 `static_cast` 的 C 风格的强制转换。
 
-### <a name="Rh-ptr-cast"></a>C.147: 当查找所需类的失败被当做一种错误时，应当对引用类型使用 `dynamic_cast`
+### <a name="Rh-ref-cast"></a>C.147: 当查找所需类的失败被当做一种错误时，应当对引用类型使用 `dynamic_cast`
 
 ##### 理由
 
@@ -7296,19 +7296,45 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ???
 
-### <a name="Rh-ref-cast"></a>C.148: 当查找所需类的失败被当做一种有效的可能情况时，应当对指针类型使用 `dynamic_cast`
+### <a name="Rh-ptr-cast"></a>C.148: 当查找所需类的失败被当做一种有效的可能情况时，应当对指针类型使用 `dynamic_cast`
 
 ##### 理由
 
-???
+`dynamic_cast` 转换允许测试指针是否指向某个其类层次中包含给定类的多态对象。由于其找不到类时仅会返回空值，因而可以在运行时予以测试。这允许编写的代码可以基于其结果而选择不同的代码路径。
+
+与此相对，[C.147](#Rh-ptr-cast) 中失败即是错误，而且不能用于条件执行。
 
 ##### 示例
 
-    ???
+下面的例子的 `Shape_owner` 的 `add` 方法获取构造的 `Shape` 对象的所有权。这些对象也根据其几何特性被存储到了不同视图中。
+这个例子中的 `Shape` 并不继承于 `Geometric_attributes`，而是其各个子类继承。
+
+    void add(Shape * const item)
+    {
+      // 总是获得其所有权
+      owned_shapes.emplace_back(item);
+
+      // 检查 Geometric_attribute 并将该形状加入到（零个/一个/某些/全部）视图中
+
+      if (auto even = dynamic_cast<Even_sided*>(item))
+      {
+        view_of_evens.emplace_back(even);
+      }
+
+      if (auto trisym = dynamic_cast<Trilaterally_symmetrical*>(item))
+      {
+        view_of_trisyms.emplace_back(trisym);
+      }
+    }
+
+##### 注解
+
+找不到所需的类时 `dynamic_cast` 将返回空值，而解引用空指针将导致未定义的行为。
+因此 `dynamic_cast` 的结果应当总是当做可能包含空值并进行测试。
 
 ##### 强制实施
 
-???
+* 【复杂】 除非在指针类型 `dynamic_cast` 的结果上进行了空值测试，否则就对该指针的解引用给出警告。
 
 ### <a name="Rh-smart"></a>C.149: 用 `unique_ptr` 或 `shared_ptr` 来避免忘记对以 `new` 所创建的对象进行 `delete` 的情况
 
@@ -7860,7 +7886,7 @@ C++ 语义中的很多部分都假定了其默认的含义。
 程序员必须保持对它的跟踪。
 裸联合体是类型错误的一种来源。
 
-###### Example, bad
+##### Example, bad
 
     union Value {
         int x;
@@ -10822,7 +10848,7 @@ C++17 的规则多少会少些意外：
 人看起来像是个无名变量的东西，对于编译器来说是一条由一个将会立刻离开作用域的临时对象所组成的语句。
 这样可避免不愉快的意外。
 
-###### 示例，不好
+##### 示例，不好
 
     void f()
     {
@@ -12410,7 +12436,7 @@ C++11 引入了许多核心并发原语，C++14 对它们进行了改进，
         socket1 >> surface_readings;
         if (!socket1) throw Bad_input{};
 
-        auto h1 = async([&] { if (!validate(surface_readings) throw Invalide_data{}; });
+        auto h1 = async([&] { if (!validate(surface_readings) throw Invalid_data{}; });
         auto h2 = async([&] { return temperature_gradiants(surface_readings); });
         auto h3 = async([&] { return altitude_map(surface_readings); });
         // ...
@@ -12721,7 +12747,7 @@ C++ 对此的机制是 `atomic` 类型：
 
 ##### 示例
 
-    void f(int * p)
+    void f(int* p)
     {
         // ...
         *p = 99;
@@ -12760,7 +12786,7 @@ C++ 对此的机制是 `atomic` 类型：
 
 ##### 示例
 
-    void f(int * p)
+    void f(int* p)
     {
         // ...
         *p = 99;
@@ -13458,7 +13484,7 @@ C++ 对此的机制是 `atomic` 类型：
     public:
         My_class()
         {
-            // ...
+            // 这个只做一次
         }
     };
 
@@ -13473,42 +13499,48 @@ C++ 对此的机制是 `atomic` 类型：
 
 双检查锁定是很容易被搞乱的。如果确实需要编写自己的双检查锁定，而不顾规则 [CP.110: 不要为初始化编写你自己的双检查锁定](#Rconc-double)和规则 [CP.100: 除非绝对必要，请勿使用无锁编程](#Rconc-lockfree)，那么应当采用惯用的模式。
 
+使用双检查锁定模式而不违反[CP.110: 不要为初始化编写你自己的双检查锁定](#Rconc-double)的情形，出现于当某个非线程安全的动作既困难也罕见，并且存在某个快速且线程安全的测试可以用于保证该动作并不需要实施的情况，但反过来的情况则无法保证。
+
 ##### 示例，不好
 
-即便下面的例子在大多数硬件平台都能正确工作，C++ 标准也不保证其工作。`x_init.load(memory_order_relaxed)` 调用可能会见到在锁定保护之外所获得的值。
+使用 `volatile` 并不能使得第一个检查线程安全，另见[CP.200: `volatile` 仅用于和非 C++ 内存进行通信](#Rconc-volatile2)
 
-    atomic<bool> x_init;
+    mutex action_mutex;
+    volatile bool action_needed;
 
-    if (!x_init.load(memory_order_acquire)) {
-        lock_guard<mutex> lck(x_mutex);
-        if (!x_init.load(memory_order_relaxed)) {
-            // ... 初始化 x ...
-            x_init.store(true, memory_order_release);
+    if (action_needed) {
+        std::lock_guard<std::mutex> lock(action_mutex);
+        if (action_needed) {
+            take_action();
+            action_needed = false;
         }
     }
 
 ##### 示例，好
 
-如下是一种惯用的模式。
+    mutex action_mutex;
+    atomic<bool> action_needed;
 
-    std::atomic<int> state;
-
-    // 当 state == SOME_ACTION_NEEDED 时，也许须有某个动作，也许不需要，我们需要
-    // 在锁定时再次检查。不过，如果 state != SOME_ACTION_NEEDED，则我们可以确定
-    // 不需要进行这个动作。这是双检查锁定的
-    // 基本假设。
-
-    if (state == SOME_ACTION_NEEDED)
-    {
-        std::lock_guard<std::mutex> lock(mutex);
-        if (state == SOME_ACTION_NEEDED)
-        {
-            // 做某些事
-            state = NO_ACTION_NEEDED;
+    if (action_needed) {
+        std::lock_guard<std::mutex> lock(action_mutex);
+        if (action_needed) {
+            take_action();
+            action_needed = false;
         }
     }
 
-在上面的例子中，`(state == SOME_ACTION_NEEDED)` 可以是任何条件。它不必是相等比较。比如它也可以是 `(size > MIN_SIZE_TO_TAKE_ACTION)`。
+这对于正确调校的内存顺序会带来好处，其中的获取加载要比顺序一致性加载更加高效
+
+    mutex action_mutex;
+    atomic<bool> action_needed;
+
+    if (action_needed.load(memory_order_acquire)) {
+        lock_guard<std::mutex> lock(action_mutex);
+        if (action_needed.load(memory_order_relaxed)) {
+            take_action();
+            action_needed.store(false, memory_order_release);
+        }
+    }
 
 ##### 强制实施
 
@@ -14680,6 +14712,34 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 注意，这种包装函数的方案是一种补丁，只能在无法修改 `f()` 的声明时才使用它，
 比如当它属于某个你无法修改的程序库时。
 
+##### 注解
+
+`const` 成员函数可以改动 `mutable` 对象的值，或者通过某个指针成员改动对象的值。
+一种常见用法是来维护一个缓存以避免重复进行复杂的运算。
+例如，这里的 `Date` 缓存（记住）了其字符串表示，以简化其重复使用：
+
+    class Date {
+    public:
+        // ...
+        const string& string_ref() const
+        {
+            if (string_val == "") compute_string_rep();
+            return string_val;
+        }
+        // ...
+    private:
+        void compute_string_rep() const;    // 计算字符串表示并将其存入 string_val
+        mutable string string_val;
+        // ...
+    };
+
+另一种说法是 `const` 特性不会传递。
+通过 `const` 成员函数改动 `mutable` 成员的值和通过非 `const` 指针来访问的对象的值
+是有可能的。
+由类负责确保这样的改动仅当根据其语义（不变式）对于其用户有意义时
+才会发生。
+
+另见 [PIMPL](#???)。
 
 ##### 强制实施
 
@@ -16861,7 +16921,7 @@ C++ 是不支持这样做的。
 
 当你打算使一个类符合某个概念时，应该提早进行验证以减少麻烦。
 
-###### 示例
+##### 示例
 
     class X {
         X() = delete;
@@ -16877,7 +16937,7 @@ C++ 是不支持这样做的。
     static_assert(Copyable<X>);                 // 错误: 忘记定义 X 的移动构造函数了
 
 
-###### 强制实施
+##### 强制实施
 
 不可行。
 
@@ -17274,17 +17334,28 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
 避免文件被多次 `#include`。
 
+为避免包含防卫宏的冲突，不要仅使用文件名来命名防卫宏。
+确保还要包含一个关键词和好的区分词，比如头文件所属的程序库
+或组件的名字。
+
 ##### 示例
 
     // file foobar.h:
-    #ifndef FOOBAR_H
-    #define FOOBAR_H
+    #ifndef LIBRARY_FOOBAR_H
+    #define LIBRARY_FOOBAR_H
     // ... 声明 ...
-    #endif // FOOBAR_H
+    #endif // LIBRARY_FOOBAR_H
 
 ##### 强制实施
 
 标记没有 `#include` 防卫的 `.h` 文件。
+
+##### 注解
+
+一些实现提供了如 `#pragma once` 这样的厂商扩展作为包含防卫宏的替代。
+这并非标准且不可移植。它向程序中注入了宿主机器的文件系统的语义，
+而且把你锁定到某个特定厂商。
+我们的建议是编写 ISO C++：参见[规则 P.2](#Rp-Cplusplus)。
 
 ### <a name="Rs-cycles"></a>SF.9: 避免源文件的循环依赖
 
@@ -17527,7 +17598,7 @@ We don't consider
 注意已经为 `string` 提供了 `>>` 和 `!=`（作为有用操作的例子），并且没有显示的内存分配，
 回收，或者范围检查（`string` 会处理这些）。
 
-C++17 中，我们可以使用 `string_view` 而不是 `const string` 作为参数，以允许调用方更大的灵活性：
+C++17 中，我们可以使用 `string_view` 而不是 `const string*` 作为参数，以允许调用方更大的灵活性：
 
     vector<string> read_until(string_view terminator)   // C++17
     {
@@ -17581,7 +17652,8 @@ C++17 中，我们可以使用 `string_view` 而不是 `const string` 作为参�
 
 ##### 理由
 
-`std::string_view` 或 `gsl::string_span` 提供了简易且（潜在）安全的对字符序列的访问，并与序列的分配和存储方式无关。
+`std::string_view` 或 `gsl::string_span` 提供了简易且（潜在）安全的对字符序列的访问，并与序列的
+分配和存储方式无关。
 
 ##### 示例
 
@@ -17635,7 +17707,6 @@ C++17 中，我们可以使用 `string_view` 而不是 `const string` 作为参�
 已经存在了上亿行的 C++ 代码，它们大多使用 `char*` 和 `const char*` 却并不注明其意图。
 各种不同的方式都在使用它们，包括以之表示所有权，以及（代替 `void*`）作为通用的内存指针。
 很难区分这些用法，因此这条指导方针很难被遵守。
-This is one of the major sources of bugs in C and C++ programs, so it it worth while to follow this guideline wherever feasible..
 而这是 C 和 C++ 程序中的最主要的 BUG 来源之一，因此一旦可行就遵守这条指导方针是值得的。
 
 ##### 强制实施
@@ -17673,7 +17744,7 @@ This is one of the major sources of bugs in C and C++ programs, so it it worth w
 ##### 强制实施
   
 * 标记在 `char*` 上使用的 `[]`
-    
+
 ### <a name="Rstr-byte"></a>Sl.str.5: 使用 `std::byte` 以指代并不必须表示字符的字节值
 
 ##### 理由
@@ -17807,7 +17878,7 @@ I/O 流规则概览：
 错误通常最好尽快处理。
 如果输入无效，所有的函数都必须编写为对付不良的数据（而这并不现实）。
 
-###### 示例
+##### 示例
 
     ???
 
@@ -19532,7 +19603,7 @@ CamelCase：多词标识符的每个词首字母大写：
 
 可读性。
 
-###### 示例
+##### 示例
 
 用数字分隔符来避免长串的数字
 
@@ -19540,7 +19611,7 @@ CamelCase：多词标识符的每个词首字母大写：
     auto q2 = 0b0000'1111'0000'0000;
     auto ss_number = 123'456'7890;
 
-###### 示例
+##### 示例
 
 需要清晰性时使用字面量后缀
 
@@ -19548,13 +19619,13 @@ CamelCase：多词标识符的每个词首字母大写：
     auto world = "world";   // C 风格字符串
     auto interval = 100ms;  // 使用 <chrono>
 
-###### 注解
+##### 注解
 
 不能在代码中到处当做[“魔法常量”](#Res-magic)一样乱用字面量，
 但当定义它们时使它们更可读仍是个好主意。
 在较长的整数串中很容易出现拼写错误。
 
-###### 强制实施
+##### 强制实施
 
 标记长数字串。麻烦的是“长”的定义；也许应当是 7。
 
