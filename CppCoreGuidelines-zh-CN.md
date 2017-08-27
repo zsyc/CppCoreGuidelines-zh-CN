@@ -6815,15 +6815,15 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ##### 示例，不好
 
-   class Shape {
-   public:
-        // ... 接口函数 ...
-   protected:
-        // 为派生类所使用的数据：
-        Color fill_color;
-        Color edge_color;
-        Style st;
-   };
+    class Shape {
+    public:
+         // ... 接口函数 ...
+    protected:
+         // 为派生类所使用的数据：
+         Color fill_color;
+         Color edge_color;
+         Style st;
+    };
 
 这样，由每个所定义的 `Shape` 来保证对受保护数据正确进行操作。
 这样做一度很流行，但同样是维护性问题的一种主要来源。
