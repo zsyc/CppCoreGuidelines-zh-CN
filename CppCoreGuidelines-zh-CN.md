@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/5/16
+2017/5/19
 
 
 编辑：
@@ -1205,6 +1205,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * [I.24: 避免出现相邻而无关的相同类型的参数](#Ri-unrelated)
 * [I.25: 优先以抽象类作为类层次的接口](#Ri-abstract)
 * [I.26: 当想要跨编译器的 ABI 时，使用一个 C 风格的语言子集](#Ri-abi)
+* [I.30: 将有违规则的部分封装](#Ri-encapsulate)
 
 参见
 
@@ -1536,6 +1537,10 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 `Expects()` 还可以用于在算法的中部来检查某个条件。
 
+##### 注解
+
+使用 `unsigned` 并不是回避[确保非负数值](#Res-nonnegative)问题的好方法。
+
 ##### 强制实施
 
 【无法强制实施】 要把各种对前条件进行断言的方式都找出来是不可行的。对那些易于识别的（如 `assert()`）实例给出警告的做法，其意义在缺少语言设施的前提下是有问题的。
@@ -1791,8 +1796,9 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
         return res;
     }
 
-**替代方案**: 用“智能指针”来传递所有权，比如 `unique_ptr`（专有所有权）和 `shared_ptr`（共享所有权）。
-不过除非你需要引用语义，否则这样做并没有那么简炼和高效。
+**替代方案**: 用“智能指针”来[传递所有权](#Rr-smartptrparam)，比如 `unique_ptr`（专有所有权）和 `shared_ptr`（共享所有权）。
+这样做比返回对象自身来说并没有那么简炼，而且通常也不那么高效，
+因此，仅当需要引用语义时再使用智能指针。
 
 **替代方案**: 有时候因为 ABI 兼容性的要求或者缺少资源，是无法对老代码进行修改的。
 这种情况下，请用[指导方针支持库](#S-gsl)的 `owner` 来标记拥有对象的指针：
@@ -1816,7 +1822,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 传递所有权的 API 相对于传递指针的 API 来说比较少见，
 因此缺省情况就是“不传递所有权”。
 
-**参见**: [实参传递](#Rf-conventional)和[返回值](#Rf-T-return)。
+**参见**: [实参传递](#Rf-conventional)，[使用智能指针参数](#Rr-smartptrparam)，以及[返回值](#Rf-T-return)。
 
 ##### 强制实施
 
@@ -2134,6 +2140,69 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 ##### 强制实施
 
 【无法强制实施】 要可靠地识别某个接口是否是构成 ABI 的一部分是很困难的。
+
+### <a name="Ri-encapsulate"></a>I.30: 将有违规则的部分封装
+
+##### 理由
+
+维持代码简单且安全。
+有时候因为逻辑的或者性能的原因，需要使用难看的，不安全的或者易错的技术。
+此时，将它们局部化，而不是使其“感染”接口，可以避免更多的程序员团队必须当心其
+细节和微妙之处。
+如果可能的话，实现复杂度不能通过接口渗透到用户代码之中。
+
+##### 示例
+
+考虑一个程序，其基于某种形式的输入（比如 `main` 的实参）来决定
+从文件，从命令行，还是从标准输入来获得输入数据。
+我们可能会将其写成
+
+    bool owned;
+    owner<istream*> inp;
+    switch (source) {
+    case std_in:        owned = false; inp = &cin;
+    case command_line:  owned = true;  inp = new istringstream{argv[2]};
+    case file:          owned = true;  inp = new ifstream{argv[2]};
+    }
+    istream& in = *inp;
+
+这违反了[避免未初始化变量](#Res-always)，
+[避免忽略所有权](#Ri-raw)，
+和[避免魔法常量](#Res-magic)等规则。
+尤其是，人们必须记得找地方写
+
+    if (owned) delete inp;
+
+我们可以通过使用带有一个特殊的删除器（对 `cin` 不做任何事）的 `unique_ptr` 来处理这个特定的例子，
+但这对于新手来说较复杂（他们很容易遇到这种问题），并且这个例子其实是一个更一般的问题的特例：
+我们希望将其当做静态的某种属性（此处为所有权），需要在运行时进行
+偶尔的处理。
+一般的，更常见的，且更安全的例子可以被静态处理，因而我们并不希望为它们添加开销和复杂性。
+然而我们还是不得不处理那些不常见的，较不安全的，而且更为昂贵的情况。
+[[Str15]](http://www.stroustrup.com/resource-model.pdf) 中对这种例子有所探讨。
+
+由此，我们编写这样的类
+
+    class Istream { [[gsl::suppress(lifetime)]]
+    public:
+        enum Opt { from_line = 1 };
+        Istream() { }
+        Istream(zstring p) :owned{true}, inp{new ifstream{p}} {}            // 从文件读取
+        Istream(zstring p, Opt) :owned{true}, inp{new istringstream{p}} {}  // 从命令行读取
+        ~Itream() { if (owned) delete inp; }
+        operator istream& () { return *inp; }
+    private:
+        bool owned = false;
+        istream* inp = &cin;
+    };
+
+这样，`istream` 的所有权的动态本质就被封装起来。
+大体上，在现实的代码中还是需要针对潜在的错误添加一些检查。
+
+##### 强制实施
+
+* 很难，判断那种违背规则的代码是基本的是很难做到的
+* 对允许规则违背的部分跨越接口的规则抑制进行标记
 
 # <a name="S-functions"></a>F: 函数
 
@@ -6069,7 +6138,7 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 ##### 示例
 
-    class X {
+    struct X {
         string name;
         int number;
     };
@@ -9249,6 +9318,8 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.103: 避免上溢出](#Res-overflow)
 * [ES.104: 避免下溢出](#Res-underflow)
 * [ES.105: 避免除零](#Res-zero)
+* [ES.106: 不要试图用 `unsigned` 来防止负数值](#Res-nonnegative)
+* [ES.107: 不要对下标使用 `unsigned`](#Res-subscripts)
 
 ### <a name="Res-lib"></a>ES.1: 优先采用标准库而不是其他的库或者“手工自制代码”
 
@@ -10248,17 +10319,6 @@ C++17 的规则多少会少些意外：
     }(); // 注意这个 ()
 
 如果可能的话，应当将条件缩减成一个后续的简单集合（比如一个 `enum`），并避免把选择和初始化相互混合起来。
-
-##### 示例
-
-    bool owned = false;
-    owner<istream*> inp = [&]{
-        switch (source) {
-        case default:       owned = false; return &cin;
-        case command_line:  owned = true;  return new istringstream{argv[2]};
-        case file:          owned = true;  return new ifstream{argv[2]};
-    }();
-	istream& in = *inp;
 
 ##### 强制实施
 
@@ -11826,6 +11886,126 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 ##### 强制实施
 
 * 对以可能为零的整型值的除法进行标记。
+
+
+### <a name="Res-nonnegative"></a>ES.106: 不要试图用 `unsigned` 来防止负数值
+
+##### 理由
+
+选用 `unsigned` 意味着对于包括模算术在内的整数的常规行为的许多改动，
+它将抑制掉与溢出有关的警告，
+并打开了与混合符号相关的错误的大门。
+使用 `unsigned` 并不会真正消除负数值的可能性。
+
+##### 示例
+
+    unsigned int u1 = -2;   // OK：u1 的值为 4294967294
+    int i1 = -2;
+    unsigned int u2 = i1;   // OK：u2 的值为 4294967294
+    int i2 = u2;            // OK：i2 的值为 -2
+
+真实代码中很难找出这样的（完全合法的）语法构造的问题，而它们是许多真实世界错误的来源。
+考虑：
+
+    unsigned area(unsigned height, unsigned width) { return height*width; } // [参见](#Ri-expects)
+    // ...
+    int height;
+    cin >> height;
+    auto a = area(height, 2);   // 当输入为 -2 时 a 为 4294967292
+
+记住把 `-1` 赋值给 `unsigned int` 会变成最大的 `unsigned int`。
+而且，由于无符号算术是模算术，其乘法并不会溢出，而是会发生回绕。
+
+##### 示例
+
+    unsigned max = 100000;    // “不小心写错了”，应该写 10'000
+    unsigned short x = 100;
+    while (x < max) x += 100; // 无限循环
+
+要是 `x` 是个有符号的 `short` 的话，我们就会得到有关溢出的未定义行为的警告了。
+
+##### 替代方案
+
+* 使用有符号整数并检查 `x >= 0`
+* 使用某个正整数类型
+* 使用某个整数子值域类型
+* `Assert(-1 < x)`
+
+例如
+
+    struct Positive {
+        int val;
+        Positive(int x) :val{x} { Assert(0 < x); }
+        operator int() { return val; }
+    };
+
+    int f(Positive arg) {return arg };
+
+    int r1 = f(2);
+    int r2 = f(-2);  // 抛出异常
+
+##### 注解
+
+???
+
+##### 强制实施
+
+困难：有大量使用 `unsigned` 的代码，而我们又没给出一个实际的正数类型。
+
+
+### <a name="Res-subscripts"></a>ES.107: 不要对下标使用 `unsigned`
+
+##### 理由
+
+避免有符号和无符号混乱。
+允许更好的优化。
+允许更好的错误检测。
+
+##### 示例，不好
+
+    vector<int> vec {1, 2, 3, 4, 5};
+
+    for (int i=0; i < vec.size(); i+=2)                    // 混用 int 和 unsigned
+        cout << vec[i] << '\n';
+    for (unsigned i=0; i < vec.size(); i+=2)               // 有风险的回绕
+        cout << vec[i] << '\n';
+    for (vector<int>::size_type i=0; i < vec.size(); i+=2) // 啰嗦
+        cout << vec[i] << '\n';
+    for (auto i=0; i < vec.size(); i+=2)                   // 混用 int 和 unsigned
+        cout << vec[i] << '\n';
+
+##### 注解
+
+内建数组使用有符号的下标。
+标准库容器使用无符号的下标。
+因此没有完美的兼容解决方案。
+鉴于无符号和混合符号方面的已知问题，最好坚持使用（有符号）整数。
+
+##### 示例
+
+    template<typename T>
+    struct My_container {
+    public:
+        // ...
+        T& operator[](int i);    // 不是 unsigned
+        // ...
+    };
+
+##### 示例
+
+    ??? 演示改进后的代码生成和潜在可进行的错误检查 ???
+
+##### 替代方案
+
+可以代之以
+
+* 使用算法
+* 使用基于范围的 `for`
+* 使用迭代器或指针
+
+##### 强制实施
+
+非常麻烦，因为标准库容器已经搞错了。
 
 # <a name="S-performance"></a>Per: 性能
 
@@ -14092,9 +14272,15 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
         // ...
     }
 
-可以代之以：
+可以代之以引用：
 
     catch (exception& e) { /* ... */ }
+
+通常更好的是 `const` 引用：
+
+    catch (const exception& e) { /* ... */ }
+
+大多数处理器并不会改动异常，一般情况下我们都会[建议使用 `const`](#Res-const)。
 
 ##### 强制实施
 
@@ -17023,6 +17209,7 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 * [SF.7: 请勿在头文件中使用 `using namespace` 指令](#Rs-using-directive)
 * [SF.8: 为所有的 `.h` 文件使用 `#include` 防卫宏](#Rs-guards)
 * [SF.9: 避免源文件的循环依赖](#Rs-cycles)
+* [SF.10: 避免依赖于隐含地 `#include` 进来的名字](#Rs-implicit)
 
 * [SF.20: 用 `namespace` 表示逻辑结构](#Rs-namespace)
 * [SF.21: 请勿在头文件中使用无名（匿名）命名空间](#Rs-unnamed)
@@ -17356,6 +17543,76 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 ##### 强制实施
 
 对任何循环依赖进行标记。
+
+
+### <a name="Rs-implicit"></a>SF.10: 避免依赖于隐含地 `#include` 进来的名字
+
+##### 理由
+
+避免意外。
+避免当 `#include` 的头文件改变时改变一条 `#include`。
+避免意外地变为依赖于所包含的头文件中的实现细节和逻辑上独立的实体。
+
+##### 示例
+
+    #include <iostream>
+    using namespace std;
+
+    void use()                  // 不好
+    {
+        string s;
+        cin >> s;               // 好
+        getline(cin, s);        // 错误：getline() 未定义
+        if (s == "surprise") {  // 错误：== 未定义
+            // ...
+        }
+    }
+
+`<iostream>` 暴露了 `std::string` 的定义（“为什么？”是一个有趣的问题），
+但其并不必然是通过传递包含整个 `<string>` 头文件而做到这一点的，
+这带来了常见的新手问题“为什么 `getline(cin,s);` 不成？”，
+甚至偶尔出现的“`string` 无法用 `==` 来比较”。
+
+其解决方案是明确地 `#include<string>`：
+
+    #include <iostream>
+    #include <string>
+    using namespace std;
+
+    void use()
+    {
+        string s;
+        cin >> s;               // 好
+        getline(cin, s);        // 好
+        if (s == "surprise") {  // 好
+            // ...
+        }
+    }
+
+##### 注解
+
+一些头文件正是用于从一些头文件中合并一组声明。
+例如：
+
+    // basic_std_lib.h:
+
+    #include <vector>
+    #include <string>
+    #include <map>
+    #include <iostream>
+    #include <random>
+    #include <vector>
+
+用户只用一条 `#include` 就可以获得整组的声明了：
+
+    #include "basic_std_lib.h"
+
+本条反对隐式包含的规则并不防止这种特意的聚集包含。
+
+##### 强制实施
+
+强制实施将需要一些有关头文件中哪些是“导出”给用户所用而哪些是用于实现的知识。
+在我们能用到模块之前没有真正的好方案。
 
 ### <a name="Rs-namespace"></a>SF.20: 用 `namespace` 表示逻辑结构
 
