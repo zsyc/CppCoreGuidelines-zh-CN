@@ -364,7 +364,7 @@
 实现这些规则的工具应当遵循下面的语法以明确抑制一条规则：
 
     [[gsl::suppress(tag)]]
-    
+
 其中的 "tag" 是包含强制规则的条目的锚定名字（例如，[C.134](#Rh-public) 的锚定名字为 "Rh-public"），
 剖面配置的规则组的名字（如 "type"，"bounds"，或 "lifetime"），
 或者剖面配置中的特定规则（[type.4](#Pro-type-cstylecast) 或 [bounds.2](#Pro-bounds-arrayindex)）。
@@ -2654,7 +2654,7 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
 
     // 不会改变所有权，但要求调用方对其具有特定的所有权。
     void h(const unique_ptr<int>&);
-    
+
     // 接受任何的 int
     void h(int&);
 
@@ -2872,7 +2872,7 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
         store_somewhere(std::move(v));
         // 通常这里不再会使用 v 了；它已经被移走
     }
-    
+
 注意，`std::move(v)` 使得 `store_somewhere()` 可以把 `v` 遗留为被移走的状态。
 [这可能很危险](#Rc-move-semantic)。
 
@@ -3216,7 +3216,7 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
         // 截取指针（可能带有检查）
         std::sort(&s[0], &s[s.size() / 2]);
     }
-    
+
 ##### 注解
 
 `span<T>` 对象并不拥有其元素，而且很小，可以按值传递。
@@ -3889,7 +3889,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
         Month m;
         char d;    // day
     };
-    
+
 ##### 注解
 
 如果一个类中有任何的 `private` 数据的话，其使用者就不可能不通过构造函数而完全初始化一个对象。
@@ -4195,7 +4195,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 ##### 示例
 
     class Point1 {
-        int x, y;   
+        int x, y;
         // ... 一些操作 ...
         // ... 没有虚函数 ...
     };
@@ -4305,7 +4305,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 * [C.40: 如果类具有不变式，请为其定义构造函数](#Rc-ctor)
 * [C.41: 构造函数应当创建经过完整初始化的对象](#Rc-complete)
 * [C.42: 当构造函数无法构造有效对象时，应当抛出异常](#Rc-throw)
-* [C.43: 保证类带有默认构造函数](#Rc-default0)
+* [C.43: 保证值类型类带有默认构造函数](#Rc-default0)
 * [C.44: 尽量让默认构造函数简单且不抛出异常](#Rc-default00)
 * [C.45: 不要定义仅对数据成员进行初始化的默认构造函数；应当使用成员初始化式](#Rc-default)
 * [C.46: 默认情况下，把单参数的构造函数声明为 `explicit`](#Rc-explicit)
@@ -5034,7 +5034,9 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 有些领域，比如像飞行器控制这样的硬实时系统中，（在没有其他工具支持下）异常处理在计时方面不具有足够的可预测性。
 这样的话就必须使用 `is_valid()` 技巧。这种情况下，可以一贯并即刻地检查 `is_valid()` 来模拟 [RAII](#Rr-raii)。
 
-**替代方案**: 如果你觉得想要使用某种“构造函数之后初始化”或者“两阶段初始化”手法，请试着避免这样做。
+##### 替代方案
+
+如果你觉得想要使用某种“构造函数之后初始化”或者“两阶段初始化”手法，请试着避免这样做。
 如果你确实要如此的话，请参考[工厂函数](#Rc-factory)。
 
 ##### 注解
@@ -5045,13 +5047,22 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 ##### 强制实施
 
-### <a name="Rc-default0"></a>C.43: 保证类带有默认构造函数
+???
+
+### <a name="Rc-default0"></a>C.43: 保证值类型类带有默认构造函数
 
 ##### 理由
 
 许多的语言和程序库设施都依赖于默认构造函数来初始化其各个元素，比如 `T a[10]` 和 `std::vector<T> v(10)`。
+默认构造函数通常会简化定义一个适当的[移动遗留状态](#???)的任务。
 
-##### 示例，不好
+##### 注解
+
+我们（尚）未正式定义[值类型](#SS-concrete)，不过可将其看作一个与 `int` 行为非常相似的类：
+它可以用 `=` 进行复制，通常也可以用 `==` 进行比较。
+这与 [EoP](http://elementsofprogramming.com/) 和 [Palo Alto TR](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3351.pdf) 中的正规（Regular）类型紧密相关。
+
+##### 示例
 
     class Date { // 不好: 缺少默认构造函数
     public:
@@ -5063,17 +5074,17 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
     vector<Date> vd2(1000, Date{Month::October, 7, 1885});   // 替代方式
 
 仅当没有用户声明的构造函数时，默认构造函数才会自动生成，因此上面的例子中的 vector `vdl` 是无法进行初始化的。
+缺乏默认值会导致用户感觉奇怪，并且使其使用变复杂，因此如果可以合理定义的话就应当定义默认值。
 
+`Date` 可以推动我们考虑：
 “天然的”默认日期是不存在的（大爆炸对大多数人来说在时间上太过久远了），因此这并非是毫无意义的例子。
 `{0, 0, 0}` 在大多数历法系统中都不是有效的日期，因此选用它可能会引入某种如同浮点的 `NaN` 这样的东西。
 不过，大多数现实的 `Date` 类都有某个“首日”（比如很常见的 1970/1/1），因此以它为默认日期通常很容易做到。
 
-##### 示例
-
     class Date {
     public:
         Date(int dd, int mm, int yyyy);
-        Date() = default; // 参见 C.45
+        Date() = default; // [参见](#Rc-default)
         // ...
     private:
         int dd = 1;
@@ -5120,9 +5131,41 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         int i {};   // 默认初始化（为 0）
     };
 
+##### 示例
+
+许多类本来就没有合理的默认值。
+
+设计仅用于作为基类的类不需要默认构造函数，因为它自身是无法构造的：
+
+    struct Shape {  // 纯接口：所有成员都是纯虚函数
+            void draw() = 0;
+            void rotate(int) = 0;
+            // ...
+    };
+
+表示不可修改的值的类
+
+    lock_guard g {mx};  // 防卫 mutex mx
+    lock_guard g2;      // 错误：不防卫任何东西
+
+##### 注解
+
+带有必须由其成员函数或者其用户进行特殊处理的“特殊状态”的类，会带来额外的工作量，
+（而且很可能有更多的错误）。例如
+
+    ofstream out {"Foobar"};
+    // ...
+    out << log(time, transaction);
+
+如果 `Foobar` 无法为写入打开，而 `out` 并未设置为错误时抛出异常，则输出操作将成为空操作。
+实现必须当心这种情况，而用户则必须记得测试成功状态。
+
+指针，即便是智能指针，可以不指向任何东西（空指针），也是这种情况的例子。
+提供默认构造函数并不是万灵药；理想情况下它应当为一个有意义的状态，比如 `std::string` 的 `""` 和 `std::vector` 的 `{}`。
+
 ##### 强制实施
 
-* 标记没有默认构造函数的类。
+* 对于可用 `=` 进行复制或可用 `==` 进行比较的类，若没有默认构造函数则对其进行标记。
 
 ### <a name="Rc-default00"></a>C.44: 尽量让默认构造函数简单且不抛出异常
 
@@ -6432,7 +6475,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
     } // 泄漏
 
 `Derived` 是通过其 `Goof` 接口而被 `delete` 的，而它的 `string` 则泄漏了。
-为 `Goof` 提供虚析构函数就能使其都正常工作。 
+为 `Goof` 提供虚析构函数就能使其都正常工作。
 
 
 ##### 强制实施
@@ -6553,7 +6596,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
         void f3(double);     // 不好（希望会有警告）: D::f3() 隐藏了 B::f3()
         // ...
     };
-    
+
     struct Better : B {
         void f1(int) override;        // 错误（被发现）: D::f1() 隐藏了 B::f1()
         void f2(int) const override;
@@ -7073,7 +7116,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 没有 using 声明的话，派生类的成员函数将会隐藏全部其所继承的重载集合。
 
 ##### 示例，不好
- 
+
     #include <iostream>
     class B {
     public:
@@ -11490,7 +11533,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
         string s2 = s1;             // ok, 接收了一个副本
         assert(s1 == "supercalifragilisticexpialidocious");  // ok
-        
+
         // 不好, 如果你打算保留 s1 的值的话
         string s3 = move(s1);
 
@@ -11533,7 +11576,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 示例，不好
 
-    vector<int> v = std::move(make_vector());   // 不好; 这个 std::move 完全是多余的 
+    vector<int> v = std::move(make_vector());   // 不好; 这个 std::move 完全是多余的
 
 绝不在返回值上使用 `move`，如 `x = move(f());`，其中的 `f` 按值返回。
 语言已经知道返回值是临时对象而且可以被移动。
@@ -12739,12 +12782,9 @@ C++ 对此的机制是 `atomic` 类型：
 * [CP.21: 用 `std::lock()` 或 `std::scoped_lock` 来获得多个 `mutex`](#Rconc-lock)
 * [CP.22: 绝不在持有锁的时候调用未知的代码（比如回调）](#Rconc-unknown)
 * [CP.23: 把连接的 `thread` 看作是有作用域的容器](#Rconc-join)
-* [CP.24: 把分离的 `thread` 看作是全局容器](#Rconc-detach)
-* [CP.25: 优先采用 `gsl::raii_thread` 而不是 `std::thread`，除非你打算 `detach()`](#Rconc-raii_thread)
-* [CP.26: 当你打算 `detach()` 时，优先采用 `gsl::detached_thread` 而不是 `std::thread`](#Rconc-detached_thread)
-* [CP.27: （仅）当需要基于某个运行时条件分离 `thread` 时，使用 `std::thread`](#Rconc-thread)
-* [CP.28: 不要忘记对未 `detach()` 的有作用域 `thread` 进行连接](#Rconc-join-undetached)
-* [CP.30: 不要把指向局部变量的指针传递给非 `raii_thread`](#Rconc-pass)
+* [CP.24: 把 `thread` 看作是全局的容器](#Rconc-detach)
+* [CP.25: 优先采用 `gsl::joining_thread` 而不是 `std::thread`](#Rconc-joining_thread)
+* [CP.26: 不要 `detach()` 线程](#Rconc-detached_thread)
 * [CP.31: 少量数据在线程之间按值传递，而不是通过引用或指针传递](#Rconc-data-by-value)
 * [CP.32: 用 `shared_ptr` 在无关的 `thread` 之间共享所有权](#Rconc-shared)
 * [CP.40: 最小化上下文切换](#Rconc-switch)
@@ -12912,26 +12952,25 @@ C++ 对此的机制是 `atomic` 类型：
     void some_fct(int* p)
     {
         int x = 77;
-        raii_thread t0(f, &x);           // OK
-        raii_thread t1(f, p);            // OK
-        raii_thread t2(f, &glob);        // OK
+        joining_thread t0(f, &x);           // OK
+        joining_thread t1(f, p);            // OK
+        joining_thread t2(f, &glob);        // OK
         auto q = make_unique<int>(99);
-        raii_thread t3(f, q.get());      // OK
+        joining_thread t3(f, q.get());      // OK
         // ...
     }
 
-`raii_thread` 是一种 `std::thread`，其析构函数进行连接且不可被 `detached()`。
+`gsl::joining_thread` 是一种 `std::thread`，其析构函数进行连接且不可被 `detached()`。
 这里的“OK”表明对象能够在 `thread` 可以使用指向它的指针时一直处于作用域（“存活”）。
 `thread` 运行的并发性并不会影响这里的生存期或所有权问题；
 这些 `thread` 可以仅仅被看成是从 `some_fct` 中调用的函数对象。
 
 ##### 强制实施
 
-确保 `raii_thread` 不会 `detach()`。
+确保 `joining_thread` 不会 `detach()`。
 之后，可以实施（针对局部对象的）常规的生存期和所有权强制实施方案。
 
-
-### <a name="Rconc-detach"></a>CP.24: 把分离的 `thread` 看作是全局容器
+### <a name="Rconc-detach"></a>CP.24: 把 `thread` 看作是全局的容器
 
 ##### 理由
 
@@ -12976,60 +13015,64 @@ C++ 对此的机制是 `atomic` 类型：
 若是这个线程持续到程序终止，则它的运行可能与具有静态存储期的对象的销毁过程发生并发，
 而这样对这些对象的访问就可能发生竞争。
 
-##### 强制实施
+##### 注解
+
+如果你[不 `detach()`](#Rconc-detached_thread) 并[使用 `gsl::joining_tread`](#Rconc-joining_thread) 的话，本条规则是多余的。
+不过，将代码转化为遵循这些指导方针可能很困难，而对于第三方库来说更是不可能的。
+这些情况下，这条规则对于生存期安全性和类型安全性来说就是必要的了。
+
 
 一般来说是无法确定是否对某个 `thread` 执行了 `detach()` 的，但简单的常见情况则易于检测出来。
 如果无法证明某个 `thread` 并没有 `detach()` 的话，我们只能假定它确实分离了，且它的存活将超过其构造时所处于的作用域；
 之后，可以实施（针对全局对象的）常规的生存期和所有权强制实施方案。
 
-
-### <a name="Rconc-raii_thread"></a>CP.25: 优先采用 `gsl::raii_thread` 而不是 `std::thread`，除非你打算 `detach()`
-
-##### 理由
-
-`raii_thread` 是一种在其作用域结尾处进行连接的线程。
-
-分离的线程很难进行监管。
-
-??? 将所有“不死线程”放入自由存储中而不是让它们 `detach()`？
-
-##### 示例
-
-    ???
-
 ##### 强制实施
 
-???
+当试图将局部变量传递给可能 `detach()` 的线程时进行标记。
 
-### <a name="Rconc-detached_thread"></a>CP.26: 当你打算 `detach()` 时，优先采用 `gsl::detached_thread` 而不是 `std::thread`
+### <a name="Rconc-joining_thread"></a>CP.25: 优先采用 `gsl::joining_thread` 而不是 `std::thread`
 
 ##### 理由
 
-通常，对 `detach` 的需求源自于该 `thread` 的任务。
-注明这点有助于理解，且有助于进行静态分析。
+`joining_thread` 是一种在其作用域结尾处进行连接的线程。
+分离的线程很难进行监管。
+确保分离的线程（和潜在分离的线程）中没有错误则更加困哪。
 
-##### 示例
+##### 示例，不好
 
-    void heartbeat();
+    void f() { std::cout << "Hello "; }
 
-    void use()
+    struct F {
+        void operator()() { std::cout << "parallel world "; }
+    };
+
+    int main()
     {
-        gsl::detached_thread t1(heartbeat);    // 显然不需要连接
-        std::thread t2(heartbeat);             // 需要进行连接吗？（要读 heartbeat() 的代码）
-        // ...
-    }
-
-标记对普通 `thread` 的无条件 `detach`。
-
-
-### <a name="Rconc-thread"></a>CP.27: （仅）当需要基于某个运行时条件分离 `thread` 时，使用 `std::thread`
-
-##### 理由
-
-预计会无条件地 `join` 或者无条件地 `detach` 的 `thread`，这样都可以被清晰地指出来。
-普通的 `thread` 应当假定会使用 `std::thread` 的全部通用性。
+        std::thread t1{f};      // f() 在独立线程中执行
+        std::thread t2{F()};    // F()() 在独立线程中执行
+    }  // 请找出问题
 
 ##### 示例
+
+    void f() { std::cout << "Hello "; }
+
+    struct F {
+        void operator()() { std::cout << "parallel world "; }
+    };
+
+    int main()
+    {
+        std::thread t1{f};      // f() 在独立线程中执行
+        std::thread t2{F()};    // F()() 在独立线程中执行
+
+        t1.join();
+        t2.join();
+    }  // 剩下一个糟糕的 BUG
+
+
+##### 示例，不好
+
+决定是要 `join()` 还是 `detach()` 的代码可能很复杂，甚至是可能由线程中所调用的函数所决定，也可能由创建线程的函数所调用的函数来决定：
 
     void tricky(thread* t, int n)
     {
@@ -13046,83 +13089,76 @@ C++ 对此的机制是 `atomic` 类型：
         // ... 这里应不应该连接？ ...
     }
 
-##### 强制实施
+这极大地使生存期分析复杂化了，而且在并不非常罕见的情况下甚至使得生存期分析变得不可能。
+这意味着，我们无法在线程中安全地涉指 `use()` 的局部对象，或者从 `use()` 中安全地涉指线程中的局部对象。
 
-???
+##### 注解
 
+使“不死线程”成为全局的，将其放入外围作用域中，或者放入自由存储中，而不要 `detach()` 它们。
+[不要 `detach`](#Rconc-detached_thread)。
 
+##### 注解
 
-### <a name="Rconc-join-undetached"></a>CP.28: 不要忘记对未 `detach()` 的有作用域 `thread` 进行连接
+因为老代码和第三方库也会使用 `std::thread`，本条规则可能很难引入。
 
 ##### 理由
 
-还未 `detach()` 的 `thread` 在销毁时将终止程序。
+标记 `std::thread` 的使用：
 
-##### 示例，不好
+* 建议使用 `gsl::joining_thread`.
+* 建议当其脱离时使其[“外放所有权”](#Rconc-detached_thread)到某个外围作用域中。
+* 如果不明确线程是联结还是脱离，则严正警告。
 
-    void f() { std::cout << "Hello "; }
+### <a name="Rconc-detached_thread"></a>CP.26: 不要 `detach()` 线程
 
-    struct F {
-        void operator()() { std::cout << "parallel world "; }
-    };
+##### 理由
 
-    int main()
-    {
-        std::thread t1{f};      // f() 在单独的线程中执行
-        std::thread t2{F()};    // F()() 在单独的线程中执行
-    }  // 找到问题
+通常，需要存活超出线程创建的作用域的情况是来源于 `thread` 的任务所决定的，
+但用 `detach` 来实现这点将造成更加难于对脱离的线程进行监控和通信。
+特别是，要确保线程按预期完成或者按预期的时间存活变得更加困难（虽然不是不可能）。
 
 ##### 示例
 
-    void f() { std::cout << "Hello "; }
-
-    struct F {
-        void operator()() { std::cout << "parallel world "; }
-    };
-
-    int main()
-    {
-        std::thread t1{f};      // f() 在单独的线程中执行
-        std::thread t2{F()};    // F()() 在单独的线程中执行
-
-        t1.join();
-        t2.join();
-    }  // 留下了一个不好的 BUG
-
-??? `cout` 有同步吗？
-
-##### 强制实施
-
-* 对 `raii_thread` 的 `join` 进行标记 ???
-* 对  `detached_thread` 的 `detach` 进行标记
-
-
-### <a name="RRconc-pass"></a>CP.30: 不要把指向局部变量的指针传递给非 `raii_thread`
-
-##### 理由
-
-一般来说是无法知道非 `raii_thread` 是否会存活超过变量的作用域的，因而这些指针将变为无效。
-
-##### 示例，不好
+    void heartbeat();
 
     void use()
     {
-        int x = 7;
-        thread t0 { f, ref(x) };
+        std::thread t(heartbeat);             // 不联结；打算持续运行 heartbeat
+        t.detach();
         // ...
-        t0.detach();
     }
 
-`detach` 可能不是这么容易发现。
-要么使用 `raii_thread` 要么不向其传递指针。
+这是一种合理的线程用法，一般会使用 `detach()`。
+但这里有些问题。
+我们怎么监控脱离的线程以查看它是否存活呢？
+心跳里边可能会出错，而在需要心跳的系统中，心跳丢失可能是非常严重的问题。
+因此，我们需要与心跳线程进行通信
+（例如，通过某个消息流，或者使用 `condition_variable` 的通知事件）。
 
-##### 示例，不好
+一种替代的，而且通常更好的方案是，通过将其放入某个其创建点（或激活点）之外的作用域来控制其生存期。
+例如：
 
-    ??? 将指向局部变量的指针放入队列来让长期存活的线程进行读取 ???
+    void heartbeat();
+
+    gsl::joining_thread t(heartbeat);             // 打算持续运行 heartbeat
+
+这个心跳，（除非出错或者硬件故障等情况）将在程序运行时一直运行。
+
+有时候，我们需要将创建点和所有权点分离开：
+
+    void heartbeat();
+
+    unique_ptr<gsl::joining_thread> tick_tock {nullptr};
+
+    void use()
+    {
+        tick_toc = make_unique(gsl::joining_thread,heartbeat);       // 打算在 tick_tock 存活期间持续运行 heartbeat
+        // ...
+    }
 
 ##### 强制实施
 
-当指向局部对象的指针被传递给普通 `thread` 的构造函数时进行标记。
+标记 `detach()`。
 
 
 ### <a name="Rconc-data-by-value"></a>CP.31: 少量数据在线程之间按值传递，而不是通过引用或指针传递
@@ -13240,10 +13276,10 @@ C++ 对此的机制是 `atomic` 类型：
 
     void workers()  // 设立工作线程（这里是 4 个工作线程）
     {
-        raii_thread w1 {worker};
-        raii_thread w2 {worker};
-        raii_thread w3 {worker};
-        raii_thread w4 {worker};
+        joining_thread w1 {worker};
+        joining_thread w2 {worker};
+        joining_thread w3 {worker};
+        joining_thread w4 {worker};
     }
 
 ##### 注解
@@ -14309,7 +14345,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 许多人都曾试图编写违反这条规则的可靠代码，比如当网络连接“拒绝关闭”的情形。
 尽我们所知，没人曾找到一个做到这点的通用方案。
 虽然偶尔对于非常特殊的例子，你可以通过设置某个状态以便进行将来的清理的方式绕过它。
-比如说，我们可能将一个不打算关闭的 socket 放入一个“故障 socket”列表之中， 
+比如说，我们可能将一个不打算关闭的 socket 放入一个“故障 socket”列表之中，
 让其被某个定期的系统状态清理所检查处理。
 我们见过的每个这种例子都是易错的，专门的，而且通常有 BUG。
 
@@ -14671,7 +14707,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
         }
         // ...
 
-    exit:      
+    exit:
       if (g1.valid()) cleanup(g1);
       if (g1.valid()) cleanup(g2);
       return {res,err};
@@ -15870,7 +15906,7 @@ GSL 中的概念都具有恰当定义的语义；请参见 Palo Alto TR 和 Rang
 
     auto y1 = find_if(v, [](Ordered x) { return x > 7; }); // 要求一种有序类型
     auto z1 = find_if(v, [](auto x) { return x > 7; });    // 期望类型带有 >
-    
+
 ##### 注解
 
 Lambda 会生成函数对象。
@@ -17459,7 +17495,7 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 ##### 注解
 
 [请勿在头文件中使用 `using namespace`](#Rs-using-directive)。
- 
+
 ##### 强制实施
 
 对于单个源文件中，对不同命名空间的多个 `using namespace` 指令进行标记。
@@ -17478,7 +17514,7 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
     // user.cpp
     #include "bad.h"
-    
+
     bool copy(/*... some parameters ...*/);    // some function that happens to be named copy
 
     int main() {
@@ -17741,7 +17777,7 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 ##### 示例
 
     int v[SIZE];                        // 不好
-     
+
     std::array<int, SIZE> w;             // ok
 
 ##### 示例
@@ -17790,7 +17826,7 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 另见[正则表达式](#SS-regex)。
 
 在这里，我们用“字符序列”或“字符串”来代表（终将）作为文本来读取的字符序列。
-We don't consider 
+We don't consider
 
 字符串概览：
 
@@ -17973,7 +18009,7 @@ C++17 中，我们可以使用 `string_view` 而不是 `const string*` 作为参
 参见 [`zstring`](#Rstr-zstring)，[`string`](#Rstr-string)，以及 [`string_span`](#Rstr-view)。
 
 ##### 强制实施
-  
+
 * 标记在 `char*` 上使用的 `[]`
 
 ### <a name="Rstr-byte"></a>Sl.str.5: 使用 `std::byte` 以指代并不必须表示字符的字节值
@@ -17994,7 +18030,7 @@ C++17
 ##### 强制实施
 
 ???
-    
+
 
 ### <a name="Rstr-locale"></a>Sl.str.10: 当需要实施相关于文化地域的操作时，使用 `std::string`
 
@@ -18067,7 +18103,7 @@ I/O 流规则概览：
 * [SL.io.1: 仅在必要时才使用字符层面的输入](#Rio-low)
 * [SL.io.2: 当进行读取时，总要考虑非法输入](#Rio-validate)
 * [SL.io.3: 优先使用 iostream 进行 I/O](#Rio-streams)
-* [SL.io.10: 除非你使用了 `printf` 族函数，否则要调用 `ios_base::sync_with_stdio(false)`](#Rio-sync) 
+* [SL.io.10: 除非你使用了 `printf` 族函数，否则要调用 `ios_base::sync_with_stdio(false)`](#Rio-sync)
 * [SL.io.50: 避免使用 `endl`](#Rio-endl)
 * [???](#???)
 
@@ -18152,7 +18188,7 @@ I/O 流规则概览：
 
 `gets()` `scanf()` 使用 `s`，而 `printf()` 使用 `%s` 是安全性的冒险（容易遭受缓冲区溢出问题而且通常很易错）。
 C11 中，它们被替换为 `gets_s()`，`scanf_s()`，和 `printf_s()` 作为更安全的替代方案，但它们仍然并非是类型安全的。
- 
+
 ##### 强制实施
 
 可选地标记 `<cstdio>` 和 `<stdio.h>`。
@@ -18887,7 +18923,7 @@ C 标准库规则概览：
 有些时候你可能打算诉诸于 `const_cast` 来避免代码重复，比如说两个访问函数由相似的实现而只有 `const` 上有区别。例如：
 
     class Bar;
-    
+
     class Foo {
     public:
         // 不好，逻辑有重复
@@ -18930,7 +18966,7 @@ C 标准库规则概览：
 
         template<class T>           // 好，推断出 T 是 const 还是非 const
         static auto get_bar_impl(T& t) -> decltype(t.get_bar())
-            { /* 获得 my_bar 的一个可能 const 的引用的复杂逻辑 */ } 
+            { /* 获得 my_bar 的一个可能 const 的引用的复杂逻辑 */ }
     };
 
 ##### 例外
@@ -20968,7 +21004,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
   因此为了产生可接受的代码，我们有时候比仅仅遵守形式说明要做更多的事。
 * *成本（cost）*: 产生一个程序，或者执行它的耗费（如开发时间，执行时间或空间等）。
   理想情况下，成本应当是复杂度的函数。
-* *定制点（customization point）*:    
+* *定制点（customization point）*:
 * *数据（data）*: 计算中所用到的值。
 * *调试（debugging）*: 寻找并移除程序中的错误的行为；通常远没有测试那样系统化。
 * *声明式（declaration）*: 程序中对一个名字及其类型的说明。
