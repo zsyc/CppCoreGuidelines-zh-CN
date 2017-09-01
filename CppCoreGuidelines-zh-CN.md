@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/5/19
+2017/5/21
 
 
 编辑：
@@ -2261,6 +2261,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * [F.52: 对于局部使用的（也包括传递给算法的）lambda，优先采用按引用俘获](#Rf-reference-capture)
 * [F.53: 对于非局部使用的（包括被返回的，在堆上存储的，或者传递给别的线程的）lambda，避免采用按引用俘获](#Rf-value-capture)
 * [F.54: 当俘获了 `this` 时，显式俘获所有的变量（不使用默认俘获）](#Rf-this-capture)
+* [F.55: 不要使用 `va_arg` 参数](#F-varargs)
 
 函数和 Lambda 表达式以及函数对象有很强的相似性，请参见章节 ???。
 
@@ -3301,7 +3302,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
     std::thread t2 {shade, args2, bottom_left, im};
     std::thread t3 {shade, args3, bottom_right, im};
 
-    // 分离各线程
+    // 脱离各线程
     // 最后执行完的线程会删除这个图像
 
 ##### 注解
@@ -3802,6 +3803,50 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 ##### 强制实施
 
 * 对指定了默认俘获的 lambda 俘获列表并且还（无论显式还是通过默认俘获）俘获了 `this` 的情况进行标识。
+
+### <a name="F-varargs"></a>F.55: 不要使用 `va_arg` 参数
+
+##### 理由
+
+从 `va_arg` 中读取时需要假定确实传递了正确类型的参数。
+而向变参传递时则需要假定将会读取正确的类型。
+这样是很脆弱的，因为其在语言中无法一般性地强制其安全，因而需要靠程序员的纪律来保证其正确。
+
+##### 示例
+
+    int sum(...) {
+        // ...
+        while (/*...*/)
+            result += va_arg(list, int); // 不好，假定所传递的是 int
+        // ...
+    }
+
+    sum(3, 2); // ok
+    sum(3.14159, 2.71828); // 不好，未定义的行为
+
+    template<class ...Args>
+    auto sum(Args... args) { // 好，而且更灵活
+        return (... + args); // 注意：C++17 的“折叠表达式”
+    }
+
+    sum(3, 2); // ok: 5
+    sum(3.14159, 2.71828); // ok: ~5.85987
+
+##### 替代方案
+
+* 重载
+* 变参模板
+* `variant` 参数
+* `initializer_list`（同质的）
+
+##### 注解
+
+有时候，对于并不涉及实际的参数传递的技巧来说，声明 `...` 形参有其作用，比如当声明“接受任何东西”的函数，以在重载集合中禁止“其他所有东西”，或在模板元程序中表达一种“全覆盖（catchall）”情况时。
+
+##### 强制实施
+
+* 为 `va_list`，`va_start`，或 `va_arg` 的使用给出诊断。
+* 如果 vararg 参数的函数并未提供重载以为该参数位置指定更加特定的类型，则当其传递参数时给出诊断。修正：使用别的函数，或标明 `[[suppress(types)]]`。
 
 # <a name="S-class"></a>C: 类和类层次
 
@@ -6373,6 +6418,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * [C.150: 用 `make_unique()` 来构建由 `unique_ptr` 所拥有的对象](#Rh-make_unique)
 * [C.151: 用 `make_shared()` 来构建由 `shared_ptr` 所拥有的对象](#Rh-make_shared)
 * [C.152: 禁止把指向派生类对象的数组的指针赋值给指向基类的指针](#Rh-array)
+* [C.153: 优先采用虚函数而不是强制转换](#Rh-use-virtual)
 
 ### <a name="Rh-domain"></a>C.120: 使用类层次来表达具有天然层次化结构的概念
 
@@ -7296,10 +7342,29 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
         }
     }
 
+使用其他的强制转换可能会违反类型安全，导致程序中所访问的某个真实类型为 `X` 的变量，被当做具有某个无关的类型 `Z` 而进行访问：
+
+    void user2(B* pb)   // 不好
+    {
+        if (D* pd = static_cast<D*>(pb)) {  // I know that pb really points to a D; trust me
+            // ... 使用 D 的接口 ...
+        }
+        else {
+            // ... 通过 B 的接口做事 ...
+        }
+    }
+
+    void f()
+    {
+        B b;
+        user(&b);   // OK
+        user2(&b);  // 糟糕的错误
+    }
+
 ##### 注解
 
 和其他强制转换一样，`dynamic_cast` 被过度使用了。
-[优先使用虚函数而不是强制转换](#???)。
+[优先使用虚函数而不是强制转换](#Rh-use-virtual)。
 如果可行（无须运行时决议）并且相当便利的话，优先使用[静态多态](#???)而不是
 继承层次的导航。
 
@@ -7316,7 +7381,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
     struct B {
         const char* name {"B"};
-        virtual const char* id() const { return name; }
+        virtual const char* id() const { return name; }     // 若 pb1->id() == pb2->id() 则 *pb1 与 *pb2 类型相同
         // ...
     };
 
@@ -7334,8 +7399,8 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
         cout << pb1->id(); // "B"
         cout << pb2->id(); // "D"
 
-        if (pb1->id() == pb2->id()) // *pb1 和 *pb2 类型相同
-        if (pb2->id() == "D") {         // 貌似没问题
+
+        if (pb1->id() == "D") {         // 貌似没问题
             D* pd = static_cast<D*>(pb1);
             // ...
         }
@@ -7362,9 +7427,19 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 在很罕见的情况下，如果你以及测量出 `dynamic_cast` 的开销确实有影响，你也有其他的方式来静态地保证向下转换的成功（比如说小心地应用 CRTP 时），而且其中并不涉及虚继承的话，可以考虑战术性地使用 `static_cast` 并带上显著的代码注释和免责声明，概述这个段落，而且由于类型系统无法验证其正确性而在维护中需要人工的关切。即便是这样，以我们的经验来说，这种“我知道我在干什么”的情况仍然是一种已知的 BUG 来源。
 
+##### 例外
+
+考虑：
+
+    template<typename B>
+    class Dx : B {
+        // ...
+    };
+
 ##### 强制实施
 
-对所有用 `static_cast` 来进行向下转换进行标记，其中也包括实施 `static_cast` 的 C 风格的强制转换。
+* 对所有用 `static_cast` 来进行向下转换进行标记，其中也包括实施 `static_cast` 的 C 风格的强制转换。
+* 本条规则属于[类型安全性剖面配置](#Pro-type-downcast)。
 
 ### <a name="Rh-ref-cast"></a>C.147: 当查找所需类的失败被当做一种错误时，应当对引用类型使用 `dynamic_cast`
 
@@ -7514,6 +7589,23 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 * 对任何的数组衰变和基类向派生类转换之间的组合进行标记。
 * 应当将数组作为 `span` 而不是指针来进行传递，而且不能让数组的名字在放入 `span` 之前经手派生类向基类的转换。
+
+
+### <a name="Rh-use-virtual"></a>CC.153: 优先采用虚函数而不是强制转换
+
+##### 理由
+
+虚函数调用安全，而强制转换易错。
+虚函数调用达到全派生函数，而强制转换可能达到某个中间类
+而得到错误的结果（尤其是当类层次在维护中被修改之后）。
+
+##### 示例
+
+    ???
+
+##### 强制实施
+
+参见 [C.146] 和 [???]
 
 ## <a name="SS-overload"></a>C.over: 重载和运算符重载
 
@@ -11309,12 +11401,21 @@ C++17 收紧了有关求值顺序的规则，但函数实参求值顺序仍然�
 
 当你觉得需要进行大量强制转换时，可能存在一个基本的设计问题。
 
+##### 替代方案
+
+强制转换被广泛（误）用了。现代 C++ 已经提供了一些语言构造，消除了许多语境中对强制转换的需求，比如
+
+* 使用模板
+* 使用 `std::variant`
+
+
 ##### 强制实施
 
 * 强制消除 C 风格的强制转换。
 * 对具名的强制转换给出警告。
 * 当存在许多函数风格的强制转换时给出警告（显而易见的问题是如何量化“许多”）。
 * 对不必要的强制转换给出警告。
+* [类型剖面配置](#Pro-type-reinterpretcast)禁用了 `reinterpret_cast`。
 
 ### <a name="Res-casts-named"></a>ES.49: 当必须使用强制转换时，使用有名字的强制转换
 
@@ -11365,24 +11466,100 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 试图用这种风格来从 `double` 初始化 `float` 会导致
 编译错误。）
 
+##### 注解
+
+`reinterpret_cast` 可以很基础，但其基础用法（如将机器地址转化为指针）并不是类型安全的：
+
+    auto p = reinterpret_cast<Device_register>(0x800);  // 天生危险
+
+
 ##### 强制实施
 
 * 对 C 风格和函数式的强制转换进行标记。
 * 建议用花括号初始化或者 `gsl::narrow_cast` 来代替算数类型上的具名强制转换。
+* [类型剖面配置](#Pro-type-reinterpretcast)禁用了 `reinterpret_cast`。
 
 ### <a name="Res-casts-const"></a>ES.50: 不要强制掉 `const`
 
 ##### 理由
 
 这是在 `const` 上说谎。
+若变量确实声明为 `const`，则“强制掉 `const`”是未定义的行为。
 
-##### 注解
+##### 示例，不好
 
-“强制掉 `const`”的理由一般是为了允许对本来无法改动的对象中的某种临时性的信息进行更新操作。
-其例子包括进行缓存，备忘，以及预先计算等。
-这样的例子，通常可以通过使用 `mutable` 或者通过一层间接进行处理，而同使用 `const_cast` 一样甚或比之更好。
+    void f(const int& i)
+    {
+        const_cast<int&>(i) = 42;   // 不好
+    }
+
+    static int i = 0;
+    static const int j = 0;
+
+    f(i); // 暗藏的副作用
+    f(j); // 未定义的行为
 
 ##### 示例
+
+有时候，你可能倾向于借助 `const_cast` 来避免代码重复，比如两个访问函数仅在是否 `const` 上有区别而实现相似的情况。例如：
+
+    class Bar;
+
+    class Foo {
+    public:
+        // 不好，逻辑重复
+        Bar& get_bar() {
+            /* 获取 my_bar 的非 const 引用前后的复杂逻辑 */
+        }
+
+        const Bar& get_bar() const {
+            /* 获取 my_bar 的 const 引用前后的相同的复杂逻辑 */
+        }
+    private:
+        Bar my_bar;
+    };
+
+应当改为共享实现。通常可以直接让非 `const` 函数来调用 `const` 函数。不过当逻辑复杂的时候这可能会导致下面这样的模式，仍然需要借助于 `const_cast`：
+
+    class Foo {
+    public:
+        // 不大好，非 const 函数调用 const 版本但借助于 const_cast
+        Bar& get_bar() {
+            return const_cast<Bar&>(static_cast<const Foo&>(*this).get_bar());
+        }
+        const Bar& get_bar() const {
+            /* 获取 my_bar 的 const 引用前后的复杂逻辑 */
+        }
+    private:
+        Bar my_bar;
+    };
+
+虽然这个模式如果恰当应用的话是安全的（因为调用方必然以一个非 `const` 对象来开始），但这并不理想，因为其安全性无法作为检查工具的规则而自动强制实施。
+
+换种方式，可以优先将公共代码放入一个公共辅助函数中，并将之作为模板以使其推断 `const`。这完全不会用到 `const_cast`：
+
+    class Foo {
+    public:                         // 好
+              Bar& get_bar()       { return get_bar_impl(*this); }
+        const Bar& get_bar() const { return get_bar_impl(*this); }
+    private:
+        Bar my_bar;
+
+        template<class T>           // 好，推断出 T 是 const 还是非 const
+        static auto get_bar_impl(T& t) -> decltype(t.get_bar())
+            { /* 获取 my_bar 的可能为 const 的引用前后的复杂逻辑 */ }
+    };
+
+##### 例外
+
+当调用 `const` 不正确的函数时，你可能需要强制掉 `const`。
+应当优先将这种函数包装到内联的 `const` 正确的包装函数中，以将强制转换封装到一处中。
+
+##### 示例
+
+有时候，“强制掉 `const`”是为了允许对本来无法改动的对象中的某种临时性的信息进行更新操作。
+其例子包括进行缓存，备忘，以及预先计算等。
+这样的例子，通常可以通过使用 `mutable` 或者通过一层间接进行处理，而同使用 `const_cast` 一样甚或比之更好。
 
 考虑为昂贵操作将之前所计算的结果保留下来：
 
@@ -11472,7 +11649,8 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 强制实施
 
-标记 `const_cast`。相关的剖面配置请参见 [Type.3: 请勿使用 `const_cast` 强制掉 `const`（亦即不要这样做）](#Pro-type-constcast)。
+* 标记 `const_cast`。
+* 本条规则属于[类型安全性剖面配置](#Pro-type-constcast)。
 
 ### <a name="Res-range-checking"></a>ES.55: 避免发生对范围检查的需要
 
@@ -12781,7 +12959,7 @@ C++ 对此的机制是 `atomic` 类型：
 * [CP.20: 使用 RAII，绝不使用普通的 `lock()`/`unlock()`](#Rconc-raii)
 * [CP.21: 用 `std::lock()` 或 `std::scoped_lock` 来获得多个 `mutex`](#Rconc-lock)
 * [CP.22: 绝不在持有锁的时候调用未知的代码（比如回调）](#Rconc-unknown)
-* [CP.23: 把连接的 `thread` 看作是有作用域的容器](#Rconc-join)
+* [CP.23: 把联结的 `thread` 看作是有作用域的容器](#Rconc-join)
 * [CP.24: 把 `thread` 看作是全局的容器](#Rconc-detach)
 * [CP.25: 优先采用 `gsl::joining_thread` 而不是 `std::thread`](#Rconc-joining_thread)
 * [CP.26: 不要 `detach()` 线程](#Rconc-detached_thread)
@@ -12932,12 +13110,12 @@ C++ 对此的机制是 `atomic` 类型：
 * 当持有非递归的 `mutex` 时调用回调则进行标记。
 
 
-### <a name="Rconc-join"></a>CP.23: 把连接的 `thread` 看作是有作用域的容器
+### <a name="Rconc-join"></a>CP.23: 把联结的 `thread` 看作是有作用域的容器
 
 ##### 理由
 
 为了维护指针安全性并避免泄漏，需要考虑 `thread` 所使用的指针。
-如果 `thread` 连接了，我们可以安全地把指向这个 `thread` 所在作用域及其外围作用域中的对象的指针传递给它。
+如果 `thread` 联结了，我们可以安全地把指向这个 `thread` 所在作用域及其外围作用域中的对象的指针传递给它。
 
 ##### 示例
 
@@ -12960,7 +13138,7 @@ C++ 对此的机制是 `atomic` 类型：
         // ...
     }
 
-`gsl::joining_thread` 是一种 `std::thread`，其析构函数进行连接且不可被 `detached()`。
+`gsl::joining_thread` 是一种 `std::thread`，其析构函数进行联结且不可被 `detached()`。
 这里的“OK”表明对象能够在 `thread` 可以使用指向它的指针时一直处于作用域（“存活”）。
 `thread` 运行的并发性并不会影响这里的生存期或所有权问题；
 这些 `thread` 可以仅仅被看成是从 `some_fct` 中调用的函数对象。
@@ -12975,7 +13153,7 @@ C++ 对此的机制是 `atomic` 类型：
 ##### 理由
 
 为了维护指针安全性并避免泄漏，需要考虑 `thread` 所使用的指针。
-如果 `thread` 分离了，我们只可以安全地把指向静态和自由存储的对象的指针传递给它。
+如果 `thread` 脱离了，我们只可以安全地把指向静态和自由存储的对象的指针传递给它。
 
 ##### 示例
 
@@ -13011,7 +13189,7 @@ C++ 对此的机制是 `atomic` 类型：
 
 ##### 注解
 
-即便具有静态存储期的对象，在分离的线程中的使用也会造成问题：
+即便具有静态存储期的对象，在脱离的线程中的使用也会造成问题：
 若是这个线程持续到程序终止，则它的运行可能与具有静态存储期的对象的销毁过程发生并发，
 而这样对这些对象的访问就可能发生竞争。
 
@@ -13023,7 +13201,7 @@ C++ 对此的机制是 `atomic` 类型：
 
 
 一般来说是无法确定是否对某个 `thread` 执行了 `detach()` 的，但简单的常见情况则易于检测出来。
-如果无法证明某个 `thread` 并没有 `detach()` 的话，我们只能假定它确实分离了，且它的存活将超过其构造时所处于的作用域；
+如果无法证明某个 `thread` 并没有 `detach()` 的话，我们只能假定它确实脱离了，且它的存活将超过其构造时所处于的作用域；
 之后，可以实施（针对全局对象的）常规的生存期和所有权强制实施方案。
 
 ##### 强制实施
@@ -13034,9 +13212,9 @@ C++ 对此的机制是 `atomic` 类型：
 
 ##### 理由
 
-`joining_thread` 是一种在其作用域结尾处进行连接的线程。
-分离的线程很难进行监管。
-确保分离的线程（和潜在分离的线程）中没有错误则更加困哪。
+`joining_thread` 是一种在其作用域结尾处进行联结的线程。
+脱离的线程很难进行监管。
+确保脱离的线程（和潜在脱离的线程）中没有错误则更加困哪。
 
 ##### 示例，不好
 
@@ -13086,7 +13264,7 @@ C++ 对此的机制是 `atomic` 类型：
     {
         thread t { tricky, this, n };
         // ...
-        // ... 这里应不应该连接？ ...
+        // ... 这里应不应该联结？ ...
     }
 
 这极大地使生存期分析复杂化了，而且在并不非常罕见的情况下甚至使得生存期分析变得不可能。
@@ -18811,15 +18989,26 @@ C 标准库规则概览：
 
 类型安全性剖面配置概览：
 
-* [Type.1: 请勿使用 `reinterpret_cast`](#Pro-type-reinterpretcast)
-* [Type.2: 请勿使用 `static_cast` 进行向下强制转换。代之以使用 `dynamic_cast`](#Pro-type-downcast)
-* [Type.3: 请勿使用 `const_cast` 强制掉 `const`（亦即不要这样做）](#Pro-type-constcast)
-* [Type.4: 请勿使用  C 风格的强制转换 `(T)expression`，它可能进行 `static_cast` 向下转换，`const_cast`，或者 `reinterpret_cast`](#Pro-type-cstylecast)
-* [Type.4.1: 不要使用 `T(expression)` 进行强制转换](#Pro-fct-style-cast)
-* [Type.5: 请勿在初始化之前使用变量](#Pro-type-init)
-* [Type.6: 坚持初始化成员变量](#Pro-type-memberinit)
-* [Type.7: 避免访问原始 union 的成员。优先采用 `variant`](#Pro-fct-style-cast)
-* [Type.8: 避免从 varargs 读取参数或传递 vararg 参数。优先采用可变模板参数](#Pro-type-varargs)
+* <a name="Pro-type-reinterpretcast"></a>Type.1: 请勿使用 `reinterpret_cast`：
+此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。
+* <a name="Pro-type-downcast"></a>Type.2: 请勿使用 `static_cast` 进行向下强制转换。：
+[代之以使用 `dynamic_cast`](#Rh-dynamic_cast)。
+* <a name="Pro-type-constcast"></a>Type.3: 请勿使用 `const_cast` 强制掉 `const`（亦即不要这样做）：
+[不要强制掉 `const`](#Res-casts-const)。
+* <a name="Pro-type-cstylecast"></a>Type.4: 请勿使用  C 风格的强制转换 `(T)expression`：
+[优先使用静态的强制转换](#Res-casts-named)。
+* [Type.4.1: 不要使用 `T(expression)` 进行强制转换](#Pro-fct-style-cast)：
+[优先使用具名的强制转换](#Res-casts-named)。
+* [Type.5: 请勿在初始化之前使用变量](#Pro-type-init)：
+[坚持进行初始化](#Res-always)。
+* [Type.6: 坚持初始化成员变量](#Pro-type-memberinit)：
+[坚持进行初始化](#Res-always)，
+可以采用[默认构造函数](#Rc-default0)或者
+[默认成员初始化式](#Rc-in-class-initializer)。
+* [Type.7: 避免裸 union](#Pro-fct-style-cast)：
+[代之以使用 `variant`](#Ru-naked)。
+* [Type.8: 避免 varargs](#Pro-type-varargs)：
+[不要使用 `va_arg` 参数](#F-varargs)。
 
 ##### 影响
 
@@ -18827,203 +19016,6 @@ C 标准库规则概览：
 可能抛出异常以报告无法（在编译时）被静态地检测到的错误。
 要注意的是，这种类型安全性仅当我们同样具有[边界安全性](#SS-bounds)和[生存期安全性](#SS-lifetime)时才是完整的。
 而没有这些保证的话，一个内存区域可能以与其所存储的单个或多个对象，或对象的一部分无关的方式被访问。
-
-### <a name="Pro-type-reinterpretcast"></a>Type.1: 请勿使用 `reinterpret_cast`
-
-##### 理由
-
-使用这些强制转换将会违反类型安全性，并导致程序对实际上为 `X` 类型的变量当作某个无关类型 `Z` 来进行访问。
-
-##### 示例，不好
-
-    std::string s = "hello world";
-    double* p = reinterpret_cast<double*>(&s); // 不好
-
-##### 强制实施
-
-* 对所有 `reinterpret_cast` 的使用给出诊断消息。修正：考虑代之以使用一个 `variant`。
-* 对所有向 `void*` 的 `reinterpret_cast` 的使用给出另外的诊断消息。修正：移除强制转换并允许其隐式转换。
-* 对所有从 `void*` 进行的 `reinterpret_cast` 的使用给出另外的诊断消息。修正：换用 `static_cast`。
-
-### <a name="Pro-type-downcast"></a>Type.2: 请勿使用 `static_cast` 进行向下强制转换。代之以使用 `dynamic_cast`
-
-##### 理由
-
-使用这些强制转换将会违反类型安全性，并导致程序对实际上为 `X` 类型的变量当作某个无关类型 `Z` 来进行访问。
-
-##### 示例，不好
-
-    class Base { public: virtual ~Base() = 0; };
-
-    class Derived1 : public Base { };
-
-    class Derived2 : public Base {
-        std::string s;
-    public:
-        std::string get_s() { return s; }
-    };
-
-    Derived1 d1;
-    Base* p1 = &d1; // ok，隐式转换为基类指针没有问题
-
-    // 不好，试图把 d1 当作一个 Derived2，而它并不是
-    Derived2* p2 = static_cast<Derived2*>(p);
-    // 试图访问 d1 并不存在的字符串成员，它将见到临近 d1 的任意字节数据
-    cout << p2->get_s();
-
-##### 示例，不好
-
-    struct Foo { int a, b; };
-    struct Foobar : Foo { int bar; };
-
-    void use(int i, Foo& x)
-    {
-        if (0 < i) {
-            Foobar& x1 = dynamic_cast<Foobar&>(x);  // 错误: Foo 并非多态类
-            Foobar& x2 = static_cast<Foobar&>(x);   // 不好
-            // ...
-        }
-        // ...
-    }
-
-    // ...
-
-    use(99, *new Foo{1, 2});  // 不是 Foobar
-
-当类层次没有多态性时，应避免进行强制转换。
-这样做完全是不安全的。
-请换一个更好的设计。
-参见 [C.146](#Rh-dynamic_cast)。
-
-##### 强制实施
-
-对所有进行向下强制转换（即将某个 `X` 的指针或引用强制转换为某个并非 `X` 或 `X` 的可访问基类的类型的指针或引用）的 `static_cast` 的使用给出诊断消息。修正：若它是一个向下强制转换或交叉强制转换，则代之以 `dynamic_cast`，否则考虑代之以使用一个 `variant`。
-
-### <a name="Pro-type-constcast"></a>Type.3: 请勿使用 `const_cast` 强制掉 `const`（亦即不要这样做）
-
-##### 理由
-
-强制掉 `const` 是在说谎。如果变量其实被声明为了 `const` 的话，这种谎言将会被未定义行为所惩罚。
-
-##### 示例，不好
-
-    void f(const int& i)
-    {
-        const_cast<int&>(i) = 42;   // 不好
-    }
-
-    static int i = 0;
-    static const int j = 0;
-
-    f(i); // 隐含的副作用
-    f(j); // 未定义行为
-
-##### 示例
-
-有些时候你可能打算诉诸于 `const_cast` 来避免代码重复，比如说两个访问函数由相似的实现而只有 `const` 上有区别。例如：
-
-    class Bar;
-
-    class Foo {
-    public:
-        // 不好，逻辑有重复
-        Bar& get_bar() {
-            /* 获得 my_bar 的一个非 const 引用的复杂逻辑 */
-        }
-
-        const Bar& get_bar() const {
-            /* 获得 my_bar 的一个 const 引用的相同的复杂逻辑 */
-        }
-    private:
-        Bar my_bar;
-    };
-
-应当采用公用实现来代替。通常我们可以直接让非 `const` 函数来调用 `const` 函数。不过，当逻辑比较复杂时这将会导致下面的代码模式，它仍然要诉诸于一次 `const_cast`：
-
-    class Foo {
-    public:
-        // 不太好，非 const 调用了 const 版本，但诉诸于 const_cast
-        Bar& get_bar() {
-            return const_cast<Bar&>(static_cast<const Foo&>(*this).get_bar());
-        }
-        const Bar& get_bar() const {
-            /* 获得 mybar 的一个 const 引用的复杂逻辑 */
-        }
-    private:
-        Bar my_bar;
-    };
-
-虽然正确应用这个模式是安全的（由于调用方必然有一个非 `const` 对象来进行调用），这种做法并不理想，因为其安全性很难作为检查工具的规则来自动进行加强。
-
-应当替换为将共同的代码放到一个公共辅助函数中——并将其作为模板以使它可以推断 `const`。这样完全不需要使用任何 `const_cast`：
-
-    class Foo {
-    public:                         // 好
-              Bar& get_bar()       { return get_bar_impl(*this); }
-        const Bar& get_bar() const { return get_bar_impl(*this); }
-    private:
-        Bar my_bar;
-
-        template<class T>           // 好，推断出 T 是 const 还是非 const
-        static auto get_bar_impl(T& t) -> decltype(t.get_bar())
-            { /* 获得 my_bar 的一个可能 const 的引用的复杂逻辑 */ }
-    };
-
-##### 例外
-
-你可能需要在调用 `const` 不正确的函数时强制掉 `const`。请优先采取将这种函数包装到内联的 `const` 正确的包装函数中的方式，以将其强制转换封装到一处。
-
-##### 另请参见：
-
-[ES.50, 不要强制掉 `const`](#Res-casts-const) 中的其他讨论。
-
-##### 强制实施
-
-对所有 `const_cast` 的使用给出诊断消息。修正：要么避免以非 `const` 方式使用变量，要么不要使它 `const`。
-
-### <a name="Pro-type-cstylecast"></a>Type.4: 请勿使用 C 风格的强制转换 `(T)expression`，它可能进行 `static_cast` 向下转换，`const_cast`，或者 `reinterpret_cast`
-
-##### 理由
-
-使用这些强制转换将会违反类型安全性，并导致程序对实际上为 `X` 类型的变量当作某个无关类型 `Z` 来进行访问。
-注意 C 风格的强制转换 `(T)expression` 的含义为实施以下之中第一个可行的转换：`const_cast`，`static_cast`，`static_cast` 之后再 `const_cast`，`reinterpret_cast`，`reinterpret_cast` 之后再 `const_cast`。本条规则仅当 `(T)expression` 用于实施不安全的强制转换时才将之禁止。
-
-##### 示例，不好
-
-    std::string s = "hello world";
-    double* p0 = (double*)(&s); // 不好
-
-    class Base { public: virtual ~Base() = 0; };
-
-    class Derived1 : public Base { };
-
-    class Derived2 : public Base {
-        std::string s;
-    public:
-        std::string get_s() { return s; }
-    };
-
-    Derived1 d1;
-    Base* p1 = &d1; // ok, 隐式转换为基类指针没有问题
-
-    // 不好，试图把 d1 当作一个 Derived2，
-    Derived2* p2 = (Derived2*)(p1);
-    // 试图访问 d1 并不存在的字符串成员，它将见到临近 d1 的任意字节数据
-    cout << p2->get_s();
-
-    void f(const int& i) {
-        (int&)(i) = 42;   // 不好
-    }
-
-    static int i = 0;
-    static const int j = 0;
-
-    f(i); // 隐含的副作用
-    f(j); // 未定义行为
-
-##### 强制实施
-
-对所有可能进行向下强制转换的 `static_cast`，`const_cast`，或者 `reinterpret_cast` 的 C 风格的 `(T)expression` 的使用给出诊断消息。修正：相应分别代之以 `dynamic_cast`，`const` 正确的声明，或使用 `variant`。
 
 ### <a name="Pro-fct-style-cast"></a>Type.4.1: 不要使用 `T(expression)` 进行强制转换
 
@@ -19048,9 +19040,6 @@ C 标准库规则概览：
 
 标记出对具有内建类型的 `e` 所应用的 `T(e)`。
 
-### <a name="Pro-type-init"></a>Type.5: 请勿在初始化之前使用变量
-
-需要采用 [ES.20: 坚持为对象进行初始化](#Res-always)。
 
 ### <a name="Pro-type-memberinit"></a>Type.6: 坚持初始化成员变量
 
@@ -19073,63 +19062,7 @@ C 标准库规则概览：
 * 如果非可平凡构造类型的任何构造函数并未初始化全部的成员变量，则对其给出诊断。修正：写数据成员的初始化式，或者将它放在成员初始化式列表中。
 * 如果可平凡构造类型的对象的构造中不带有 `()` 或 `{}` 以初始化其成员，则对其给出诊断。修正：添上 `()` 或 `{}`。
 
-### <a name="Pro-type-unions"></a>Type.7: 避免访问原始 union 的成员。优先采用 `variant`
 
-##### 理由
-
-读取联合的某个成员需要假定这个成员正是最后被写入的一个，而写入联合的某个成员则需要假定其他带有非平凡析构函数的成员已经调用了析构函数。这是很脆弱的，因为它一般无法确保在语言中是安全的，而是依赖于程序员的纪律来保证其正确。
-
-##### 示例
-
-    union U { int i; double d; };
-
-    U u;
-    u.i = 42;
-    use(u.d); // 不好，未定义
-
-    variant<int, double> u;
-    u = 42; // u 现在包含的是 int
-    use(u.get<int>()); // ok
-    use(u.get<double>()); // 抛出异常 ??? 标准委员会完成 variant 的设计后应当更新这里
-
-注意，直接复制一个联合并非是不安全的，因此安全的代码可以把联合从一处不安全的代码传递给另一处。
-
-##### 强制实施
-
-* 对联合成员的访问给出诊断。修正：代之以使用 `variant`。
-
-### <a name="Pro-type-varargs"></a>Type.8: 避免从 vararg 中读取或传递 vararg 参数。优先代之以可变模板参数
-
-##### 理由
-
-从 vararg 中读取将假定传递了正确的类型。传递 vararg 则将假定它会读取正确的类型。这是很脆弱的，因为它一般无法确保在语言中是安全的，而是依赖于程序员的纪律来保证其正确。
-
-##### 示例
-
-    int sum(...) {
-        // ...
-        while (/*...*/)
-            result += va_arg(list, int); // 不好，假定所传递的是 int
-        // ...
-    }
-
-    sum(3, 2); // ok
-    sum(3.14159, 2.71828); // 不好，未定义
-
-    template<class ...Args>
-    auto sum(Args... args) { // 好，而且更灵活
-        return (... + args); // 注意：C++17 的“折叠表达式”
-    }
-
-    sum(3, 2); // ok: 5
-    sum(3.14159, 2.71828); // ok: ~5.85987
-
-注意：有时候声明 `...` 参数有助于某些并不涉及实际的参数传递的技巧，比如用以声明一个“接受任何对象”的函数以在重载集合中禁止掉“所有其他类型”，或者在模板元编程中表示一种“兜底所有情况”。
-
-##### 强制实施
-
-* 为 `va_list`，`va_start`，或 `va_arg` 的使用给出诊断。修正：代之以使用可变模板参数列表。
-* 如果 vararg 参数的函数并未提供重载以为该参数位置指定更加特定的类型，则当其传递参数时给出诊断。修正：使用别的函数，或标明 `[[suppress(types)]]`。
 
 ## <a name="SS-bounds"></a>Pro.bounds: 边界安全性剖面配置
 
@@ -19642,6 +19575,7 @@ GSL 组件概览：
 * `narrow`        // `narrow<T>(x)` 在满足 `static_cast<T>(x) == x` 时为 `static_cast<T>(x)`，否则抛出 `narrowing_error`
 * `[[implicit]]`  // 放在单参数构造函数上的“记号”，以明确说明它们并非显式构造函数。
 * `move_owner`    // `p = move_owner(q)` 含义为 `p = q` 但 ???
+* `joining_thread` // RAII 风格版本的进行联结的 `std::thread`
 
 ## <a name="SS-gsl-concepts"></a>GSL.concept: 概念
 
@@ -21156,7 +21090,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 * 使用 RAII 锁定保护（`lock_guard`，`unique_lock`，`shared_lock`），绝不直接调用 `mutex.lock` 和 `mutex.unlock`（RAII）
 * 优先使用非递归锁（它们通常用作不良情况的变通手段，有开销）
-* 连接（join）你的每个线程！（因为如果没被连接或分离（detach）的话，析构函数会调用 `std::terminate`……有什么好理由来分离线程吗？） -- ??? 支持库该不该为 `std::thread` 提供一个 RAII 包装呢？
+* 联结（join）你的每个线程！（因为如果没被联结或脱离（detach）的话，析构函数会调用 `std::terminate`……有什么好理由来脱离线程吗？） -- ??? 支持库该不该为 `std::thread` 提供一个 RAII 包装呢？
 * 当必须同时获取两个或更多的互斥体时，应当使用 `std::lock`（或者别的死锁免除算法？）
 * 当使用 `condition_variable` 时，始终用一个互斥体来保护它（在互斥体外面设置原子 bool 的值的做法是错误的！），并对条件变量自身使用同一个互斥体。
 * 绝不对 `std::atomic<user-defined-struct>` 使用 `atomic_compare_exchange_strong`（填充位中的区别会造成影响，而在循环中使用 `compare_exchange_weak` 则能够归于稳定的填充位）
