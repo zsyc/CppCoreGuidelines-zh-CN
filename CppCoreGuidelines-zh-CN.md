@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/5/29
+2017/6/8
 
 
 编辑：
@@ -95,7 +95,7 @@
 [不需要](#Rc-default) --
 [`explicit`](#Rc-explicit) --
 [委派](#Rc-delegating) --
-[`virtual`](#RC-ctor-virtual)
+[`virtual`](#Rc-ctor-virtual)
 * 派生 `class`：
 [何时使用](#Rh-domain) --
 [作为接口](#Rh-abstract) --
@@ -857,7 +857,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
         // ...
     }
 
-现在，就可以在调用点（提早地）检查 `m<=n`，而不是更晚进行了。
+现在，就可以在调用点（提早地）检查 `m <= n`，而不是更晚进行了。
 如果我们只是打错了字而本想用 `n` 作为边界值的话，代码还可以进一步简化（来消除一处错误的可能性）：
 
     void use3(int m)
@@ -1205,6 +1205,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * [I.24: 避免出现相邻而无关的相同类型的参数](#Ri-unrelated)
 * [I.25: 优先以抽象类作为类层次的接口](#Ri-abstract)
 * [I.26: 当想要跨编译器的 ABI 时，使用一个 C 风格的语言子集](#Ri-abi)
+* [I.27: 对于稳定的程序库 ABI，考虑使用 Pimpl 手法](#Ri-pimpl)
 * [I.30: 将有违规则的部分封装](#Ri-encapsulate)
 
 参见
@@ -1878,7 +1879,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 考虑：
 
-    void copy_n(const T* p, T* q, int n); // 从 [p:p+n) 复制到 [q:q+n)
+    void copy_n(const T* p, T* q, int n); // 从 [p:p + n) 复制到 [q:q + n)
 
 当由 `q` 所指向的数组少于 `n` 个元素会怎么样？此时我们将覆写一些可能无关的内存。
 当由 `p` 所指向的数组少于 `n` 个元素会怎么样？此时我们将读取一些可能无关的内存。
@@ -1968,13 +1969,14 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 两个最常见的使得函数具有过多参数的原因是：
 
-    1. *缺乏抽象* 缺少一种抽象，使得一个组合值被以
-    一组独立的元素的方式进行传递，而不是以一个单独的保证了不变式的对象来传递。
-    这不仅使其参数列表变长，而且会导致错误，
-    因为各个成分值无法再被某种获得保证的不变式进行保护。
+1. *缺乏抽象*
+   缺少一种抽象，使得一个组合值被以
+   一组独立的元素的方式进行传递，而不是以一个单独的保证了不变式的对象来传递。
+   这不仅使其参数列表变长，而且会导致错误，
+   因为各个成分值无法再被某种获得保证的不变式进行保护。
 
-    2. *违反了“函数单一职责”原则* 这个函数试图完成多项任务，
-    它可能应当被重构。
+2. *违反了“函数单一职责”原则*
+   这个函数试图完成多项任务，它可能应当被重构。
 
 ##### 示例
 
@@ -2044,13 +2046,13 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 考虑：
 
-    void copy_n(T* p, T* q, int n);  // 从 [p:p+n) 复制到 [q:q+n)
+    void copy_n(T* p, T* q, int n);  // 从 [p:p + n) 复制到 [q:q + n)
 
 这是个 K&R C 风格接口的一种恶劣的变种。它导致很容易把“目标”和“来源”参数搞反。
 
 可以在“来源”参数上使用 `const`：
 
-    void copy_n(const T* p, T* q, int n);  // 从 [p:p+n) 复制到 [q:q+n)
+    void copy_n(const T* p, T* q, int n);  // 从 [p:p + n) 复制到 [q:q + n)
 
 ##### 例外
 
@@ -2140,6 +2142,53 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 ##### 强制实施
 
 【无法强制实施】 要可靠地识别某个接口是否是构成 ABI 的一部分是很困难的。
+
+### <a name="Ri-pimpl"></a>I.27: 对于稳定的程序库 ABI，考虑使用 Pimpl 手法
+
+##### 理由
+
+由于私有数据成员参与类的内存布局，而私有成员函数参与重载决议，
+对这些实现细节的改动都要求使用了这类的所有用户全部重新编译。而持有指向实现的指针（Pimpl）的
+非多态的接口类，则可以将类的用户从其实现的改变隔离开来，其代价是一层间接。
+
+##### 示例
+
+接口（widget.h）
+
+    class widget {
+        class impl;
+        std::unique_ptr<impl> pimpl;
+    public:
+        void draw(); // 公开 API 转发给实现
+        widget(int); // 定义于实现文件中
+        ~widget();   // 定义于实现文件中，其中 impl 将为完整类型
+        widget(widget&&) = default;
+        widget(const widget&) = delete;
+        widget& operator=(widget&&); // 定义于实现文件中
+        widget& operator=(const widget&) = delete;
+    };
+
+
+实现（widget.cpp）
+
+    class widget::impl {
+        int n; // private data
+    public:
+        void draw(const widget& w) { /* ... */ }
+        impl(int n) : n(n) {}
+    };
+    void widget::draw() { pimpl->draw(*this); }
+    widget::widget(int n) : pimpl{std::make_unique<impl>(n)} {}
+    widget::~widget() = default;
+    widget& widget::operator=(widget&&) = default;
+
+##### 注解
+
+参见 [GOTW #100](https://herbsutter.com/gotw/_100/) 和 [cppreference](http://en.cppreference.com/w/cpp/language/pimpl) 有关这个手法相关的权衡和其他实现细节。
+
+##### 强制实施
+
+【无法强制】 很难可靠地识别出哪个接口属于 ABI 的一部分。
 
 ### <a name="Ri-encapsulate"></a>I.30: 将有违规则的部分封装
 
@@ -2393,8 +2442,8 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 考虑：
 
-    double simpleFunc(double val, int flag1, int flag2)
-        // simpleFunc: 接受一个值并计算所需的 ASIC 值，
+    double simple_func(double val, int flag1, int flag2)
+        // simple_func: 接受一个值并计算所需的 ASIC 值，
         // 依赖于两个模式标记。
     {
         double intermediate;
@@ -2437,8 +2486,8 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
         // ???
     }
 
-    double simpleFunc(double val, int flag1, int flag2)
-        // simpleFunc: 接受一个值并计算所需的 ASIC 值，
+    double simple_func(double val, int flag1, int flag2)
+        // simple_func: 接受一个值并计算所需的 ASIC 值，
         // 依赖于两个模式标记。
     {
         if (flag1 > 0)
@@ -3195,7 +3244,7 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
 ##### 注解
 
 范围（Range）在 C++ 代码中十分常见。典型情况下，它们都是隐含的，且非常难于保证它们能够被正确使用。
-特别地，给定一对儿参数 `(p, n)` 来代表数组 \[`p`:`p+n`)，
+特别地，给定一对儿参数 `(p, n)` 来代表数组 \[`p`:`p + n`)，
 通常来说不可能确定 `*p` 后面是不是真的存在 `n` 个元素。
 `span<T>` 和 `span_p<T>` 两个简单的辅助类，分别用于代表范围 \[`p`:`q`)，以及一个以 `p` 开头并以使谓词为真的第一个元素结尾的范围。
 
@@ -4190,7 +4239,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
         int mem(int x, int y)
         {
             /* ... 做一些事 ... */
-            return do_bar(x+y); // OK：派生类可以略过检查
+            return do_bar(x + y); // OK：派生类可以略过检查
         }
     }
 
@@ -6853,7 +6902,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 我们曾经说过，这只是用来构造双类层次的一种方式。
 
-分离接口和实现的另一个（相关的）技巧是 [PIMPL](#???)。
+分离接口和实现的另一个（相关的）技巧是 [Pimpl](#Ri-pimpl)。
 
 ##### 注解
 
@@ -6973,15 +7022,15 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ##### 示例，不好
 
-   class Shape {
-   public:
+    class Shape {
+    public:
         // ... 接口函数 ...
-   protected:
+    protected:
         // 为派生类所使用的数据：
         Color fill_color;
         Color edge_color;
         Style st;
-   };
+    };
 
 这样，由每个所定义的 `Shape` 来保证对受保护数据正确进行操作。
 这样做一度很流行，但同样是维护性问题的一种主要来源。
@@ -7171,7 +7220,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
     };
     class D: public B {
     public:
-        int f(int i) override { std::cout << "f(int): "; return i+1; }
+        int f(int i) override { std::cout << "f(int): "; return i + 1; }
     };
     int main()
     {
@@ -7184,7 +7233,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
     class D: public B {
     public:
-        int f(int i) override { std::cout << "f(int): "; return i+1; }
+        int f(int i) override { std::cout << "f(int): "; return i + 1; }
         using B::f; // 展露了 f(double)
     };
 
@@ -9438,6 +9487,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.62: 不要在不同的数组之间进行指针比较](#Res-arr2)
 * [ES.63: 不要产生切片](#Res-slice)
 * [ES.64: 使用 `T{e}` 写法来进行构造](#Res-construct)
+* [ES.65: 不要解引用无效指针](#Res-deref)
 
 语句的规则：
 
@@ -10388,17 +10438,17 @@ C++17 的规则多少会少些意外：
 
 你可能想把一个缓冲区当做暂存器来重复使用以作为一种优化措施，但即便如此也请尽可能限定该变量的作用域，还要当心不要导致由于遗留在重用的缓冲区中的数据而引发的 BUG，这是安全性 BUG 的一种常见来源。
 
-    {
+    void write_to_file() {
         std::string buffer;             // 以避免每次循环重复中的重新分配
         for (auto& o : objects)
         {
             // 第一部分工作。
-            generateFirstString(buffer, o);
-            writeToFile(buffer);
+            generate_first_String(buffer, o);
+            write_to_file(buffer);
 
             // 第二部分工作。
-            generateSecondString(buffer, o);
-            writeToFile(buffer);
+            generate_second_string(buffer, o);
+            write_to_file(buffer);
 
             // 等等...
         }
@@ -11064,11 +11114,11 @@ C++17 的规则多少会少些意外：
 
 ##### 注解
 
-    无名函数实参是没问题的。
+无名函数实参是没问题的。
 
 ##### 强制实施
 
-    标记出仅有临时对象的语句。
+标记出仅有临时对象的语句。
 
 ### <a name="Res-empty"></a>ES.85: 让空语句显著可见
 
@@ -11244,22 +11294,22 @@ C++17 收紧了有关求值顺序的规则
     {
         if (count < 2) return;
 
-        int* q = p + 1; // 不好
+        int* q = p + 1;    // 不好
 
         ptrdiff_t d;
         int n;
-        d = (p - &n); // OK
-        d = (q - p); // OK
+        d = (p - &n);      // OK
+        d = (q - p);       // OK
 
-        int n = *p++; // 不好
+        int n = *p++;      // 不好
 
         if (count < 6) return;
 
-        p[4] = 1; // 不好
+        p[4] = 1;          // 不好
 
-        p[count - 1] = 2; // 不好
+        p[count - 1] = 2;  // 不好
 
-        use(&p[0], 3); // 不好
+        use(&p[0], 3);     // 不好
     }
 
 ##### 示例，好
@@ -11268,17 +11318,17 @@ C++17 收紧了有关求值顺序的规则
     {
         if (a.length() < 2) return;
 
-        int n = a[0]; // OK
+        int n = a[0];      // OK
 
         span<int> q = a.subspan(1); // OK
 
         if (a.length() < 6) return;
 
-        a[4] = 1; // OK
+        a[4] = 1;          // OK
 
-        a[count - 1] = 2; // OK
+        a[count - 1] = 2;  // OK
 
-        use(a.data(), 3); // OK
+        use(a.data(), 3);  // OK
     }
 
 ##### 注解
@@ -11624,7 +11674,7 @@ C++17 收紧了有关求值顺序的规则，但函数实参求值顺序仍然�
 
 ##### 替代方案
 
-强制转换被广泛（误）用了。现代 C++ 已经提供了一些语言构造，消除了许多语境中对强制转换的需求，比如
+强制转换被广泛（误）用了。现代 C++ 已经提供了一些规则和语言构造，消除了许多语境中对强制转换的需求，比如
 
 * 使用模板
 * 使用 `std::variant`
@@ -11635,7 +11685,8 @@ C++17 收紧了有关求值顺序的规则，但函数实参求值顺序仍然�
 * 强制消除 C 风格的强制转换。
 * 当存在许多函数风格的强制转换时给出警告（显而易见的问题是如何量化“许多”）。
 * [类型剖面配置](#Pro-type-reinterpretcast)禁用了 `reinterpret_cast`。
-* 对[不必要的指针强制转换](#Pro-type-unnecessarycast)给出警告。
+* 对指针类型之间的[同一强制转换](#Pro-type-identitycast)给出警告，这之中的源类型和目标类型相同(#Pro-type-identitycast)。
+* 当指针强制转换可以为[隐式转换](#Pro-type-implicitpointercast)时给出警告。
 
 ### <a name="Res-casts-named"></a>ES.49: 当必须使用强制转换时，使用有名字的强制转换
 
@@ -12210,6 +12261,145 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 标记 C 风格的 `(T)e` 和函数式风格的 `T(e)` 强制转换。
 
+### <a name="Res-deref"></a>ES.65: 不要解引用无效指针
+
+##### 理由
+
+解引用如 `nullptr` 这样的无效指针是未定义的行为，通常会导致程序立刻崩溃，
+产生错误结果，或者内存被损坏。
+
+##### 注解
+
+本条规则是显然并且广为知晓的语言规则，但其可能难于遵守。
+这需要良好的编码风格，程序库支持，以及静态分析来消除违反情况而不耗费大量开销。
+这正是[C++'s resource- and type-safety model](#Stroustrup15)中所讨论的主要部分。
+
+另请参见
+
+* 使用 [RAII](#Rr-raii) 以避免生存期问题。
+* 使用 [unique_ptr](#Rf-unique_ptr) 以避免生存期问题。
+* 使用 [shared_ptr](#Rf-shared_ptr) 以避免生存期问题。
+* 当不可能出现 `nullptr` 时应使用[引用](#Rf-ptr-ref)。
+* 使用 [not_null](#Rf-not_null) 以尽早捕捉到预期外的 `nullptr`。
+* 使用[边界剖面配置](#SS-bounds)以避免范围错误。
+
+
+##### 示例
+
+    void f()
+    {
+        int x = 0;
+        int* p = &x;
+
+        if (condition()) {
+            int y = 0;
+            p = &y;
+        } // p 失效
+
+        *p = 42;            // 不好，若走了上面的分支则 p 无效
+    }
+
+为解决这个问题，要么应当扩展指针打算指代的这个对象的生存期，要么应当缩短指针的生存期（将解引用移动到所指代的对象生存期结束之前进行）。
+
+    void f1()
+    {
+        int x = 0;
+        int* p = &x;
+
+        int y = 0;
+        if (condition()) {
+            p = &y;
+        }
+
+        *p = 42;            // OK，p 可指向 x 或 y，而它们都仍在作用域中
+    }
+
+不幸的是，大多数无效指针问题都更加难于定位且更加难于解决。
+
+##### 示例
+
+    void f(int* p)
+    {
+        int x = *p; // 不好：如何确定 p 是否有效？
+    }
+
+有大量的这种代码存在。
+它们大多数都能工作（经过了大量的测试），但其各自是很难确定 `p` 是否可能为 `nullptr` 的。
+后果就是，这同样是错误的一大来源。
+有许多方案试图解决这个潜在问题：
+
+    void f1(int* p) // 处理 nullptr
+    {
+        if (p == nullptr) {
+            // 处理 nullptr（分配，返回，抛出，使 p 指向什么，等等
+        }
+        int x = *p;
+    }
+
+测试 `nullptr` 的做法有两个潜在的问题：
+
+* 当遇到 `nullptr` 时应当做什么并不总是明确的
+* 其测试可能多余并且相对比较昂贵
+* 这个测试是为了保护某种违例还是所需逻辑的一部分并不明显
+
+    void f2(int* p) // 声称 p 不应当为 nullptr
+    {
+        Assert(p != nullptr);
+        int x = *p;
+    }
+
+这样，仅当打开了断言检查时才会有所耗费，而且会向编译器/分析器提供有用的信息。
+当 C++ 出现契约的直接支持后，还可以做的更好：
+
+    void f3(int* p) // 声称 p 不应当为 nullptr
+        [[expects: p != nullptr]]
+    {
+        int x = *p;
+    }
+
+或者，还可以使用 `gsl::not_null` 来保证 `p` 不为 `nullptr`。
+
+    void f(not_null<int*> p)
+    {
+        int x = *p;
+    }
+
+这些只是关于 `nullptr` 的处理办法。
+要知道还有其他出现无效指针的方式。
+
+##### 示例
+
+    void f(int* p)  // 老代码，没使用 owner
+    {
+        delete p;
+    }
+
+    void g()        // 老代码：使用了裸 new
+    {
+        auto q = new int{7};
+        f(q);
+        int x = *q; // 不好：解引用了无效指针
+    }
+
+##### 示例
+
+    void f()
+    {
+        vector<int> v(10);
+        int* p = &v[5];
+        v.push_back(99); // 可能重新分配 v 中的元素
+        int x = *p; // 不好：解引用了潜在的无效指针
+    }
+
+##### 强制实施
+
+本条规则属于[生存期剖面配置](#Pro.lifetime)
+
+* 当对指向已经超出作用域的对象的指针进行解引用时进行标记
+* 当对可能已经通过赋值 `nullptr` 而无效的指针进行解引用时进行标记
+* 当对可能已经因 `delete` 而无效的指针进行解引用时进行标记
+* 当对指向已经失效的容器元素的的指针进行解引用时进行标记
+
 ## <a name="SS-numbers"></a>算术
 
 ### <a name="Res-mix"></a>ES.100: 不要进行有符号和无符号混合运算
@@ -12266,7 +12456,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 ##### 理由
 
 因为大多数算术都假定是有符号的；
-当 `y>x` 时，`x-y` 都会产生负数，除了罕见的情况下你确实需要模算术。
+当 `y > x` 时，`x - y` 都会产生负数，除了罕见的情况下你确实需要模算术。
 
 ##### 示例
 
@@ -12276,23 +12466,23 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     template<typename T, typename T2>
     T subtract(T x, T2 y)
     {
-        return x-y;
+        return x - y;
     }
 
     void test()
     {
         int s = 5;
         unsigned int us = 5;
-        cout << subtract(s, 7) << '\n';     // -2
-        cout << subtract(us, 7u) << '\n';   // 4294967294
-        cout << subtract(s, 7u) << '\n';    // -2
-        cout << subtract(us, 7) << '\n';    // 4294967294
-        cout << subtract(s, us+2) << '\n';  // -2
-        cout << subtract(us, s+2) << '\n';  // 4294967294
+        cout << subtract(s, 7) << '\n';       // -2
+        cout << subtract(us, 7u) << '\n';     // 4294967294
+        cout << subtract(s, 7u) << '\n';      // -2
+        cout << subtract(us, 7) << '\n';      // 4294967294
+        cout << subtract(s, us + 2) << '\n';  // -2
+        cout << subtract(us, s + 2) << '\n';  // 4294967294
     }
 
 我们这次非常明确发生了什么。
-但要是你见到 `us-(s+2)` 或者 `s+=2; ... us-s` 时，你确实能够预计到打印的结果将是 `4294967294` 吗？
+但要是你见到 `us - (s + 2)` 或者 `s += 2; ...; us - s` 时，你确实能够预计到打印的结果将是 `4294967294` 吗？
 
 ##### 例外
 
@@ -12307,10 +12497,10 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 这不可避免地带来了意外（以及 BUG）。
 
     int a[10];
-    for (int i=0; i < 10; ++i) a[i]=i;
+    for (int i = 0; i < 10; ++i) a[i] = i;
     vector<int> v(10);
     // 比较有符号和无符号数；有些编译器会警告
-    for (int i=0; v.size() < 10; ++i) v[i]=i;
+    for (int i = 0; v.size() < 10; ++i) v[i] = i;
 
     int a2[-2];         // 错误：负的大小
 
@@ -12497,13 +12687,13 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
     vector<int> vec {1, 2, 3, 4, 5};
 
-    for (int i=0; i < vec.size(); i+=2)                    // 混用 int 和 unsigned
+    for (int i = 0; i < vec.size(); i += 2)                    // 混用 int 和 unsigned
         cout << vec[i] << '\n';
-    for (unsigned i=0; i < vec.size(); i+=2)               // 有风险的回绕
+    for (unsigned i = 0; i < vec.size(); i += 2)               // 有风险的回绕
         cout << vec[i] << '\n';
-    for (vector<int>::size_type i=0; i < vec.size(); i+=2) // 啰嗦
+    for (vector<int>::size_type i = 0; i < vec.size(); i += 2) // 啰嗦
         cout << vec[i] << '\n';
-    for (auto i=0; i < vec.size(); i+=2)                   // 混用 int 和 unsigned
+    for (auto i = 0; i < vec.size(); i += 2)                   // 混用 int 和 unsigned
         cout << vec[i] << '\n';
 
 ##### 注解
@@ -15425,7 +15615,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 由类负责确保这样的改动仅当根据其语义（不变式）对于其用户有意义时
 才会发生。
 
-另见 [PIMPL](#???)。
+另见 [PImpl](#Ri-pimpl)。
 
 ##### 强制实施
 
@@ -17216,7 +17406,7 @@ C++ 是不支持这样做的。
 
 除了使用一个独立的“base”类型外，另一种常用的技巧是对 `void` 或 `void*` 进行特化，并让针对 `T` 的通用模板成为在从或向 `void` 的核心实现进行强制转换的一层类型安全封装。
 
-**替代方案**: 使用一个 [PIMPL](#???) 实现。
+**替代方案**: 使用一个 [PImpl](#Ri-pimpl) 实现。
 
 ##### 强制实施
 
@@ -17945,11 +18135,11 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
 ##### 示例
 
-    #include<string>
-    #include<vector>
-    #include<iostream>
-    #include<memory>
-    #include<algorithm>
+    #include <string>
+    #include <vector>
+    #include <iostream>
+    #include <memory>
+    #include <algorithm>
 
     using namespace std;
 
@@ -17962,7 +18152,7 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
 使用 `using namespace std;` 导致程序员可能面临与标准库中的名字造成名字冲突
 
-    #include<cmath>
+    #include <cmath>
     using namespace std;
 
     int g(int x)
@@ -18099,7 +18289,7 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 这带来了常见的新手问题“为什么 `getline(cin,s);` 不成？”，
 甚至偶尔出现的“`string` 无法用 `==` 来比较”。
 
-其解决方案是明确地 `#include<string>`：
+其解决方案是明确地 `#include <string>`：
 
     #include <iostream>
     #include <string>
@@ -18467,7 +18657,7 @@ C++17 中，我们可以使用 `string_view` 而不是 `const string*` 作为参
         return res;
     }
 
-`gsl::string_span` 是当前的一种替代方案，为简单的例子提供了 `string_span` 的大多数优势：
+`gsl::string_span` 是当前的一种替代方案，为简单的例子提供了 `std::string_view` 的大多数优势：
 
     vector<string> read_until(string_span terminator)
     {
@@ -18486,11 +18676,11 @@ C++17 中，我们可以使用 `string_view` 而不是 `const string*` 作为参
     {
         int l1 = strlen(s1);
         int l2 = strlen(s2);
-        char* p = (char*)malloc(l1+l2+2);
+        char* p = (char*)malloc(l1 + l2 + 2);
         strcpy(p, s1, l1);
         p[l1] = '.';
-        strcpy(p+l1+1, s2, l2);
-        p[l1+l2+1] = 0;
+        strcpy(p + l1 + 1, s2, l2);
+        p[l1 + l2 + 1] = 0;
         return res;
     }
 
@@ -19381,7 +19571,7 @@ C 标准库规则概览：
 
 要抑制对某个剖面配置检查，可以在语言构造上放一个 `suppress` 标注。例如：
 
-    [[suppress(bounds)]] char* raw_find(char* p, int n, char x)    // 在 p[0]..p[n-1] 中寻找 x
+    [[suppress(bounds)]] char* raw_find(char* p, int n, char x)    // 在 p[0]..p[n - 1] 中寻找 x
     {
         // ...
     }
@@ -19403,10 +19593,11 @@ C 标准库规则概览：
 
 类型安全性剖面配置概览：
 
-* <a name="Pro-type-avoidcasts"></a>Type.1: [避免强制转换](#Res-casts)：
-    * <a name="Pro-type-reinterpretcast"></a>请勿使用 `reinterpret_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。
-    * <a name="Pro-type-arithmeticcast"></a>请勿在算术类型上使用 `static_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。
-    * <a name="Pro-type-unnecessarycast"></a>请勿使用不必要的指针强制转换；此为[避免强制转换](#Res-casts)的严格的版本。
+* <a name="Pro-type-avoidcasts"></a>Type.1: [避免强制转换](#Res-casts)： 
+<a name="Pro-type-reinterpretcast">a. </a>请勿使用 `reinterpret_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。  
+<a name="Pro-type-arithmeticcast">b. </a>请勿在算术类型上使用 `static_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。  
+<a name="Pro-type-identitycast">c. </a>当源指针类型和目标类型相同时，请勿进行指针强制转换；此为[避免强制转换](#Res-casts)的严格的版本。  
+<a name="Pro-type-implicitpointercast">d. </a>当指针转换可以隐式转换时，请勿使用指针强制转换；此为[避免强制转换](#Res-casts)的严格的版本。  
 * <a name="Pro-type-downcast"></a>Type.2: 请勿使用 `static_cast` 进行向下强制转换：
 [代之以使用 `dynamic_cast`](#Rh-dynamic_cast)。
 * <a name="Pro-type-constcast"></a>Type.3: 请勿使用 `const_cast` 强制掉 `const`（亦即不要这样做）：
@@ -19464,146 +19655,26 @@ C 标准库规则概览：
 
 ## <a name="SS-lifetime"></a>Pro.lifetime: 生存期安全性剖面配置
 
-参见 /docs 文件夹中的初始设计。详细的正式规则仍在指定中（2017 年 5 月）。
+桶已经不指向任何东西的指针进行访问，是错误的一种主要来源，
+而且在许多传统的 C 或 C++ 风格的编程中这很难避免。
+例如，指针可能未初始化，值为 `nullptr`，指向越过指针范围，或者指向已删除的对象。
 
-一下是所要强制的专门规则。
+参见 /docs 文件夹中的初始设计。详细的正式规则仍在制定中（2017 年 5 月）。
 
 生存期安全性剖面配置概览：
 
-* [Lifetime.1: 不要解引用可能无效的指针](#Pro-lifetime-invalid-deref)
-* [Lifetime.2: 不要解引用可能为空的指针](#Pro-lifetime-null-deref)
-* [Lifetime.3: 不要将可能无效的指针传给函数](#Pro-lifetime-invalid-argument)
+* <a href="Pro-lifetime-invalid-deref"></a>Lifetime.1: 不要解引用无效指针：
+[检测或避免](#Res-deref)。
 
-??? 这些规则将被移动到指导方针的主线部分中 ???
+##### 影响
 
-### <a name="Pro-lifetime-invalid-deref"></a>Lifetime.1: 不要解引用可能无效的指针
+一旦强制实施了编码风格规则，静态分析，以及程序库支持的组合方案之后，本剖面配置将能
 
-##### 理由
-
-这是未定义行为。
-
-为解决这个问题，要么应当扩展指针打算指代的这个对象的生存期，要么应当缩短指针的生存期（将解引用移动到所指代的对象生存期结束之前进行）。
-
-##### 示例，不好
-
-    void f()
-    {
-        int x = 0;
-        int* p = &x;
-
-        if (condition()) {
-            int y = 0;
-            p = &y;
-        } // p 失效
-
-        *p = 42;            // 不好，若走了上面的分支则 p 无效
-    }
-
-##### 示例，好
-
-    void f()
-    {
-        int x = 0;
-        int* p = &x;
-
-        int y = 0;
-        if (condition()) {
-            p = &y;
-        }
-
-        *p = 42;            // OK，p 可指向 x 或 y，而它们都仍在作用域中
-    }
-
-##### 强制实施
-
-* 对于沿着某条局部代码路径到达解引用点之中可能失效（可能指向已经销毁的对象）的指针，对其解引用给出诊断消息。修正：扩展所指向对象的生存期，或移动解引用到所指向对象的生存期结束之前。
-
-
-
-### <a name="Pro-lifetime-null-deref"></a>Lifetime.2: 不要解引用可能为空的指针
-
-##### 理由
-
-这是未定义行为。
-
-##### 示例，不好
-
-    void f(int* p1)
-    {
-        *p1 = 42;           // 不好，p1 可能为空
-
-        int i = 0;
-        int* p2 = condition() ? &i : nullptr;
-        *p2 = 42;           // 不好，p2 可能为空
-    }
-
-##### 示例，好
-
-    void f(int* p1, not_null<int*> p3)
-    {
-        if (p1 != nullptr) {
-            *p1 = 42;       // OK，这个分支中必然不为空
-        }
-
-        int i = 0;
-        int* p2 = condition() ? &i : nullptr;
-        if (p2 != nullptr) {
-            *p2 = 42;       // OK，这个分支中必然不为空
-        }
-
-        *p3 = 42;           // OK，不需要测试 not_null 是否为空
-    }
-
-##### 强制实施
-
-* 对于沿着某条局部代码路径到达解引用点之中可能被设为空值的指针，对其解引用给出诊断消息。修正：添加空值检查，仅在已经过测试确保不为空的分支中解引用这个指针。
-
-
-
-### <a name="Pro-lifetime-invalid-argument"></a>Lifetime.3: 不要将可能无效的指针传给函数
-
-##### 理由
-
-这个函数对这个指针做不出什么有意义的事。
-
-为解决这个问题，要么应当扩展指针打算指代的这个对象的生存期，要么应当缩短指针的生存期（将函数调用移动到所指代的对象生存期结束之前进行）。
-
-##### 示例，不好
-
-    void f(int*);
-
-    void g()
-    {
-        int x = 0;
-        int* p = &x;
-
-        if (condition()) {
-            int y = 0;
-            p = &y;
-        } // p 失效
-
-        f(p);               // 不好，若走了上面的分支则 p 无效
-    }
-
-##### 示例，好
-
-    void f()
-    {
-        int x = 0;
-        int* p = &x;
-
-        int y = 0;
-        if (condition()) {
-            p = &y;
-        }
-
-        f(p);               // OK，p 可指向 x 或 y，而它们都仍在作用域中
-    }
-
-##### 强制实施
-
-* 对于沿着某条局部代码路径到达解引用点之中可能失效（可能指向已经销毁的对象）的用作函数实参的指针，对该实参给出诊断消息。修正：扩展所指向对象的生存期，或移动函数调用到所指向对象的生存期结束之前。
-
+* 消除 C++ 中的恶劣错误的一种主要来源
+* 消除潜在安全漏洞的一种主要来源
+* 通过消除多余的“偏执”检查而改善性能
+* 提升代码正确性的信心
+* 通过强制遵循一种关键的 C++ 语言规则而避免未定义的行为
 
 
 # <a name="S-gsl"></a>GSL: 指导方针支持库
@@ -19638,7 +19709,7 @@ GSL 组件概览：
 
 “视图”都不是所有者。
 
-引用都不是所有者。注意：有许多机会能让引用存活超过其所指代的对象，如按引用返回局部变量，持有 vector 的某个元素的引用然后进行 `push_back`，绑定到  `std::max(x,y+1)`，等等。生存期安全性剖面配置的目标就是处理这些事情，但即便如此 `owner<T&>` 也没有意义且不建议使用。
+引用都不是所有者。注意：有许多机会能让引用存活超过其所指代的对象，如按引用返回局部变量，持有 vector 的某个元素的引用然后进行 `push_back`，绑定到  `std::max(x, y + 1)`，等等。生存期安全性剖面配置的目标就是处理这些事情，但即便如此 `owner<T&>` 也没有意义且不建议使用。
 
 它们的名字基本上遵循 ISO 标准库风格（小写字母和下划线）：
 
@@ -19666,7 +19737,7 @@ GSL 组件概览：
 * `not_null<T>`   // `T` 通常是某个指针类型（例如 `not_null<int*>` 和 `not_null<owner<Foo*>>`），且不能为 `nullptr`。
   `T` 可以是 `==nullptr` 有意义的任何类型。
 
-* `span<T>`       // \[`p`:`p+n`)，构造函数接受 `{p, q}` 和 `{p, n}`；`T` 为指针类型
+* `span<T>`       // \[`p`:`p + n`)，构造函数接受 `{p, q}` 和 `{p, n}`；`T` 为指针类型
 * `span_p<T>`     // `{p, predicate}` \[`p`:`q`)，其中 `q` 为首个使 `predicate(*p)` 为真的元素
 * `string_span`   // `span<char>`
 * `cstring_span`  // `span<const char>`
@@ -19703,7 +19774,7 @@ GSL 组件概览：
 现在这些断言还是宏（天呐！）而且必须（只）被用在函数定义式之内。
 等待标准委员会对于契约和断言语法的确定。
 参见使用属性语法的[契约提案](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0380r1.pdf)，
-比如说，`Expects(p!=nullptr)` 将变为 `[[expects: p!=nullptr]]`。
+比如说，`Expects(p != nullptr)` 将变为 `[[expects: p != nullptr]]`。
 
 ## <a name="SS-utilities"></a>GSL.util: 工具
 
@@ -21275,6 +21346,8 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * <a name="Stroustrup14"></a>
   \[Stroustrup14]:    B. Stroustrup. [A Tour of C++](http://www.stroustrup.com/Tour.html).
   Addison Wesley 2014.
+* <a name="Stroustrup15></a>
+  \[Stroustrup15]:    B. Stroustrup, Herb Sutter, and G. Dos Reis: [A brief introduction to C++'s model for type- and resource-safety](https://github.com/isocpp/CppCoreGuidelines/blob/master/docs/Introduction%20to%20type%20and%20resource%20safety.pdf).
 * <a name="SuttHysl04b"></a>
   \[SuttHysl04b]:     H. Sutter and J. Hyslop. "Collecting Shared Objects" (C/C++ Users Journal, 22(8), August 2004).
 * <a name="SuttAlex05"></a>
