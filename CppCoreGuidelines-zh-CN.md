@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/5/21
+2017/5/29
 
 
 编辑：
@@ -71,7 +71,7 @@
 [优先采用初始化](#Rc-initialize) --
 [复制](#Rc-copy-semantics) --
 [移动](#Rc-move-semantics) --
-[以及其他操作](Rc-matched) --
+[以及其他操作](#Rc-matched) --
 [缺省操作](#Rc-eqdefault)
 * `class`：
 [数据](#Rc-org) --
@@ -112,7 +112,7 @@
 [不可失败](#Rc-dtor-fail)
 * 异常：
 [错误](#S-errors) --
-[`throw`](Re-throw) --
+[`throw`](#Re-throw) --
 [仅用于错误](#Re-errors) --
 [`noexcept`](#Re-noexcept) --
 [最少化 `try`](#Re-catch) --
@@ -135,7 +135,7 @@
 [lambda](#Rf-capture-vs-overload)
 * `inline`:
 [小型函数](#Rf-inline) --
-[头文件中](Rs-inline)
+[头文件中](#Rs-inline)
 * 初始化：
 [总是](#Res-always) --
 [优先采用 `{}`](#Res-list) --
@@ -146,7 +146,7 @@
 * lambda 表达式：
 [何时使用](#SS-lambdas)
 * 运算符：
-[约定](Ro-conventional) --
+[约定](#Ro-conventional) --
 [避免转换运算符](#Ro-conventional) --
 [与 lambda](#Ro-lambda)
 * `public`, `private`, 和 `protected`：
@@ -170,7 +170,7 @@
 * `virtual`：
 [接口](#Ri-abstract) --
 [非 `virtual`](#Rc-concrete) --
-[析构函数](Rc-dtor-virtual) --
+[析构函数](#Rc-dtor-virtual) --
 [不能失败](#Rc-dtor-fail)
 
 您可以查看用于表达这些规则的一些设计概念：
@@ -1261,7 +1261,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * 【简单】 函数不能基于声明于命名空间作用域的变量来作出影响控制流的决定。
 * 【简单】 函数不能对声明于命名空间作用域的变量进行写入操作。
 
-### <a name="Ri-global"></a>I.2 避免全局变量
+### <a name="Ri-global"></a>I.2: 避免全局变量
 
 ##### 理由
 
@@ -4229,7 +4229,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 * [C.10: 优先使用具体类型而不是类继承层次](#Rc-concrete)
 * [C.11: 使具体类型正规化](#Rc-regular)
 
-### <a name="Rc-concrete"></a>C.10 优先使用具体类型而不是类继承层次
+### <a name="Rc-concrete"></a>C.10: 优先使用具体类型而不是类继承层次
 
 ##### 理由
 
@@ -5188,7 +5188,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
             // ...
     };
 
-表示不可修改的值的类
+必须在构造过程中获取资源的类
 
     lock_guard g {mx};  // 防卫 mutex mx
     lock_guard g2;      // 错误：不防卫任何东西
@@ -7144,7 +7144,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 很明显，这个例子过于“理论化”，但确实很难找到一个*小型*的现实例子出来。
 `Interface` 是一个[接口层次](#Rh-abstract)的根，
-而 `Utility` 则是一个[实现层次](Rh-kind)的根。
+而 `Utility` 则是一个[实现层次](#Rh-kind)的根。
 [一个稍微更现实的例子](https://www.quora.com/What-are-the-uses-and-advantages-of-virtual-base-class-in-C%2B%2B/answer/Lance-Diduck)，有一些解释。
 
 ##### 注解
@@ -7346,7 +7346,14 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
     void user2(B* pb)   // 不好
     {
-        if (D* pd = static_cast<D*>(pb)) {  // I know that pb really points to a D; trust me
+        D* pd = static_cast<D*>(pb);    // I know that pb really points to a D; trust me
+        // ... 使用 D 的接口 ...
+    }
+
+    void user3(B* pb)    // 不安全
+    {
+        if (some_condition) {
+            D* pd = static_cast<D*>(pb);   // I know that pb really points to a D; trust me
             // ... 使用 D 的接口 ...
         }
         else {
@@ -7359,6 +7366,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
         B b;
         user(&b);   // OK
         user2(&b);  // 糟糕的错误
+        user3(&b);  // OK，*如果*程序员已经正确检查了 some_condition 的话
     }
 
 ##### 注解
@@ -7381,7 +7389,8 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
     struct B {
         const char* name {"B"};
-        virtual const char* id() const { return name; }     // 若 pb1->id() == pb2->id() 则 *pb1 与 *pb2 类型相同
+        // 若 pb1->id() == pb2->id() 则 *pb1 与 *pb2 类型相同
+        virtual const char* id() const { return name; }
         // ...
     };
 
@@ -7591,7 +7600,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 * 应当将数组作为 `span` 而不是指针来进行传递，而且不能让数组的名字在放入 `span` 之前经手派生类向基类的转换。
 
 
-### <a name="Rh-use-virtual"></a>CC.153: 优先采用虚函数而不是强制转换
+### <a name="Rh-use-virtual"></a>C.153: 优先采用虚函数而不是强制转换
 
 ##### 理由
 
@@ -7605,7 +7614,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 强制实施
 
-参见 [C.146] 和 [???]
+参见 [C.146](#Rh-dynamic_cast) 和 ???
 
 ## <a name="SS-overload"></a>C.over: 重载和运算符重载
 
@@ -9428,6 +9437,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.61: 用 `delete[]` 删除数组，用 `delete` 删除非数组对象](#Res-del)
 * [ES.62: 不要在不同的数组之间进行指针比较](#Res-arr2)
 * [ES.63: 不要产生切片](#Res-slice)
+* [ES.64: 使用 `T{e}` 写法来进行构造](#Res-construct)
 
 语句的规则：
 
@@ -10056,6 +10066,29 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 （不过不要没有测量就作出性能评判；一个编译器很可能无法为每一个例子都能够很好地生成最精简的代码，
 而且也可能存在一些语言规则是你在某种特定情况下所喜欢的，但却会妨碍作出某种优化）。
 
+##### 示例
+
+本条规则涵盖成员变量。
+
+    class X {
+    public:
+        X(int i, int ci) : m2{i}, cm2{ci} {}
+        // ...
+
+    private:
+        int m1 = 7;
+        int m2;
+        int m3;
+
+        const int cm1 = 7;
+        const int cm2;
+        const int cm3;
+    };
+
+编译器能够标记 `cm3` 为未初始化（因其为 `const`），但它无法发觉 `m3` 缺少初始化。
+通常来说，以很少不恰当的成员初始化来消除错误，要比缺乏初始化更有价值，
+而且优化器是可以消除冗余的初始化的（比如紧跟在赋值之前的初始化）。
+
 ##### 注解
 
 几十年来，精明的程序员中都流行进行复杂的初始化。
@@ -10594,6 +10627,7 @@ C++17 的规则多少会少些意外：
 
 * 对 C 风格的变参函数的定义作出标记。
 * 对 `#include <cstdarg>` 和 `#include <stdarg.h>` 作出标记。
+
 
 ## ES.stmt: 语句
 
@@ -11196,17 +11230,197 @@ C++17 收紧了有关求值顺序的规则
 
 复杂的指针操作是一种重大的错误来源。
 
-* 在 `span` 上进行所有的指针运算（简单循环中的 `++p` 为例外???）
-* 避免指向指针的指针
-* ???
+##### 注解
+
+代之以使用 `gsl::span`。
+指针[只应当指代单个对象](#Ri-array)。
+指针算术是脆弱而易错的，是许多许多糟糕的 BUG 和安全漏洞的来源。
+`span` 是一种用于访问数组对象的带有边界检查的安全类型。
+以常量为下标来访问已知边界的数组，编译器可以进行验证。
+
+##### 示例，不好
+
+    void f(int* p, int count)
+    {
+        if (count < 2) return;
+
+        int* q = p + 1; // 不好
+
+        ptrdiff_t d;
+        int n;
+        d = (p - &n); // OK
+        d = (q - p); // OK
+
+        int n = *p++; // 不好
+
+        if (count < 6) return;
+
+        p[4] = 1; // 不好
+
+        p[count - 1] = 2; // 不好
+
+        use(&p[0], 3); // 不好
+    }
+
+##### 示例，好
+
+    void f(span<int> a) // 好多了：函数声明中使用了 span
+    {
+        if (a.length() < 2) return;
+
+        int n = a[0]; // OK
+
+        span<int> q = a.subspan(1); // OK
+
+        if (a.length() < 6) return;
+
+        a[4] = 1; // OK
+
+        a[count - 1] = 2; // OK
+
+        use(a.data(), 3); // OK
+    }
+
+##### 注解
+
+用变量做下标，对于工具和人类来说都是很难将其验证为安全的。
+`span` 是一种用于访问数组对象的带有运行时边界检查的安全类型。
+`at()` 是可以保证单次访问进行边界检查的另一种替代方案。
+如果需要用迭代器来访问数组的话，应使用构造于数组之上的 `span` 所提供的迭代器。
+
+##### 示例，不好
+
+    void f(array<int, 10> a, int pos)
+    {
+        a[pos / 2] = 1; // 不好
+        a[pos - 1] = 2; // 不好
+        a[-1] = 3;    // 不好（但易于被工具查出） - 没有替代方案，请勿这样做
+        a[10] = 4;    // 不好（但易于被工具查出） - 没有替代方案，请勿这样做
+    }
+
+##### 示例，好
+
+使用 `span`：
+
+    void f1(span<int, 10> a, int pos) // A1: 将参数类型改为使用 span
+    {
+        a[pos / 2] = 1; // OK
+        a[pos - 1] = 2; // OK
+    }
+
+    void f2(array<int, 10> arr, int pos) // A2: 增加局部的 span 并使用之
+    {
+        span<int> a = {arr, pos}
+        a[pos / 2] = 1; // OK
+        a[pos - 1] = 2; // OK
+    }
+
+使用 `at()`：
+
+    void f3(array<int, 10> a, int pos) // 替代方案 B: 用 at() 进行访问
+    {
+        at(a, pos / 2) = 1; // OK
+        at(a, pos - 1) = 2; // OK
+    }
+
+##### 示例，不好
+
+    void f()
+    {
+        int arr[COUNT];
+        for (int i = 0; i < COUNT; ++i)
+            arr[i] = i; // 不好，不能使用非常量索引
+    }
+
+##### 示例，好
+
+使用 `span`：
+
+    void f1()
+    {
+        int arr[COUNT];
+        span<int> av = arr;
+        for (int i = 0; i < COUNT; ++i)
+            av[i] = i;
+    }
+
+使用 `span` 和基于范围的 `for`：
+
+    void f1a()
+    {
+         int arr[COUNT];
+         span<int, COUNT> av = arr;
+         int i = 0;
+         for (auto& e : av)
+             e = i++;
+    }
+
+使用 `at()` 进行访问：
+
+    void f2()
+    {
+        int arr[COUNT];
+        for (int i = 0; i < COUNT; ++i)
+            at(arr, i) = i;
+    }
+
+使用基于范围的 `for`：
+
+    void f3()
+    {
+         int arr[COUNT];
+         for (auto& e : arr)
+             e = i++;
+    }
+
+##### 注解
+
+工具可以提供重写能力，以将涉及动态索引表达式的数组访问替换为使用 `at()` 进行访问：
+
+    static int a[10];
+
+    void f(int i, int j)
+    {
+        a[i + j] = 12;      // 不好，可以重写为 ...
+        at(a, i + j) = 12;  // OK - 带有边界检查
+    }
 
 ##### 示例
 
-    ???
+把数组转变为指针（语言基本上总会这样做），移除了进行检查的机会，因此应当予以避免
+
+    void g(int* p);
+
+    void f()
+    {
+        int a[5];
+        g(a);        // 不好：是要传递一个数组吗？
+        g(&a[0]);    // OK：传递单个对象
+    }
+
+如果要传递数组的话，应该这样：
+
+    void g(int* p, size_t length);  // 老的（危险）代码
+
+    void g1(span<int> av); // 好多了：改动了 g()。
+
+    void f()
+    {
+        int a[5];
+        span<int> av = a;
+
+        g(av.data(), av.length());   // OK, 如果没有其他选择的话
+        g1(a);                       // OK - 这里没有衰变，而是使用了隐式的 span 构造函数
+    }
 
 ##### 强制实施
 
-我们需要对指针算术语句的复杂度实施一种启发式的限制。
+* 对任何在指针类型的表达式上进行的产生指针类型的值的算术运算进行标记。
+* 对任何数组类型的表达式或变量（无论是静态数组还是 `std::array`）上进行索引的表达式，若其索引不是值为从 `0` 到数组上界之内的编译期常量表达式，则进行标记。
+* 对任何可能依赖于从数组类型向指针类型的隐式转换的表达式进行标记。
+
+本条规则属于[边界安全性剖面配置](#SS-bounds)。
+
 
 ### <a name="Res-order"></a>ES.43: 避免带有未定义的求值顺序的表达式
 
@@ -11247,14 +11461,20 @@ C++17 收紧了有关求值顺序的规则，但函数实参求值顺序仍然�
     int i = 0;
     f(++i, ++i);
 
-这个调用很可能是 `f(0, 1)` 或 `f(1, 0)`，但你不知道是哪个。技术上讲，其行为是未定义的。
+这个调用很可能是 `f(0, 1)` 或 `f(1, 0)`，但你不知道是哪个。
+技术上讲，其行为是未定义的。
+在 C++17 中这段代码没有未定义行为，但仍未指定是哪个实参被首先求值。
 
 ##### 示例
 
-??? 重载运算符可能导致求值顺序问题（但这并不应该:-(）
+重载运算符可能导致求值顺序问题：
 
-    f1()->m(f2());   // m(f1(), f2())
+    f1()->m(f2());          // m(f1(), f2())
     cout << f1() << f2();   // operator<<(operator<<(cout, f1()), f2())
+
+在 C++17 中，这些例子将按预期工作（自左向右），而赋值则按自右向左求值（`=` 正是自右向左绑定的）
+
+    f1() = f2();    // C++14 中为未定义行为；C++17 中 f2() 在 f1() 之前求值
 
 ##### 强制实施
 
@@ -11386,7 +11606,8 @@ C++17 收紧了有关求值顺序的规则，但函数实参求值顺序仍然�
 
 ##### 注解
 
-写下强制转换的程序员通常认为他们知道所做的是什么事情。
+写下强制转换的程序员通常认为他们知道所做的是什么事情，
+或者写出强制转换能让程序“更易读”。
 而实际上，他们这样经常会禁止掉使用值的一些一般规则。
 如果存在正确的函数的话，重载决议和模板实例化通常都能挑选出正确的函数。
 如果没有的话，则可能本应如此，而不应该进行某种局部的修补（强制转换）。
@@ -11407,15 +11628,14 @@ C++17 收紧了有关求值顺序的规则，但函数实参求值顺序仍然�
 
 * 使用模板
 * 使用 `std::variant`
-
+* 借助良好定义的，安全的，指针类型之间的隐式转换
 
 ##### 强制实施
 
 * 强制消除 C 风格的强制转换。
-* 对具名的强制转换给出警告。
 * 当存在许多函数风格的强制转换时给出警告（显而易见的问题是如何量化“许多”）。
-* 对不必要的强制转换给出警告。
 * [类型剖面配置](#Pro-type-reinterpretcast)禁用了 `reinterpret_cast`。
+* 对[不必要的指针强制转换](#Pro-type-unnecessarycast)给出警告。
 
 ### <a name="Res-casts-named"></a>ES.49: 当必须使用强制转换时，使用有名字的强制转换
 
@@ -11476,8 +11696,8 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 ##### 强制实施
 
 * 对 C 风格和函数式的强制转换进行标记。
-* 建议用花括号初始化或者 `gsl::narrow_cast` 来代替算数类型上的具名强制转换。
 * [类型剖面配置](#Pro-type-reinterpretcast)禁用了 `reinterpret_cast`。
+* [类型剖面配置](#Pro-type-arithmeticcast)对于在算术类型之间使用 `static_cast` 时给出警告。
 
 ### <a name="Res-casts-const"></a>ES.50: 不要强制掉 `const`
 
@@ -11898,6 +12118,97 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 ##### 强制实施
 
 针对切片给出警告。
+
+### <a name="Res-construct"></a>ES.64: 使用 `T{e}` 写法来进行构造
+
+##### 理由
+
+对象构造语法 `T{e}` 明确了所需进行的构造。
+对象构造语法 `T{e}` 不允许发生窄化。
+`T{e}` 是唯一安全且通用的由表达式 `e` 构造一个 `T` 类型的值的表达式。
+强制转换的写法 `T(e)` 和 `(T)e` 既不安全也不通用。
+
+##### 示例
+
+对于内建类型，构造的写法保护了不发生窄化和重解释
+
+    void use(char ch, int i, double d, char* p, long long lng)
+    {
+        int x1 = int{ch};     // OK，但多余
+        int x2 = int{d};      // 错误：double->int 窄化；如果需要的话应使用强制转换
+        int x3 = int{p};      // 错误：指针->int；如果确实需要的话应使用 reinterpret_cast
+        int x4 = int{lng};    // 错误：long long->int 窄化；如果需要的话应使用强制转换
+
+        int y1 = int(ch);     // OK，但多余
+        int y2 = int(d);      // 不好：double->int 窄化；如果需要的话应使用强制转换
+        int y3 = int(p);      // 不好：指针->int；如果确实需要的话应使用 reinterpret_cast
+        int y4 = int(lng);    // 不好：long->int 窄化；如果需要的话应使用强制转换
+
+        int z1 = (int)ch;     // OK，但多余
+        int z2 = (int)d;      // 不好：double->int 窄化；如果需要的话应使用强制转换
+        int z3 = (int)p;      // 不好：指针->int；如果确实需要的话应使用 reinterpret_cast
+        int z4 = (int)lng;    // 不好：long long->int 窄化；如果需要的话应使用强制转换
+    }
+
+整数和指针之间的转换，在使用 `T(e)` 和 `(T)e` 时是由实现定义的，
+而且在不同整数和指针大小的平台之间不可移植。
+
+##### 注解
+
+[避免强制转换](#Res-casts)（显式类型转换），如果必须要做的话[优先采用具名强制转换](#Res-casts-named)。
+
+##### 注解
+
+当没有歧义时，可以不写 `T{e}` 中的 `T`。
+
+    complex<double> f(complex<double>);
+
+    auto z = f({2*pi,1});
+
+##### 注解
+
+对象构造语法是最通用的[初始化式语法](#Res-list)。
+
+##### 例外
+
+`std::vector` 和其他的容器是在 `{}` 作为对象构造语法之前定义的。
+考虑：
+
+    vector<string> vs {10};                           // 十个空字符串
+    vector<int> vi1 {1, 2, 3, 4, 5, 6, 7, 8, 9, 10};  // 十个元素 1..10
+    vector<int> vi2 {10};                             // 一个值为 10 的元素
+
+如何得到包含十个默认初始化的 `int` 的 `vector`？
+
+    vector<int> v3(10); // 十个值为 0 的元素
+
+使用 `()` 而不是 `{}` 作为元素数量是一种约定（源于 1980 年代早期），很难改变，
+但仍然是一个设计错误：对于元素类型与元素数量可能发生混淆的容器，必须解决
+其中的歧义。
+约定的方案是将 `{10}` 解释为单个元素的列表，而用 `(10)` 来指定大小。
+
+不应当在新代码中重复这个错误。
+可以定义一个类型来表示元素的数量：
+
+    struct Count { int n };
+
+    template<typename T>
+    class Vector {
+    public:
+        Vector(Count n);                     // n 个默认构造的元素
+        Vector(initializer_list<T> init);    // init.size() 个元素
+        // ...
+    };
+
+    Vector<int> v1{10};
+    Vector<int> v2{Count{10}};
+    Vector<Count> v3{Count{10}};    // 这里仍有一个很小的问题
+
+剩下的主要问题就是为 `Count` 找个合适的名字了。
+
+##### 强制实施
+
+标记 C 风格的 `(T)e` 和函数式风格的 `T(e)` 强制转换。
 
 ## <a name="SS-numbers"></a>算术
 
@@ -13330,7 +13641,8 @@ C++ 对此的机制是 `atomic` 类型：
 
     void use()
     {
-        tick_toc = make_unique(gsl::joining_thread,heartbeat);       // 打算在 tick_tock 存活期间持续运行 heartbeat
+        // 打算在 tick_tock 存活期间持续运行 heartbeat
+        tick_tock = make_unique(gsl::joining_thread, heartbeat);
         // ...
     }
 
@@ -17898,6 +18210,7 @@ C++ 标准库组件概览：
 * [SL.1: 尽可能使用程序库](#Rsl-lib)
 * [SL.2: 优先使用标准库而不是其他程序库](#Rsl-sl)
 * [SL.3: 请勿向命名空间 `std` 中添加非标准实体](#sl-std)
+* [SL.4: 以类型安全的方式使用标准库](#sl-safe)
 * ???
 
 ### <a name="Rsl-lib"></a>SL.1:  尽可能使用程序库
@@ -17932,6 +18245,21 @@ C++ 标准库组件概览：
 
 有可能，但很麻烦而且在一些平台上很可能导致一些问题。
 
+### <a name="sl-safe"></a>SL.4: 以类型安全的方式使用标准库
+
+##### 理由
+
+因为，很显然，违反这条规则将导致未定义的行为，内存损坏，以及其他所有种类的糟糕的错误。
+
+##### 注解
+
+本条规则是半哲学性的元规则，需要许多具体规则予以支持。
+我们需要将之作为对于更加专门的规则的总括。
+
+更加专门的规则概览：
+
+* [SL.4: 以类型安全的方式使用标准库](#sl-safe)
+
 
 ## <a name="SS-con"></a>SL.con: 容器
 
@@ -17941,6 +18269,7 @@ C++ 标准库组件概览：
 
 * [SL.con.1: 优先采用 STL 的 `array` 或 `vector` 而不是 C 数组](#Rsl-arrays)
 * [SL.con.2: 除非有理由使用别的容器，否则默认情况应优先采用 STL 的 `vector`](#Rsl-vector)
+* [SL.con.3: 避免边界错误](#Rsl-bounds)
 *  ???
 
 ### <a name="Rsl-arrays"></a>SL.con.1: 优先采用 STL 的 `array` 或 `vector` 而不是 C 数组
@@ -17964,6 +18293,10 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
     delete[] v;                         // 不好，手工 delete
 
     std::vector<int> w(initial_size);   // ok
+
+##### 注解
+
+在不拥有而引用容器中的元素时使用 `gsl::span`。
 
 ##### 强制实施
 
@@ -17994,6 +18327,87 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 
 * 如果 `vector` 构造之后大小不会改变（比如因为它是 `const` 或者因为没有对它调用过非 `const` 函数），则对其进行标记。修正：代之以使用 `array`。
 
+### <a name="Rsl-bounds"></a>SL.con.3: 避免边界错误
+
+##### 理由
+
+越过已分配的元素的范围进行读写，通常都会导致糟糕的错误，不正确的结果，程序崩溃，以及安全漏洞。
+
+##### 注解
+
+应用于一组元素的范围的标准库函数，都有（或应当有）接受 `span` 的边界安全重载。
+如 `vector` 这样的标准类型，在边界剖面配置下（以某种不兼容的方式，如添加契约）可以被修改为实施边界检查，或者使用 `at()`。
+
+理想情况下，边界内保证应当可以被静态强制实行。
+例如：
+
+* 基于范围的 `for` 的循环不会越过其所针对的容器的范围
+* `v.begin(),v.end()` 可以很容易确定边界安全性
+
+这种循环和任何的等价的无检查或不安全的循环一样高效。
+
+通常，可以用一个简单的预先检查来消除检查每个索引的需要。
+例如
+
+* 对于 `v.begin(),v.begin()+i`，`i` 可以很容易针对 `v.size()` 检查
+
+这种循环比每次都待检查元素访问要快得多。
+
+##### 示例，不好
+
+    void f()
+    {
+        array<int, 10> a, b;
+        memset(a.data(), 0, 10);         // 不好，且包含长度错误（length = 10 * sizeof(int)）
+        memcmp(a.data(), b.data(), 10);  // 不好，且包含长度错误（length = 10 * sizeof(int)）
+    }
+
+而且，`std::array<>::fill()` 或 `std::fill()`，甚或是空的初始化式，都比 `memset()` 要好。
+
+##### 示例，好
+
+    void f()
+    {
+        array<int, 10> a, b, c{};       // c 被初始化为零
+        a.fill(0);
+        fill(b.begin(), b.end(), 0);    // std::fill()
+        fill(b, 0);                     // std::fill() + Ranges TS
+
+        if ( a == b ) {
+          // ...
+        }
+    }
+
+##### Example
+
+如果代码使用的是未修改的标准库，仍然有一些变通方案来以边界安全的方式使用 `std::array` 和 `std::vector`。代码中可以调用各个类的 `.at()` 成员函数，这将抛出 `std::out_of_range` 异常。或者，代码中可以调用 `at()` 自由函数，这将在边界违例时导致快速失败（或者某个自定义动作）。
+
+    void f(std::vector<int>& v, std::array<int, 12> a, int i)
+    {
+        v[0] = a[0];        // 不好
+        v.at(0) = a[0];     // OK（替代方案 1）
+        at(v, 0) = a[0];    // OK（替代方案 2）
+
+        v.at(0) = a[i];     // 不好
+        v.at(0) = a.at(i);  // OK（替代方案 1）
+        v.at(0) = at(a, i); // OK（替代方案 2）
+    }
+
+##### 强制实施
+
+* 对于没有边界检查的标准库函数的任何调用都给出诊断消息。
+??? 在这里添加一组禁用函数的连接列表
+
+本条规则属于[边界剖面配置](#SS-bounds)。
+
+**TODO 注释**:
+
+* 对于标准库的影响需要和 WG21 之间进行紧密的协调，即便不需要标准化也应当至少保证兼容性。
+* 我们正在考虑为标准库（尤其是 C 标准库）中如 `memcmp` 这样的函数指定边界安全的重载，并在 GSL 中提供它们。
+* 对于标准中没有进行完全的边界检查的现存函数和如 `vector` 这样的类型来说，我们的目标是在启用了边界剖面配置的代码中调用时，这些功能应当进行边界检查，而从遗留代码中调用时则没有检查，可能需要利用契约来实现（正由几个 WG21 成员进行提案工作）。
+
+
+
 ## <a name="SS-string"></a>SL.str: 字符串
 
 文本处理是一个大的主题。
@@ -18012,11 +18426,11 @@ We don't consider
 * [SL.str.2: 使用 `std::string_view` 或 `gsl::string_span` 以指代字符序列](#Rstr-view)
 * [SL.str.3: 使用 `zstring` 或 `czstring` 以指代 C 风格、以零结尾的字符序列](#Rstr-zstring)
 * [SL.str.4: 使用 `char*` 以指代单个字符](#Rstr-char*)
-* [Sl.str.5: 使用 `std::byte` 以指代并不必须表示字符的字节值](#Rstr-byte)
+* [SL.str.5: 使用 `std::byte` 以指代并不必须表示字符的字节值](#Rstr-byte)
 
-* [Sl.str.10: 当需要实施相关于文化地域的操作时，使用 `std::string`](#Rstr-locale)
-* [Sl.str.11: 当需要改动字符串时，使用 `gsl::string_span` 而不是 `std::string_view`](#Rstr-span)
-* [Sl.str.12: 为作为标准库的 `string` 类型的字符串字面量使用后缀 `s`](#Rstr-s)
+* [SL.str.10: 当需要实施相关于文化地域的操作时，使用 `std::string`](#Rstr-locale)
+* [SL.str.11: 当需要改动字符串时，使用 `gsl::string_span` 而不是 `std::string_view`](#Rstr-span)
+* [SL.str.12: 为作为标准库的 `string` 类型的字符串字面量使用后缀 `s`](#Rstr-s)
 
 另见
 
@@ -18190,7 +18604,7 @@ C++17 中，我们可以使用 `string_view` 而不是 `const string*` 作为参
 
 * 标记在 `char*` 上使用的 `[]`
 
-### <a name="Rstr-byte"></a>Sl.str.5: 使用 `std::byte` 以指代并不必须表示字符的字节值
+### <a name="Rstr-byte"></a>SL.str.5: 使用 `std::byte` 以指代并不必须表示字符的字节值
 
 ##### 理由
 
@@ -18210,7 +18624,7 @@ C++17
 ???
 
 
-### <a name="Rstr-locale"></a>Sl.str.10: 当需要实施相关于文化地域的操作时，使用 `std::string`
+### <a name="Rstr-locale"></a>SL.str.10: 当需要实施相关于文化地域的操作时，使用 `std::string`
 
 ##### 理由
 
@@ -18228,7 +18642,7 @@ C++17
 
 ???
 
-### <a name="Rstr-span"></a>Sl.str.11: 当需要改动字符串时，使用 `gsl::string_span` 而不是 `std::string_view`
+### <a name="Rstr-span"></a>SL.str.11: 当需要改动字符串时，使用 `gsl::string_span` 而不是 `std::string_view`
 
 ##### 理由
 
@@ -18246,7 +18660,7 @@ C++17
 
 编译器会标记出试图写入 `string_view` 的地方。
 
-### <a name="Rstr-s"></a>Sl.str.12: 为作为标准库的 `string` 类型的字符串字面量使用后缀 `s`
+### <a name="Rstr-s"></a>SL.str.12: 为作为标准库的 `string` 类型的字符串字面量使用后缀 `s`
 
 ##### 理由
 
@@ -18452,9 +18866,9 @@ C 标准库规则概览：
 
 架构性规则概览：
 
-* [A.1 将代码中的稳定部分和不稳定的部分进行分离](#Ra-stable)
-* [A.2 将潜在可复用的部分作为程序库](#Ra-lib)
-* [A.4 程序库之间不能有循环依赖](#?Ra-dag)
+* [A.1: 将代码中的稳定部分和不稳定的部分进行分离](#Ra-stable)
+* [A.2: 将潜在可复用的部分作为程序库](#Ra-lib)
+* [A.4: 程序库之间不能有循环依赖](#?Ra-dag)
 * [???](#???)
 * [???](#???)
 * [???](#???)
@@ -18462,11 +18876,11 @@ C 标准库规则概览：
 * [???](#???)
 * [???](#???)
 
-### <a name="Ra-stable"></a>A.1 将代码中的稳定部分和不稳定的部分进行分离
+### <a name="Ra-stable"></a>A.1: 将代码中的稳定部分和不稳定的部分进行分离
 
 ???
 
-### <a name="Ra-lib"></a>A.2 将潜在可复用的部分作为程序库
+### <a name="Ra-lib"></a>A.2: 将潜在可复用的部分作为程序库
 
 ##### 理由
 
@@ -18477,7 +18891,7 @@ C 标准库规则概览：
 程序库可以被静态或动态地连接到程序中，或者可以被 `#included` 入其中。
 
 
-### <a name="Ra-dag"></a>A.4 程序库之间不能有循环依赖
+### <a name="Ra-dag"></a>A.4: 程序库之间不能有循环依赖
 
 ##### 理由
 
@@ -18989,25 +19403,25 @@ C 标准库规则概览：
 
 类型安全性剖面配置概览：
 
-* <a name="Pro-type-reinterpretcast"></a>Type.1: 请勿使用 `reinterpret_cast`：
-此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。
-* <a name="Pro-type-downcast"></a>Type.2: 请勿使用 `static_cast` 进行向下强制转换。：
+* <a name="Pro-type-avoidcasts"></a>Type.1: [避免强制转换](#Res-casts)：
+    * <a name="Pro-type-reinterpretcast"></a>请勿使用 `reinterpret_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。
+    * <a name="Pro-type-arithmeticcast"></a>请勿在算术类型上使用 `static_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。
+    * <a name="Pro-type-unnecessarycast"></a>请勿使用不必要的指针强制转换；此为[避免强制转换](#Res-casts)的严格的版本。
+* <a name="Pro-type-downcast"></a>Type.2: 请勿使用 `static_cast` 进行向下强制转换：
 [代之以使用 `dynamic_cast`](#Rh-dynamic_cast)。
 * <a name="Pro-type-constcast"></a>Type.3: 请勿使用 `const_cast` 强制掉 `const`（亦即不要这样做）：
 [不要强制掉 `const`](#Res-casts-const)。
-* <a name="Pro-type-cstylecast"></a>Type.4: 请勿使用  C 风格的强制转换 `(T)expression`：
-[优先使用静态的强制转换](#Res-casts-named)。
-* [Type.4.1: 不要使用 `T(expression)` 进行强制转换](#Pro-fct-style-cast)：
-[优先使用具名的强制转换](#Res-casts-named)。
-* [Type.5: 请勿在初始化之前使用变量](#Pro-type-init)：
+* <a name="Pro-type-cstylecast"></a>Type.4: 请勿使用  C 风格的强制转换 `(T)expression` 和函数式风格强制转换 `T(expression)`：
+优先使用[构造语法](#Res-construct)和[具名的强制转换](#Res-casts-named)。
+* <a name="Pro-type-init"></a>Type.5: 请勿在初始化之前使用变量：
 [坚持进行初始化](#Res-always)。
-* [Type.6: 坚持初始化成员变量](#Pro-type-memberinit)：
+* <a name="Pro-type-memberinit"></a>Type.6: 坚持初始化成员变量：
 [坚持进行初始化](#Res-always)，
 可以采用[默认构造函数](#Rc-default0)或者
 [默认成员初始化式](#Rc-in-class-initializer)。
-* [Type.7: 避免裸 union](#Pro-fct-style-cast)：
+* <a name="Pro-type-unon"></a>Type.7: 避免裸 union：
 [代之以使用 `variant`](#Ru-naked)。
-* [Type.8: 避免 varargs](#Pro-type-varargs)：
+* <a name="Pro-type-varargs"></a>Type.8: 避免 varargs：
 [不要使用 `va_arg` 参数](#F-varargs)。
 
 ##### 影响
@@ -19017,313 +19431,35 @@ C 标准库规则概览：
 要注意的是，这种类型安全性仅当我们同样具有[边界安全性](#SS-bounds)和[生存期安全性](#SS-lifetime)时才是完整的。
 而没有这些保证的话，一个内存区域可能以与其所存储的单个或多个对象，或对象的一部分无关的方式被访问。
 
-### <a name="Pro-fct-style-cast"></a>Type.4.1: 不要使用 `T(expression)` 进行强制转换
-
-##### 理由
-
-当 `e` 具有内建类型时，`T(e)` 等价于容易出错的 `(T)e`。
-
-##### 示例，不好
-
-    int* p = f(x);
-    auto i = int(p);    // 潜在造成损害的强制转换；不要这样做，或使用 `reinterpret_cast`
-
-    short s = short(i); // 潜在发生窄化；不要这样做，或使用 `narrow` 或 `narrow_cast`
-
-##### 注解
-
-花括号语法（`{}`）明确其所需要的是构造，且不允许发生窄化
-
-    f(Foo{bar});
-
-##### 强制实施
-
-标记出对具有内建类型的 `e` 所应用的 `T(e)`。
-
-
-### <a name="Pro-type-memberinit"></a>Type.6: 坚持初始化成员变量
-
-##### 理由
-
-变量被初始化前是并不包含其类型的某个确定的有效值的。它可能包含任何随意的位模式，而且可能每次调用都不同。
-
-##### 示例
-
-    struct X { int i; };
-
-    X x;
-    use(x); // 不好，x 未初始化
-
-    X x2{}; // 好
-    use(x2);
-
-##### 强制实施
-
-* 如果非可平凡构造类型的任何构造函数并未初始化全部的成员变量，则对其给出诊断。修正：写数据成员的初始化式，或者将它放在成员初始化式列表中。
-* 如果可平凡构造类型的对象的构造中不带有 `()` 或 `{}` 以初始化其成员，则对其给出诊断。修正：添上 `()` 或 `{}`。
-
-
 
 ## <a name="SS-bounds"></a>Pro.bounds: 边界安全性剖面配置
 
-这个剖面配置将能简化对于在分配的内存块的边界之中进行操作的编码工作。它是通过关注于移除边界违例的主要根源——即指针算术和数组索引——而做到这点的。这个剖面配置的核心功能之一就是限制指针只能指向单个对象而不是数组。
+这个剖面配置将能简化对于在分配的内存块的边界之中进行操作的编码工作。
+它是通过关注于移除边界违例的主要根源——即指针算术和数组索引——而做到这点的。
+这个剖面配置的核心功能之一就是限制指针只能指向单个对象而不是数组。
 
-根据本文档的目的，边界安全性被定义为这样一种性质：程序无法通过变量来对分配并赋予这个变量的内存范围之外的内存进行访问。（注意，当和[类型安全性](#SS-type)和[生存期安全性](#SS-lifetime)组合起来时，安全性才是完整的，它们还会包含其他允许发生边界违例的不安全操作，比如类型不安全的强制转换可能会“放宽”一些指针。）
-
-下列各项也是被考虑的，但并未包括到以下规则之内，将它们划分到别的剖面配置中可能更好：
-
-* ???
-
-这个剖面配置的实现应当在源代码中识别出下列模式，将之作为不符合并给出诊断信息。
+我们将边界安全性定义为这样一种性质：程序不通过一个对象来对分配给这个对象的内存范围之外的内存进行访问。
+仅当边界安全性与[类型安全性](#SS-type)和[生存期安全性](#SS-lifetime)组合起来时才是完整的，
+它们还会包含其他允许发生边界违例的不安全操作。
 
 边界安全性剖面配置概览：
 
-* [Bounds.1: 请勿使用指针算术。请使用 `span` 代替](#Pro-bounds-arithmetic)
-* [Bounds.2: 仅使用常量表达式对数组进行索引操作](#Pro-bounds-arrayindex)
-* [Bounds.3: 避免数组向指针的衰变](#Pro-bounds-decay)
-* [Bounds.4: 请勿使用不进行边界检查的标准库函数和类型](#Pro-bounds-stdlib)
-
-
-### <a name="Pro-bounds-arithmetic"></a>Bounds.1: 请勿使用指针算术。请使用 `span` 代替
-
-##### 理由
-
-指针只应当指代单个对象，指针算术是脆弱而易错的。`span` 带有边界检查，是访问数组数据的安全类型。
-
-##### 示例，不好
-
-    void f(int* p, int count)
-    {
-        if (count < 2) return;
-
-        int* q = p + 1; // 不好
-
-        ptrdiff_t d;
-        int n;
-        d = (p - &n); // OK
-        d = (q - p); // OK
-
-        int n = *p++; // 不好
-
-        if (count < 6) return;
-
-        p[4] = 1; // 不好
-
-        p[count - 1] = 2; // 不好
-
-        use(&p[0], 3); // 不好
-    }
-
-##### 示例，好
-
-    void f(span<int> a) // 好多了：函数声明中使用了 span
-    {
-        if (a.length() < 2) return;
-
-        int n = a[0]; // OK
-
-        span<int> q = a.subspan(1); // OK
-
-        if (a.length() < 6) return;
-
-        a[4] = 1; // OK
-
-        a[count - 1] = 2; // OK
-
-        use(a.data(), 3); // OK
-    }
-
-##### 强制实施
-
-对任何在指针类型的表达式上进行的产生指针类型的值的算术运算给出诊断消息。
-
-### <a name="Pro-bounds-arrayindex"></a>Bounds.2: 仅使用常量表达式对数组进行索引操作
-
-##### 理由
-
-对数组进行动态访问操作，对于工具和人类来说都是很难将其验证为安全的。`span` 是一种用于访问数组对象的带有边界检查的安全类型。`at()` 是可以保证单次访问进行边界检查的另一种替代方案。如果需要用迭代器来访问数组的话，应使用构造于数组之上的 `span` 所提供的迭代器。
-
-##### 示例，不好
-
-    void f(array<int, 10> a, int pos)
-    {
-        a[pos / 2] = 1; // 不好
-        a[pos - 1] = 2; // 不好
-        a[-1] = 3;    // 不好 - 没有替代方案，请勿这样做
-        a[10] = 4;    // 不好 - 没有替代方案，请勿这样做
-    }
-
-##### 示例，好
-
-    // 替代方案 A: 使用 span
-
-    // A1: 将参数类型改为使用 span
-    void f1(span<int, 10> a, int pos)
-    {
-        a[pos / 2] = 1; // OK
-        a[pos - 1] = 2; // OK
-    }
-
-    // A2: 增加局部的 span 并使用之
-    void f2(array<int, 10> arr, int pos)
-    {
-        span<int> a = {arr, pos}
-        a[pos / 2] = 1; // OK
-        a[pos - 1] = 2; // OK
-    }
-
-    // 替代方案 B: 用 at() 进行访问
-    void f3(array<int, 10> a, int pos)
-    {
-        at(a, pos / 2) = 1; // OK
-        at(a, pos - 1) = 2; // OK
-    }
-
-##### 示例，不好
-
-    void f()
-    {
-        int arr[COUNT];
-        for (int i = 0; i < COUNT; ++i)
-            arr[i] = i; // 不好，不能使用非常量索引
-    }
-
-##### 示例，好
-
-    // 替代方案 A: 使用 span
-    void f1()
-    {
-        int arr[COUNT];
-        span<int> av = arr;
-        for (int i = 0; i < COUNT; ++i)
-            av[i] = i;
-    }
-
-    // 替代方案 Aa: 使用 span 和基于范围的 for
-    void f1a()
-    {
-         int arr[COUNT];
-         span<int, COUNT> av = arr;
-         int i = 0;
-         for (auto& e : av)
-             e = i++;
-    }
-
-    // 替代方案 B: 使用 at() 进行访问
-    void f2()
-    {
-        int arr[COUNT];
-        for (int i = 0; i < COUNT; ++i)
-            at(arr, i) = i;
-    }
-
-##### 强制实施
-
-对任何数组类型的表达式或变量（无论是静态数组还是 `std::array`）上进行索引的表达式，若其索引不是编译期常量表达式则给出诊断消息。
-
-对任何数组类型的表达式或变量（无论是静态数组还是 `std::array`）上进行索引的表达式，若其索引不在从 `0` 到数组上界之内则给出诊断消息。
-
-**重写支持**: 工具可以提供重写能力，以将涉及动态索引表达式的数组访问替换为使用 `at()` 进行访问：
-
-    static int a[10];
-
-    void f(int i, int j)
-    {
-        a[i + j] = 12;      // 不好，可以重写为 ...
-        at(a, i + j) = 12;  // OK - 带有边界检查
-    }
-
-### <a name="Pro-bounds-decay"></a>Bounds.3: 避免数组向指针的衰变
-
-##### 理由
-
-不能把指针用作数组。`span` 是对通过指针来访问数组的一种带有边界检查的安全的替代方案。
-
-##### 示例，不好
-
-    void g(int* p, size_t length);
-
-    void f()
-    {
-        int a[5];
-        g(a, 5);        // 不好
-        g(&a[0], 1);    // OK
-    }
-
-##### 示例，好
-
-    void g(int* p, size_t length);
-    void g1(span<int> av); // 好多了：改动了 g()
-
-    void f()
-    {
-        int a[5];
-        span<int> av = a;
-
-        g(av.data(), av.length());   // OK, 如果没有其他选择的话
-        g1(a);                       // OK - 这里没有衰变，而是使用了隐式的 span 构造函数
-    }
-
-##### 强制实施
-
-对任何可能依赖于从数组类型向指针类型的隐式转换的表达式给出诊断消息。
-
-### <a name="Pro-bounds-stdlib"></a>Bounds.4: 请勿使用不进行边界检查的标准库函数和类型
-
-##### 理由
-
-这些函数都带有接受 `span` 的进行边界检查的重载。而诸如 `vector` 这样的标准类型都可以根据边界剖面配置进行改写以进行边界检查（应当以兼容的方式进行，比如通过添加契约），或者通过 `at()` 来使用它们。
-
-##### 示例，不好
-
-    void f()
-    {
-        array<int, 10> a, b;
-        memset(a.data(), 0, 10);         // 不好，带有长度错误 (length = 10 * sizeof(int))
-        memcmp(a.data(), b.data(), 10);  // 不好，带有长度错误 (length = 10 * sizeof(int))
-    }
-
-同样，`std::array<>::fill()` 或 `std::fill()`，甚至空的初始化式都比 `memset()` 要好。
-
-##### 示例，好
-
-    void f()
-    {
-        array<int, 10> a, b, c{};       // c 被初始化为零
-        a.fill(0);
-        fill(b.begin(), b.end(), 0);    // std::fill()
-        fill(b, 0);                     // std::fill() + Ranges TS
-
-        if ( a == b ) {
-          // ...
-        }
-    }
-
-##### 示例
-
-当代码使用的是未修改的标准库时，仍有一些变通方法来让 `std::array` 和 `std::vector` 可以以边界安全的方式使用。可以在代码中调用这些类的成员函数 `.at()`，它们将导致抛出一个 `std::out_of_range` 异常。另外，代码也可以调用自由函数 `at()`，它在发生边界违例时将会导致迅速失败（Fail fast）或者某个自定义动作。
-
-    void f(std::vector<int>& v, std::array<int, 12> a, int i)
-    {
-        v[0] = a[0];        // 不好
-        v.at(0) = a[0];     // OK (替代方案 1)
-        at(v, 0) = a[0];    // OK (替代方案 2)
-
-        v.at(0) = a[i];     // 不好
-        v.at(0) = a.at(i)   // OK (替代方案 1)
-        v.at(0) = at(a, i); // OK (替代方案 2)
-    }
-
-##### 强制实施
-
-* 对于没有边界检查的标准库函数的任何调用都给出诊断消息。 ??? 在这里添加一组禁用函数的连接列表
-
-**TODO 注释**:
-
-* 对于标准库的影响需要和 WG21 之间进行紧密的协调，即便不需要标准化也应当至少保证兼容性。
-* 我们正在考虑为标准库（尤其是 C 标准库）中如 `memcmp` 这样的函数指定边界安全的重载，并在 GSL 中提供它们。
-* 对于标准中没有进行完全的边界检查的现存函数和如 `vector` 这样的类型来说，我们的目标是在启用了边界剖面配置的代码中调用时，这些功能应当进行边界检查，而从遗留代码中调用时则没有检查，可能需要利用契约来实现（正由几个 WG21 成员进行提案工作）。
-
+* <a href="Pro-bounds-arithmetic"></a>Bounds.1: 请勿使用指针算术。请使用 `span` 代替：
+[（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-simple)。
+* <a href="Pro-bounds-arrayindex"></a>Bounds.2: 仅使用常量表达式对数组进行索引操作：
+[（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-simple)。
+* <a href="Pro-bounds-decay"></a>Bounds.3: 避免数组向指针的衰变：
+[（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-simple)。
+* <a href="Pro-bounds-stdlib"></a>Bounds.4: 请勿使用不进行边界检查的标准库函数和类型：
+[以类型安全的方式使用标准库](#Rsl-bounds)
+
+##### 影响
+
+边界安全性意味着，当访问对象（尤其是数组）时不会越过对象的内存分配范围。
+这消除了一大类的隐伏且难于发现的错误，包括（不）著名的“缓冲区溢出”错误。
+这避免了安全漏洞，以及（当越界写入时发生）内存损坏错误的大量来源。
+即使越界访问“只是读取操作”，它也可能导致不变式的违反（当所访问的不是预期的类型时）
+和“神秘的值”。
 
 
 ## <a name="SS-lifetime"></a>Pro.lifetime: 生存期安全性剖面配置
@@ -19338,6 +19474,7 @@ C 标准库规则概览：
 * [Lifetime.2: 不要解引用可能为空的指针](#Pro-lifetime-null-deref)
 * [Lifetime.3: 不要将可能无效的指针传给函数](#Pro-lifetime-invalid-argument)
 
+??? 这些规则将被移动到指导方针的主线部分中 ???
 
 ### <a name="Pro-lifetime-invalid-deref"></a>Lifetime.1: 不要解引用可能无效的指针
 
@@ -19735,7 +19872,7 @@ IDE 也都会提供某些默认方案和一组替代方案。
 
 使用一种工具。
 
-### <a name="Rl-name-type"></a>NL.5 请勿在名字中编码类型信息
+### <a name="Rl-name-type"></a>NL.5: 请勿在名字中编码类型信息
 
 ##### 原理
 
