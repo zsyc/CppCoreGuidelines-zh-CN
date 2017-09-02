@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/6/8
+2017/6/19
 
 
 编辑：
@@ -490,11 +490,12 @@
         cin >> val;
         // ...
         int index = -1;                    // 不好
-        for (int i = 0; i < v.size(); ++i)
+        for (int i = 0; i < v.size(); ++i) {
             if (v[i] == val) {
                 index = i;
                 break;
             }
+        }
         // ...
     }
 
@@ -1228,12 +1229,12 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 通过全局（命名空间作用域）变量（调用模式）来控制函数的行为，是隐含的，而且潜在会造成困惑。例如：
 
-    int rnd(double d)
+    int round(double d)
     {
-        return (rnd_up) ? ceil(d) : d;    // 请勿：“不可见的”依赖
+        return (round_up) ? ceil(d) : d;    // 请勿：“不可见的”依赖
     }
 
-两次调用 `rnd(7.2)` 的含义可能给出不同的结果，这对于调用者来说是不明显的。
+两次调用 `round(7.2)` 的含义可能给出不同的结果，这对于调用者来说是不明显的。
 
 ##### 例外
 
@@ -2209,9 +2210,9 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
     bool owned;
     owner<istream*> inp;
     switch (source) {
-    case std_in:        owned = false; inp = &cin;
-    case command_line:  owned = true;  inp = new istringstream{argv[2]};
-    case file:          owned = true;  inp = new ifstream{argv[2]};
+    case std_in:        owned = false; inp = &cin;                       break;
+    case command_line:  owned = true;  inp = new istringstream{argv[2]}; break;
+    case file:          owned = true;  inp = new ifstream{argv[2]};      break;
     }
     istream& in = *inp;
 
@@ -2287,7 +2288,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 参数传递语义的规则：
 
-* [F.22: 用 `T*`，`owner<T*>` 或者智能指针来代表一个对象](#Rf-ptr)
+* [F.22: 用 `T*` 或 `owner<T*>` 来代表单个对象](#Rf-ptr)
 * [F.23: 用 `not_null<T>` 来表明“空值（null）”不是有效的值](#Rf-nullptr)
 * [F.24: 用 `span<T>` 或者 `span_p<T>` 来代表一个半开序列](#Rf-range)
 * [F.25: 用 `zstring` 或者 `not_null<zstring>` 来代表 C 风格的字符串](#Rf-zstring)
@@ -4225,7 +4226,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
     class Foo {
     public:
-        int bar(int x) { check(x); return do_bar(); }
+        int bar(int x) { check(x); return do_bar(x); }
         // ...
     protected:
         int do_bar(int x); // 在数据上做些操作
@@ -4241,7 +4242,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
             /* ... 做一些事 ... */
             return do_bar(x + y); // OK：派生类可以略过检查
         }
-    }
+    };
 
     void user(Foo& x)
     {
@@ -7602,8 +7603,8 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 强制实施
 
-* 标记模板特化列表 `<Foo>` 的重复使用。
-* 标记声明为 `unique_ptr<Foo>` 的变量。
+* 标记模板特化列表 `<Bar>` 的重复使用。
+* 标记声明为 `unique_ptr<Bar>` 的变量。
 
 ### <a name="Rh-make_shared"></a>C.151: 用 `make_shared()` 来构建由 `shared_ptr` 所拥有的对象
 
@@ -7614,10 +7615,12 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 示例
 
-    // OK: 但出现重复；而且为这个 Foo 和 shared_ptr 的使用计数分别进行了分配
-    shared_ptr<Foo> p {new<Foo>{7}};
+    void test() {
+        // OK: 但出现重复；而且为这个 Foo 和 shared_ptr 的使用计数分别进行了分配
+        shared_ptr<Foo> p {new<Foo>{7}};
 
-    auto q = make_shared<Foo>(7);   // 有改善: 并未重复 Foo；只有一个对象
+        auto q = make_shared<Foo>(7);   // 有改善: 并未重复 Foo；只有一个对象
+    }
 
 ##### 强制实施
 
@@ -8439,15 +8442,25 @@ C++17 引入了一个独立类型 `std::byte` 以支持在原始对象表示上�
 
 ##### 示例
 
-    enum class Day { mon, tue, wed, thu, fri, sat, sun };
+    enum Day { mon, tue, wed, thu, fri, sat, sun };
 
-    Day operator++(Day& d)
+    Day& operator++(Day& d)
     {
-        return d == Day::sun ? Day::mon : Day{++d};
+        return d = (d == Day::sun) ? Day::mon : static_cast<Day>(static_cast<int>(d)+1);
     }
 
     Day today = Day::sat;
     Day tomorrow = ++today;
+
+这里使用 `static_cast` 有点不好，但
+
+    Day& operator++(Day& d)
+    {
+        return d = (d == Day::sun) ? Day::mon : Day(++d);    // 错误
+    }
+
+是无限递归，而且不用强制转换而使用一个针对所有情况的 `switch` 太冗长了。
+
 
 ##### 强制实施
 
@@ -8971,9 +8984,9 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
     void f(const string& name)
     {
-        FILE* f = fopen(name, "r");          // 打开文件
+        FILE* f = fopen(name, "r");            // 打开文件
         vector<char> buf(1024);
-        auto _ = finally([f] { fclose(f); })  // 记得要关闭文件
+        auto _ = finally([f] { fclose(f); });  // 记得要关闭文件
         // ...
     }
 
@@ -10668,6 +10681,32 @@ C++17 的规则多少会少些意外：
     }
 
 **替代方案**: 重载。模板。变参模板。
+    #include <iostream>
+
+    void error(int severity)
+    {
+        std::cerr << std::endl;
+        std::exit(severity);
+    }
+
+    template <typename T, typename... Ts>
+    constexpr void error(int severity, T head, Ts... tail)
+    {
+        std::cerr << head;
+        error(severity, tail...);
+    }
+
+    void use()
+    {
+        error(7); // 不会崩溃！
+        error(5, "this", "is", "not", "an", "error"); // 不会崩溃！
+
+        std::string an = "an";
+        error(7, "this", "is", "not", an, "error"); // 不会崩溃！
+
+        error(5, "oh", "no", nullptr); // 编译器报错！不需要 nullptr。
+    }
+
 
 ##### 注解
 
@@ -10907,7 +10946,7 @@ C++17 的规则多少会少些意外：
             goto exit;
         // ...
     exit:
-        ... 公共的清理代码 ...
+        // ... 公共的清理代码 ...
     }
 
 这是对析构函数的一种专门模仿。
@@ -11360,7 +11399,7 @@ C++17 收紧了有关求值顺序的规则
 
     void f2(array<int, 10> arr, int pos) // A2: 增加局部的 span 并使用之
     {
-        span<int> a = {arr, pos}
+        span<int> a = {arr, pos};
         a[pos / 2] = 1; // OK
         a[pos - 1] = 2; // OK
     }
@@ -12241,7 +12280,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 不应当在新代码中重复这个错误。
 可以定义一个类型来表示元素的数量：
 
-    struct Count { int n };
+    struct Count { int n; };
 
     template<typename T>
     class Vector {
@@ -12661,7 +12700,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
         operator int() { return val; }
     };
 
-    int f(Positive arg) {return arg };
+    int f(Positive arg) { return arg; }
 
     int r1 = f(2);
     int r2 = f(-2);  // 抛出异常
@@ -13312,7 +13351,7 @@ C++11 引入了许多核心并发原语，C++14 对它们进行了改进，
         socket1 >> surface_readings;
         if (!socket1) throw Bad_input{};
 
-        auto h1 = async([&] { if (!validate(surface_readings) throw Invalid_data{}; });
+        auto h1 = async([&] { if (!validate(surface_readings)) throw Invalid_data{}; });
         auto h2 = async([&] { return temperature_gradiants(surface_readings); });
         auto h3 = async([&] { return altitude_map(surface_readings); });
         // ...
@@ -14700,7 +14739,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
     {
         int* p = new int[12];
         // ...
-        if (i < 17) throw Bad {"in f()", i};
+        if (i < 17) throw Bad{"in f()", i};
         // ...
     }
 
@@ -14712,7 +14751,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
         // ...
         if (i < 17) {
             delete[] p;
-            throw Bad {"in f()", i};
+            throw Bad{"in f()", i};
         }
         // ...
     }
@@ -14723,7 +14762,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
     {
         auto p = make_unique<int[]>(12);
         // ...
-        if (i < 17) throw Bad {"in f()", i};
+        if (i < 17) throw Bad{"in f()", i};
         // ...
     }
 
@@ -14981,11 +15020,13 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 ##### 示例
 
     void f()
-    try {
-        // ...
-    }
-    catch (exception e) {   // 请勿如此: 可能造成切片
-        // ...
+    {
+        try {
+            // ...
+        }
+        catch (exception e) {   // 请勿如此: 可能造成切片
+            // ...
+        }
     }
 
 可以代之以引用：
@@ -15583,7 +15624,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 例如：
 
     void f(int* p);   // 老代码：f() 并不会修改 `*p`
-    void f(const int* p) { f(const_cast<int*>(p); } // 包装函数
+    void f(const int* p) { f(const_cast<int*>(p)); } // 包装函数
 
 注意，这种包装函数的方案是一种补丁，只能在无法修改 `f()` 的声明时才使用它，
 比如当它属于某个你无法修改的程序库时。
@@ -16287,13 +16328,13 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
     void f(const Minimal& x, const Minimal& y)
     {
-        if (!(x == y) { /* ... */ }     // OK
+        if (!(x == y)) { /* ... */ }    // OK
         if (x != y) { /* ... */ }       // 意外！错误
 
         while (!(x < y)) { /* ... */ }  // OK
         while (x >= y) { /* ... */ }    // 意外！错误
 
-        x = x + y;        // OK
+        x = x + y;          // OK
         x += y;             // 意外！错误
     }
 
@@ -16317,14 +16358,14 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
     void f(const Convenient& x, const Convenient& y)
     {
-        if (!(x == y) { /* ... */ }     // OK
+        if (!(x == y)) { /* ... */ }    // OK
         if (x != y) { /* ... */ }       // OK
 
         while (!(x < y)) { /* ... */ }  // OK
         while (x >= y) { /* ... */ }    // OK
 
         x = x + y;     // OK
-        x += y;      // OK
+        x += y;        // OK
     }
 
 定义所有的运算符也许很麻烦，但并不困难。
@@ -18681,7 +18722,7 @@ C++17 中，我们可以使用 `string_view` 而不是 `const string*` 作为参
         p[l1] = '.';
         strcpy(p + l1 + 1, s2, l2);
         p[l1 + l2 + 1] = 0;
-        return res;
+        return p;
     }
 
 我们搞对了吗？
@@ -19347,7 +19388,7 @@ C 标准库规则概览：
         // ...
         int* p = (int*) malloc(n);
         // ...
-        if (some_ error) goto_exit;
+        if (some_error) goto_exit;
         // ...
     exit:
         free(p);
@@ -19411,6 +19452,7 @@ C 标准库规则概览：
 * [RF.web: 网站](#SS-web)
 * [RS.video: 有关“当代 C++”的视频](#SS-vid)
 * [RF.man: 手册](#SS-man)
+* [RF.core: 核心指导方针相关材料](#SS-core)
 
 ## <a name="SS-rules"></a>RF.rules: 编码规则
 
@@ -19495,7 +19537,10 @@ C 标准库规则概览：
 * Bjarne Stroustrup: [The Essence of C++: With Examples in C++84, C++98, C++11, and?C++14](http://channel9.msdn.com/Events/GoingNative/2013/Opening-Keynote-Bjarne-Stroustrup). 2013
 * [CppCon '14](https://isocpp.org/blog/2014/11/cppcon-videos-c9) 的全部演讲
 * Bjarne Stroustrup: [The essence of C++](https://www.youtube.com/watch?v=86xWVb4XIyE) 在爱丁堡大学。2014
-* Sutter: ???
+* Bjarne Stroustrup: [The Evolution of C++ Past, Present and Future](https://www.youtube.com/watch?v=_wzc7a3McOs). CppCon 2016 keynote.
+* Bjarne Stroustrup: [Make Simple Tasks Simple!](https://www.youtube.com/watch?v=nesCaocNjtQ). CppCon 2014 keynote.
+* Bjarne Stroustrup: [Writing Good C++14](https://www.youtube.com/watch?v=1OEu9C51K2A). CppCon 2015 keynote about the Core Guidelines.
+* Herb Sutter: [Writing Good C++14... By Default](https://www.youtube.com/watch?v=hEx5DNLWGgA). CppCon 2015 keynote about the Core Guidelines.
 * CppCon 15
 * ??? C++ Next
 * ??? Meting C++
@@ -19509,6 +19554,26 @@ C 标准库规则概览：
 * [Palo Alto "Concepts" TR](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3351.pdf).
 * [ISO C++ Concepts TS](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf).
 * [WG21 Ranges report](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4569.pdf). 草案。
+
+
+## <a name="SS-core"></a>RF.core: 核心指导方针相关材料
+
+这个部分包含一些用于展示核心指导方针及其背后的思想的有用材料：
+
+* [Our documents directory](https://github.com/isocpp/CppCoreGuidelines/tree/master/docs)
+* Stroustrup, Sutter, and Dos Reis: [A brief introduction to C++’s model for type- and resource-safety](http://www.stroustrup.com/resource-model.pdf). A paper with lots of examples.
+* Sergey Zubkov: [a Core Guidelines talk](https://www.youtube.com/watch?v=DyLwdl_6vmU)
+and here are the [slides](http://2017.cppconf.ru/talks/sergey-zubkov). In Russian. 2017.
+* Neil MacIntosh: [The Guideline Support Library: One Year Later](https://www.youtube.com/watch?v=_GhNnCuaEjo). CppCon 2016.
+* Bjarne Stroustrup: [Writing Good C++14](https://www.youtube.com/watch?v=1OEu9C51K2A). CppCon 2015 keynote.
+* Herb Sutter: [Writing Good C++14... By Default](https://www.youtube.com/watch?v=hEx5DNLWGgA). CppCon 2015 keynote.
+* Peter Sommerlad: [C++ Core Guidelines - Modernize your C++ Code Base](https://www.youtube.com/watch?v=fQ926v4ZzAM). ACCU 2017.
+* Bjarne Stroustrup: [No Littering!](https://www.youtube.com/watch?v=01zI9kV4h8c). Bay Area ACCU 2016.
+It gives some idea of the ambition level for the Core uidelines.
+
+CppCon 的展示的幻灯片是可以获得的（其链接，还有上传的视频）。
+
+极大欢迎对于这个列表的贡献。
 
 ## <a name="SS-ack"></a>鸣谢
 
@@ -19817,9 +19882,9 @@ Range 提案，
 * `Relation`
 * ...
 
-### <a name="SS-gsl-smartptrconcepts"></a>智能指针概念
+### <a name="SS-gsl-smartptrconcepts"></a>GSL.ptr: 智能指针概念
 
-在 [Lifetimes paper](https://github.com/isocpp/CppCoreGuidelines/blob/master/docs/Lifetimes%20I%20and%20II%20-%20v0.9.1.pdf) 中进行了描述。
+参见 [Lifetimes paper](https://github.com/isocpp/CppCoreGuidelines/blob/master/docs/Lifetimes%20I%20and%20II%20-%20v0.9.1.pdf)。
 
 # <a name="S-naming"></a>NL: 命名和代码布局规则
 
@@ -20580,7 +20645,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 [\[Cline99\]](#Cline99) §22.03-11, [\[Dewhurst03\]](Dewhurst03) §52-53, [\[Koenig97\]](#Koenig97) §4, [\[Lakos96\]](#Lakos96) §10.3.5, [\[Meyers97\]](#Meyers97) §13, [\[Murray93\]](#Murray93) §2.1.3, [\[Sutter00\]](#Sutter00) §47
 
-### <a name="TBD"></a>使用 `=`，`{}`，和 `()` 作为初始化式
+### <a name="Sd-init"></a>讨论：使用 `=`，`{}`，和 `()` 作为初始化式
 
 ???
 
@@ -20907,7 +20972,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 * [若类为资源句柄，则它需要构造函数，析构函数，复制以及移动操作](#Cr-handle)
 * [若类为容器，则应为其提供一个初始化式列表构造函数](#Cr-list)
 
-### <a name="Cr-safety"></a>提供强资源安全性；亦即，绝不让你认为是资源的任何东西发生泄漏
+### <a name="Cr-safety"></a>讨论：提供强资源安全性；亦即，绝不让你认为是资源的任何东西发生泄漏
 
 ##### 理由
 
@@ -20935,7 +21000,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 防止泄漏的基本技巧是让所有的资源都被某种带有回档析构函数的资源句柄所拥有。检查工具能够查找出“裸 `new`”。给定一组 C 风格的分配函数（如 `fopen()`），检查工具也能够查找出未被资源句柄管理的使用点。一般来说，可以带着怀疑看待“裸指针”，对其进行标记和分析。如果没有人为输入的话，时无法产生资源的完整列表的（“资源”的定义有些过于宽泛），不过可以用一个资源列表来对工具进行“参数化”。
 
-### <a name="Cr-never"></a>绝不在持有未被句柄所拥有的资源时抛出异常
+### <a name="Cr-never"></a>讨论：绝不在持有未被句柄所拥有的资源时抛出异常
 
 ##### 理由
 
@@ -20980,7 +21045,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 上手时，我们知道标准库容器，`string`，以及智能指针。
 `span` 和 `string_span` 的使用能够提供巨大的帮助（它们并非资源句柄）。
 
-### <a name="Cr-raw"></a>“原生”的指针或引用不可能是资源句柄
+### <a name="Cr-raw"></a>讨论：“原生”的指针或引用不可能是资源句柄
 
 ##### 理由
 
@@ -20990,7 +21055,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 这和你如何“拼写”指针是两回事：`T*`，`T&`，`Ptr<T>` 和 `Range<T>` 都不是所有者。
 
-### <a name="Cr-outlive"></a>绝不让指针的生存期超过其所指向的对象
+### <a name="Cr-outlive"></a>讨论：绝不让指针的生存期超过其所指向的对象
 
 ##### 理由
 
@@ -21021,7 +21086,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 大多数编译器已经能对简单情况进行警告，而且它们带有可以更进一步的信息。将函数所返回的任何指针都当作是可疑的。用容器、资源句柄和视图（例如 `span`，它不是资源句柄）来减少需要检查的情形。上手时，可将带有析构函数的类都当作是资源句柄处理。
 
-### <a name="Cr-templates"></a>用模板来表现容器（和其他资源句柄）
+### <a name="Cr-templates"></a>讨论：用模板来表现容器（和其他资源句柄）
 
 ##### 理由
 
@@ -21035,7 +21100,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
         int sz;
     };
 
-### <a name="Cr-value-return"></a>按值返回容器（依靠移动或复制消除来获得性能）
+### <a name="Cr-value-return"></a>讨论：按值返回容器（依靠移动或复制消除来获得性能）
 
 ##### 理由
 
@@ -21058,7 +21123,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 检查函数所返回额指针和引用，看看它们是否被赋值给资源句柄（如 `unique_ptr`）。
 
-### <a name="Cr-handle"></a>若类为资源句柄，则它需要构造函数，析构函数，复制以及移动操作
+### <a name="Cr-handle"></a>讨论：若类为资源句柄，则它需要构造函数，析构函数，复制以及移动操作
 
 ##### 理由
 
@@ -21083,7 +21148,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 一般来说，工具是无法知道类是否是资源句柄的。不过，如果类带有某种[默认操作](#SS-ctor)的话, 它就得拥有全部，而如果类中有成员为资源句柄的话，它也应被当做是资源句柄。
 
-### <a name="Cr-list"></a>若类为容器，则应为其提供一个初始化式列表构造函数
+### <a name="Cr-list"></a>讨论：若类为容器，则应为其提供一个初始化式列表构造函数
 
 ##### 理由
 
