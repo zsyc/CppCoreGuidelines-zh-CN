@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/9/18
+2017/10/5
 
 
 编辑：
@@ -6793,7 +6793,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
     class Circle : public Shape {   // 纯接口
     public:
-        int radius() = 0;
+        virtual int radius() = 0;
         // ...
     };
 
@@ -6803,13 +6803,13 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
     public:
         // 构造函数，析构函数
         // ...
-        virtual Point center() const { /* ... */ }
-        virtual Color color() const { /* ... */ }
+        Point center() const override { /* ... */ }
+        Color color() const override { /* ... */ }
 
-        virtual void rotate(int) { /* ... */ }
-        virtual void move(Point p) { /* ... */ }
+        void rotate(int) override { /* ... */ }
+        void move(Point p) override { /* ... */ }
 
-        virtual void redraw() { /* ... */ }
+        void redraw() override { /* ... */ }
 
         // ...
     };
@@ -6821,7 +6821,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
     public:
         // 构造函数，析构函数
 
-        int radius() { /* ... */ }
+        int radius() override { /* ... */ }
         // ...
     };
 
@@ -7857,6 +7857,45 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 比较微妙。如果用户定义了 `&` 而并未同时为其结果类型定义 `->`，则进行警告。
 
+### <a name="Ro-overload"></a>C.167: 应当为带有传统含义的操作提供运算符
+
+##### 理由
+
+可读性。约定。可重用性。支持泛型代码。
+
+##### 示例
+
+    void cout_my_class(const My_class& c) // 含糊，并非传统约定，非泛型
+    {
+        std::cout << /* 此处为类成员 */;
+    }
+
+    std::ostream& operator<<(std::ostream& os, const my_class& c) // OK
+    {
+        return os << /* 此处为类成员 */;
+    }
+
+对于其自身而言，`cout_my_class` 也许是没问题的，但它无法用在（或组合到）依赖于 `<<` 的输出用法约定代码之中：
+
+    My_class var { /* ... */ };
+    // ...
+    cout << "var = " << var << '\n';
+
+##### 注解
+
+大多数运算符都有很强烈和活跃的含义约定用法，比如
+
+* 比较：`==`，`!=`，`<`，`<=`，`>`，以及 `>=`
+* 算术操作：`+`，`-`，`*`，`/`，以及 `%`
+* 访问操作：`.`，`->`，一元 `*`，以及 `[]`
+* 赋值：`=`
+
+请勿定义违反约定的用法，请勿为它们发明自己的名字。
+
+##### 强制实施
+
+比较棘手。需要洞悉其语义。
+
 ### <a name="Ro-namespace"></a>C.168: 应当在操作数所在的命名空间中定义重载运算符
 
 ##### 理由
@@ -7921,45 +7960,6 @@ C++ 语义中的很多部分都假定了其默认的含义。
 ##### 强制实施
 
 * 对并非处于其操作数的命名空间中的运算符的定义进行标记。
-
-### <a name="Ro-overload"></a>C.167: 应当为带有传统含义的操作提供运算符
-
-##### 理由
-
-可读性。约定。可重用性。支持泛型代码。
-
-##### 示例
-
-    void cout_my_class(const My_class& c) // 含糊，并非传统约定，非泛型
-    {
-        std::cout << /* 此处为类成员 */;
-    }
-
-    std::ostream& operator<<(std::ostream& os, const my_class& c) // OK
-    {
-        return os << /* 此处为类成员 */;
-    }
-
-对于其自身而言，`cout_my_class` 也许是没问题的，但它无法用在（或组合到）依赖于 `<<` 的输出用法约定代码之中：
-
-    My_class var { /* ... */ };
-    // ...
-    cout << "var = " << var << '\n';
-
-##### 注解
-
-大多数运算符都有很强烈和活跃的含义约定用法，比如
-
-* 比较：`==`，`!=`，`<`，`<=`，`>`，以及 `>=`
-* 算术操作：`+`，`-`，`*`，`/`，以及 `%`
-* 访问操作：`.`，`->`，一元 `*`，以及 `[]`
-* 赋值：`=`
-
-请勿定义违反约定的用法，请勿为它们发明自己的名字。
-
-##### 强制实施
-
-比较棘手。需要洞悉其语义。
 
 ### <a name="Ro-lambda"></a>C.170: 当想要重载 lambda 时，应当使用泛型 lambda
 
@@ -11171,12 +11171,12 @@ C++17 的规则多少会少些意外：
 根据定义，`if` 语句，`while` 语句，以及 `for` 语句中的条件，选择 `true` 或 `false` 的取值。
 数值与 `0` 相比较，指针值与 `nullptr` 相比较。
 
-    if (p) { ... }          // 意为“如果 `p` 不是 `nullptr`”，好
-    if (p!=0) { ... }       // 意为“如果 `p` 不是 `nullptr`”，`!=0` 是多余的；不好：不要对指针用 0
-    if (p!=nullptr) { ... } // 意为“如果 `p` 不是 `nullptr`”，`!=nullptr` 是多余的，不建议如此
+    if (p) { ... }            // 好
+    if (p != 0) { ... }       // `!=0` 是多余的；不好：不要对指针用 0
+    if (p != nullptr) { ... } // `!=nullptr` 是多余的，不建议如此
 
 通常，`if (p)` 可解读为“如果 `p` 有效”，这正是程序员意图的直接表达，
-而 `if (p!=nullptr)` 则只是一种啰嗦的变通写法。
+而 `if (p != nullptr)` 则只是一种啰嗦的变通写法。
 
 ##### 示例
 
@@ -11184,14 +11184,14 @@ C++17 的规则多少会少些意外：
 
     if (auto pc = dynamic_cast<Circle>(ps)) { ... } // 执行是按照 ps 指向某种 Circle 来进行的，好
 
-    if (auto pc = dynamic_cast<Circle>(ps); pc!=nullptr) { ... } // 不建议如此
+    if (auto pc = dynamic_cast<Circle>(ps); pc != nullptr) { ... } // 不建议如此
 
 ##### 示例
 
 要注意，条件中会实施向 `bool` 的隐式转换。
 例如：
 
-    for (string s; cin>>s; ) v.push_back(s);
+    for (string s; cin >> s; ) v.push_back(s);
 
 这里会执行 `istream` 的 `operator bool()`。
 
@@ -11199,13 +11199,13 @@ C++17 的规则多少会少些意外：
 
 众所周知，
 
-    if(strcmp(p1,p2)) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
+    if(strcmp(p1, p2)) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
 
 时一种常见的新手错误。
 如果使用 C 风格的字符串，那么就必须好好了解 `<cstring>` 中的函数。
 即便冗余地写为
 
-    if(strcmp(p1,p2)!=0) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
+    if(strcmp(p1, p2) != 0) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
 
 也不会有效果
 
@@ -11213,9 +11213,9 @@ C++17 的规则多少会少些意外：
 
 表达相反的条件的最简单的方式就是使用一次取反：
 
-    if (!p) { ... }         // 意为“如果 `p` 为 `nullptr`”，好
-    if (p==0) { ... }       // 意为“如果 `p` 为 `nullptr`”，`!=0` 是多余的；不好：不要对指针用 `0`
-    if (p==nullptr) { ... } // 意为“如果 `p` 为 `nullptr`”，`==nullptr` 是多余的，不建议如此
+    if (!p) { ... }           // 好
+    if (p == 0) { ... }       // `!=0` 是多余的；不好：不要对指针用 `0`
+    if (p == nullptr) { ... } // `==nullptr` 是多余的，不建议如此
 
 ##### 强制实施
 
