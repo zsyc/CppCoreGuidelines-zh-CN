@@ -2244,7 +2244,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
         Istream() { }
         Istream(zstring p) :owned{true}, inp{new ifstream{p}} {}            // 从文件读取
         Istream(zstring p, Opt) :owned{true}, inp{new istringstream{p}} {}  // 从命令行读取
-        ~Itream() { if (owned) delete inp; }
+        ~Istream() { if (owned) delete inp; }
         operator istream& () { return *inp; }
     private:
         bool owned = false;
@@ -3839,9 +3839,9 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
             // [=,this] 和 [&,this] 也没好多少，并且也会导致混淆
 
             x = 42;
-            lambda(); // 调用 use(42);
+            lambda(); // 调用 use(0, 42);
             x = 43;
-            lambda(); // 调用 use(43);
+            lambda(); // 调用 use(0, 43);
 
             // ...
 
@@ -10670,560 +10670,6 @@ C++17 的规则多少会少些意外：
 * 对 `#include <cstdarg>` 和 `#include <stdarg.h>` 作出标记。
 
 
-## ES.stmt: 语句
-
-语句控制了控制的流向（除了函数调用和异常抛出，它们是表达式）。
-
-### <a name="Res-switch-if"></a>ES.70: 面临选择时，优先采用 `switch` 语句而不是 `if` 语句
-
-##### 理由
-
-* 可读性。
-* 效率：`switch` 与常量进行比较，且通常比一个 `if`-`then`-`else` 链中的一系列测试获得更好的优化。
-* `switch` 可以启用某种启发式的一致性检查。例如，是否某个 `enum` 的所有值都被覆盖了？如果没有的话，是否存在 `default`？
-
-##### 示例
-
-    void use(int n)
-    {
-        switch (n) {   // 好
-        case 0:   // ...
-        case 7:   // ...
-        }
-    }
-
-要好于：
-
-    void use2(int n)
-    {
-        if (n == 0)   // 不好：以 if-then-else 链和一组常量进行比较
-            // ...
-        else if (n == 7)
-            // ...
-    }
-
-##### 强制实施
-
-对以 `if`-`then`-`else` 链条（仅）和常量进行比较的情况进行标记。
-
-### <a name="Res-for-range"></a>ES.71: 面临选择时，优先采用范围式 `for` 语句而不是普通 `for` 语句
-
-##### 理由
-
-可读性。避免错误。效率。
-
-##### 示例
-
-    for (int i = 0; i < v.size(); ++i)   // 不好
-            cout << v[i] << '\n';
-
-    for (auto p = v.begin(); p != v.end(); ++p)   // 不好
-        cout << *p << '\n';
-
-    for (auto& x : v)    // OK
-        cout << x << '\n';
-
-    for (int i = 1; i < v.size(); ++i) // 接触了两个元素：无法作为范围式的 for
-        cout << v[i] + v[i - 1] << '\n';
-
-    for (int i = 0; i < v.size(); ++i) // 可能具有副作用：无法作为范围式的 for
-        cout << f(v, &v[i]) << '\n';
-
-    for (int i = 0; i < v.size(); ++i) { // 循环体中混入了循环变量：无法作为范围式 for
-        if (i % 2 == 0)
-            continue;   // 跳过偶数元素
-        else
-            cout << v[i] << '\n';
-    }
-
-人类或优良的静态分析器可以确定，其实在 `f(v, &v[i])` 中的 `v` 的上并不真的存在副作用，因此这个循环可以被重写。
-
-在循环体中“混入循环变量”的情况通常是最好进行避免的。
-
-##### 注解
-
-不要在范围式 `for` 循环中使用昂贵的循环变量副本：
-
-    for (string s : vs) // ...
-
-这将会对 `vs` 中的每个元素复制给 `s`。这样好一点：
-
-    for (string& s : vs) // ...
-
-更好的做法是，当循环变量不会被修改或复制时：
-
-    for (const string& s : vs) // ...
-
-##### 强制实施
-
-查看循环，如果一个传统的循环仅会查看序列中的各个元素，而且其对这些元素所做的事中没有发生副作用，则将该循环重写为范围式的 `for` 循环。
-
-### <a name="Res-for-while"></a>ES.72: 当存在显然的循环变量时，优先采用 `for` 语句而不是 `while` 语句
-
-##### 理由
-
-可读性：循环的全部逻辑都“直观可见”。循环变量的作用域是有限的。
-
-##### 示例
-
-    for (int i = 0; i < vec.size(); i++) {
-        // 干活
-    }
-
-##### 示例，不好
-
-    int i = 0;
-    while (i < vec.size()) {
-        // 干活
-        i++;
-    }
-
-##### 强制实施
-
-???
-
-### <a name="Res-while-for"></a>ES.73: 当没有显然的循环变量时，优先采用 `while` 语句而不是 `for` 语句
-
-##### 理由
-
-可读性。
-
-##### 示例
-
-    int events = 0;
-    for (; wait_for_event(); ++events) {  // 不好，含糊
-        // ...
-    }
-
-这个“事件循环”会误导人，计数器 `events` 跟循环条件（`wait_for_event()`）并没有任何关系。
-更好的做法是
-
-    int events = 0;
-    while (wait_for_event()) {      // 更好
-        ++events;
-        // ...
-    }
-
-##### 强制实施
-
-对和 `for` 的条件不相关的 `for` 初始化式和 `for` 增量部分进行标记。
-
-### <a name="Res-for-init"></a>ES.74: 优先在 `for` 语句的初始化部分中声明循环变量
-
-##### 理由
-
-限制循环变量的可见性到循环的作用域之内。
-避免在循环之后将循环变量用于其他目的。
-
-##### 示例
-
-    for (int i = 0; i < 100; ++i) {   // 好: 变量 i 仅在循环内部可见
-        // ...
-    }
-
-##### 示例，请勿如此
-
-    int j;                            // 不好: j 在循环之外可见
-    for (j = 0; j < 100; ++j) {
-        // ...
-    }
-    // j 在这里仍然可见但并不需要这样
-
-**参见**: [不要用一个变量来达成两个不相关的目的](#Res-recycle)。
-
-##### 示例
-
-    for (string s; cin >> s; ) {
-        cout << s << '\n';
-    }
-
-##### 强制实施
-
-如果在 `for` 语句中所修改的变量是在循环外面所声明的，且在循环之外并未用到，则给出警告。
-
-**讨论**: 把循环变量的作用域限制在循环体中同样会极大地帮助优化器。识别出这个归纳变量仅在循环体中
-可以访问，能够开启诸如代码外提、强度削弱、循环不变式代码移动等各种优化手段。
-
-### <a name="Res-do"></a>ES.75: 避免使用 `do` 语句
-
-##### 理由
-
-可读性，避免错误。
-其终止条件处于尾部（而这可能会被忽略），且其条件不会在第一时间进行检查。
-
-##### 示例
-
-    int x;
-    do {
-        cin >> x;
-        // ...
-    } while (x < 0);
-
-##### 注解
-
-确实有一些天才的例子中，`do` 语句是更简洁的方案，但有问题的更多。
-
-##### 强制实施
-
-标记 `do` 语句。
-
-### <a name="Res-goto"></a>ES.76: 避免 `goto`
-
-##### 理由
-
-可读性，避免错误。存在对于人类更好的控制结构；`goto` 是用于机器生成的代码的。
-
-##### 例外
-
-跳出嵌套循环。
-这种情况下应当总是向前跳出。
-
-    for (int i = 0; i < imax; ++i)
-        for (int j = 0; j < jmax; ++j) {
-            if (a[i][j] > elem_max) goto finished;
-            // ...
-        }
-    finished:
-    // ...
-
-##### 示例，不好
-
-有相当数量的代码采用 C 风格的 goto-exit 惯用法：
-
-    void f()
-    {
-        // ...
-            goto exit;
-        // ...
-            goto exit;
-        // ...
-    exit:
-        // ... 公共的清理代码 ...
-    }
-
-这是对析构函数的一种专门模仿。
-应当将资源声明为带有清理的析构函数的包装类。
-如果你由于某种原因无法用析构函数来处理所使用的各个变量的清理工作，
-请考虑用 `gsl::finally()` 作为 `goto exit` 的一种简洁且更加可靠的替代方案。
-
-##### 强制实施
-
-* 标记 `goto`。更好的做法是标记出除了从嵌套内层循环中跳出到紧跟一组嵌套循环之后的语句的 `goto` 以外的所有 `goto`。
-
-### <a name="Res-continue"></a>ES.77: 尽量减少循环中使用的 `break` 和 `continue`
-
-##### 理由
-
-在不平凡的循环体中，容易忽略掉 `break` 或 `continue`。
-
-循环中的 `break` 和 `switch` 语句中的 `break` 的含义有很大的区别，
-（而且循环中可以有 `switch` 语句，`switch` 的 `case` 中也可以有循环）。
-
-##### 示例
-
-    ???
-
-##### 替代方案
-
-通常，需要 `break` 的循环都是作为一个函数（算法）的良好候选者，其 `break` 将会变为 `return`。
-
-    ???
-
-通常，使用 `continue` 的循环都可以等价且同样简洁地用 `if` 语句来表达。
-
-    ???
-
-##### 注解
-
-如果你确实要打断一个循环，使用 `break` 通常比使用诸如[修改循环变量](#Res-loop-counter)或 [`goto`](#Res-goto) 等其他方案更好：
-
-
-##### 强制实施
-
-???
-
-### <a name="Res-break"></a>ES.78: 总是让非空的 `case` 以 `break` 结尾
-
-##### 理由
-
-意外地遗漏 `break` 是一种相当常见的 BUG。
-蓄意的直落（fall through）是维护的噩梦。
-
-##### 示例
-
-    switch (eventType) {
-    case Information:
-        update_status_bar();
-        break;
-    case Warning:
-        write_event_log();
-    case Error:
-        display_error_window(); // 不好
-        break;
-    }
-
-很容易忽略掉这个直落。应当更明确：
-
-    switch (eventType) {
-    case Information:
-        update_status_bar();
-        break;
-    case Warning:
-        write_event_log();
-        // 直落 fallthrough
-    case Error:
-        display_error_window(); // 不好
-        break;
-    }
-
-在 C++17 中，可以使用 `[[fallthrough]]` 标注：
-
-    switch (eventType) {
-    case Information:
-        update_status_bar();
-        break;
-    case Warning:
-        write_event_log();
-        [[fallthrough]];        // C++17
-    case Error:
-        display_error_window(); // 不好
-        break;
-    }
-
-##### 注解
-
-单个语句带有多个 `case` 标签是可以的：
-
-    switch (x) {
-    case 'a':
-    case 'b':
-    case 'f':
-        do_something(x);
-        break;
-    }
-
-##### 强制实施
-
-对所有从非空的 `case` 发生的直落进行标记。
-
-### <a name="Res-default"></a>ES.79: `default`（仅）用于处理一般情况
-
-##### 理由
-
-代码清晰性。
-提升错误检测的机会。
-
-##### 示例
-
-    enum E { a, b, c , d };
-
-    void f1(E x)
-    {
-        switch (x) {
-        case a:
-            do_something();
-            break;
-        case b:
-            do_something_else();
-            break;
-        default:
-            take_the_default_action();
-            break;
-        }
-    }
-
-此处很明显有一种默认的动作，而情况 `a` 和 `b` 则是特殊情况。
-
-##### 示例
-
-不过当不存在默认动作而只想处理特殊情况时怎么办呢？
-这种情况下，应当使用空的 `default`，否则没办法知道你确实处理了所有情况：
-
-    void f2(E x)
-    {
-        switch (x) {
-        case a:
-            do_something();
-            break;
-        case b:
-            do_something_else();
-            break;
-        default:
-            // 其他情况无需动作
-            break;
-        }
-    }
-
-如果没有 `default` 的话，维护者以及编译器可能会合理地假定你有意处理了所有情况：
-
-    void f2(E x)
-    {
-        switch (x) {
-        case a:
-            do_something();
-            break;
-        case b:
-        case c:
-            do_something_else();
-            break;
-        }
-    }
-
-你是忘记了情况 `d` 还是故意遗漏了它？
-当有人向枚举中添加一种情况，而又未能对每个针对这些枚举符的 `switch` 中添加时，
-容易出现这种遗忘 `case` 的情况。
-
-##### 强制实施
-
-针对某个枚举的 `switch` 语句，若其未能处理其所有枚举符且没有 `default`，则对其进行标记。
-这样做对于某些代码库可能会产生大量误报；此时，可以仅标记那些处理了大多数情况而不是所有情况的 `switch` 语句
-（这正是第一个 C++ 编译器曾经的策略）。
-
-### <a name="Res-noname"></a>ES.84: 不要（试图）声明没有名字的局部变量
-
-##### 理由
-
-没有这种东西。
-人看起来像是个无名变量的东西，对于编译器来说是一条由一个将会立刻离开作用域的临时对象所组成的语句。
-这样可避免不愉快的意外。
-
-##### 示例，不好
-
-    void f()
-    {
-        lock<mutex>{mx};   // 不好
-        // ...
-    }
-
-这里声明了一个无名的 `lock` 对象，它将在分号处立刻离开作用域。
-这并不是一种少见的错误。
-特别是，这个特别的例子会导致很难发觉的竞争条件。
-这种“手法”确实有一些极端聪明的用法，但远远少于其错误。
-
-##### 注解
-
-无名函数实参是没问题的。
-
-##### 强制实施
-
-标记出仅有临时对象的语句。
-
-### <a name="Res-empty"></a>ES.85: 让空语句显著可见
-
-##### 理由
-
-可读性。
-
-##### 示例
-
-    for (i = 0; i < max; ++i);   // 不好: 空语句很容易被忽略
-    v[i] = f(v[i]);
-
-    for (auto x : v) {           // 好多了
-        // 空
-    }
-    v[i] = f(v[i]);
-
-##### 强制实施
-
-对并非块语句且不包含注释的空语句进行标记。
-
-### <a name="Res-loop-counter"></a>ES.86: 避免在原生的 `for` 循环中修改循环控制变量
-
-##### 理由
-
-循环控制的第一行应当允许对循环中所发生的事情进行正确的推理。同时在循环的重复表达式和循环体之中修改循环计数器，是发生意外和 BUG 的一种经常性来源。
-
-##### 示例
-
-    for (int i = 0; i < 10; ++i) {
-        // 未改动 i -- ok
-    }
-
-    for (int i = 0; i < 10; ++i) {
-        //
-        if (/* 某种情况 */) ++i; // 不好
-        //
-    }
-
-    bool skip = false;
-    for (int i = 0; i < 10; ++i) {
-        if (skip) { skip = false; continue; }
-        //
-        if (/* 某种情况 */) skip = true;  // 有改善: 为两个概念使用了两个变量。
-        //
-    }
-
-##### 强制实施
-
-如果变量在循环控制的重复表达式和循环体中都潜在地进行更新（存在非 `const` 使用），则进行标记。
-
-
-### <a name="Res-if"></a>ES.87: 请勿在条件上添加多余的 `==` 或 `!=`
-
-##### 理由
-
-这样可避免啰嗦，并消除了发生某些错误的机会。
-有助于使代码风格保持一致性和协调性。
-
-##### 示例
-
-根据定义，`if` 语句，`while` 语句，以及 `for` 语句中的条件，选择 `true` 或 `false` 的取值。
-数值与 `0` 相比较，指针值与 `nullptr` 相比较。
-
-    // 这些都表示“当 `p` 不是 `nullptr` 时”
-    if (p) { ... }            // 好
-    if (p != 0) { ... }       // `!=0` 是多余的；不好：不要对指针用 0
-    if (p != nullptr) { ... } // `!=nullptr` 是多余的，不建议如此
-
-通常，`if (p)` 可解读为“如果 `p` 有效”，这正是程序员意图的直接表达，
-而 `if (p != nullptr)` 则只是一种啰嗦的变通写法。
-
-##### 示例
-
-这条规则对于把声明式用作条件时尤其有用
-
-    if (auto pc = dynamic_cast<Circle>(ps)) { ... } // 执行是按照 ps 指向某种 Circle 来进行的，好
-
-    if (auto pc = dynamic_cast<Circle>(ps); pc != nullptr) { ... } // 不建议如此
-
-##### 示例
-
-要注意，条件中会实施向 `bool` 的隐式转换。
-例如：
-
-    for (string s; cin >> s; ) v.push_back(s);
-
-这里会执行 `istream` 的 `operator bool()`。
-
-##### 示例，不好
-
-众所周知，
-
-    if(strcmp(p1, p2)) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
-
-时一种常见的新手错误。
-如果使用 C 风格的字符串，那么就必须好好了解 `<cstring>` 中的函数。
-即便冗余地写为
-
-    if(strcmp(p1, p2) != 0) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
-
-也不会有效果
-
-##### 注解
-
-表达相反的条件的最简单的方式就是使用一次取反：
-
-    // 这些都表示“当 `p` 为 `nullptr` 时”
-    if (!p) { ... }           // 好
-    if (p == 0) { ... }       // `!=0` 是多余的；不好：不要对指针用 `0`
-    if (p == nullptr) { ... } // `==nullptr` 是多余的，不建议如此
-
-##### 强制实施
-
-容易，仅需检查条件中多余的 `!=` 和 `==` 的使用即可。
-
-
 ## ES.expr: 表达式
 
 表达式对值进行操作。
@@ -12460,6 +11906,562 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 * 当对可能已经因 `delete` 而无效的指针进行解引用时进行标记
 * 当对指向已经失效的容器元素的的指针进行解引用时进行标记
 
+
+## ES.stmt: 语句
+
+语句控制了控制的流向（除了函数调用和异常抛出，它们是表达式）。
+
+### <a name="Res-switch-if"></a>ES.70: 面临选择时，优先采用 `switch` 语句而不是 `if` 语句
+
+##### 理由
+
+* 可读性。
+* 效率：`switch` 与常量进行比较，且通常比一个 `if`-`then`-`else` 链中的一系列测试获得更好的优化。
+* `switch` 可以启用某种启发式的一致性检查。例如，是否某个 `enum` 的所有值都被覆盖了？如果没有的话，是否存在 `default`？
+
+##### 示例
+
+    void use(int n)
+    {
+        switch (n) {   // 好
+        case 0:   // ...
+        case 7:   // ...
+        }
+    }
+
+要好于：
+
+    void use2(int n)
+    {
+        if (n == 0)   // 不好：以 if-then-else 链和一组常量进行比较
+            // ...
+        else if (n == 7)
+            // ...
+    }
+
+##### 强制实施
+
+对以 `if`-`then`-`else` 链条（仅）和常量进行比较的情况进行标记。
+
+### <a name="Res-for-range"></a>ES.71: 面临选择时，优先采用范围式 `for` 语句而不是普通 `for` 语句
+
+##### 理由
+
+可读性。避免错误。效率。
+
+##### 示例
+
+    for (int i = 0; i < v.size(); ++i)   // 不好
+            cout << v[i] << '\n';
+
+    for (auto p = v.begin(); p != v.end(); ++p)   // 不好
+        cout << *p << '\n';
+
+    for (auto& x : v)    // OK
+        cout << x << '\n';
+
+    for (int i = 1; i < v.size(); ++i) // 接触了两个元素：无法作为范围式的 for
+        cout << v[i] + v[i - 1] << '\n';
+
+    for (int i = 0; i < v.size(); ++i) // 可能具有副作用：无法作为范围式的 for
+        cout << f(v, &v[i]) << '\n';
+
+    for (int i = 0; i < v.size(); ++i) { // 循环体中混入了循环变量：无法作为范围式 for
+        if (i % 2 == 0)
+            continue;   // 跳过偶数元素
+        else
+            cout << v[i] << '\n';
+    }
+
+人类或优良的静态分析器可以确定，其实在 `f(v, &v[i])` 中的 `v` 的上并不真的存在副作用，因此这个循环可以被重写。
+
+在循环体中“混入循环变量”的情况通常是最好进行避免的。
+
+##### 注解
+
+不要在范围式 `for` 循环中使用昂贵的循环变量副本：
+
+    for (string s : vs) // ...
+
+这将会对 `vs` 中的每个元素复制给 `s`。这样好一点：
+
+    for (string& s : vs) // ...
+
+更好的做法是，当循环变量不会被修改或复制时：
+
+    for (const string& s : vs) // ...
+
+##### 强制实施
+
+查看循环，如果一个传统的循环仅会查看序列中的各个元素，而且其对这些元素所做的事中没有发生副作用，则将该循环重写为范围式的 `for` 循环。
+
+### <a name="Res-for-while"></a>ES.72: 当存在显然的循环变量时，优先采用 `for` 语句而不是 `while` 语句
+
+##### 理由
+
+可读性：循环的全部逻辑都“直观可见”。循环变量的作用域是有限的。
+
+##### 示例
+
+    for (int i = 0; i < vec.size(); i++) {
+        // 干活
+    }
+
+##### 示例，不好
+
+    int i = 0;
+    while (i < vec.size()) {
+        // 干活
+        i++;
+    }
+
+##### 强制实施
+
+???
+
+### <a name="Res-while-for"></a>ES.73: 当没有显然的循环变量时，优先采用 `while` 语句而不是 `for` 语句
+
+##### 理由
+
+可读性。
+
+##### 示例
+
+    int events = 0;
+    for (; wait_for_event(); ++events) {  // 不好，含糊
+        // ...
+    }
+
+这个“事件循环”会误导人，计数器 `events` 跟循环条件（`wait_for_event()`）并没有任何关系。
+更好的做法是
+
+    int events = 0;
+    while (wait_for_event()) {      // 更好
+        ++events;
+        // ...
+    }
+
+##### 强制实施
+
+对和 `for` 的条件不相关的 `for` 初始化式和 `for` 增量部分进行标记。
+
+### <a name="Res-for-init"></a>ES.74: 优先在 `for` 语句的初始化部分中声明循环变量
+
+##### 理由
+
+限制循环变量的可见性到循环的作用域之内。
+避免在循环之后将循环变量用于其他目的。
+
+##### 示例
+
+    for (int i = 0; i < 100; ++i) {   // 好: 变量 i 仅在循环内部可见
+        // ...
+    }
+
+##### 示例，请勿如此
+
+    int j;                            // 不好: j 在循环之外可见
+    for (j = 0; j < 100; ++j) {
+        // ...
+    }
+    // j 在这里仍然可见但并不需要这样
+
+**参见**: [不要用一个变量来达成两个不相关的目的](#Res-recycle)。
+
+##### 示例
+
+    for (string s; cin >> s; ) {
+        cout << s << '\n';
+    }
+
+##### 强制实施
+
+如果在 `for` 语句中所修改的变量是在循环外面所声明的，且在循环之外并未用到，则给出警告。
+
+**讨论**: 把循环变量的作用域限制在循环体中同样会极大地帮助优化器。识别出这个归纳变量仅在循环体中
+可以访问，能够开启诸如代码外提、强度削弱、循环不变式代码移动等各种优化手段。
+
+### <a name="Res-do"></a>ES.75: 避免使用 `do` 语句
+
+##### 理由
+
+可读性，避免错误。
+其终止条件处于尾部（而这可能会被忽略），且其条件不会在第一时间进行检查。
+
+##### 示例
+
+    int x;
+    do {
+        cin >> x;
+        // ...
+    } while (x < 0);
+
+##### 注解
+
+确实有一些天才的例子中，`do` 语句是更简洁的方案，但有问题的更多。
+
+##### 强制实施
+
+标记 `do` 语句。
+
+### <a name="Res-goto"></a>ES.76: 避免 `goto`
+
+##### 理由
+
+可读性，避免错误。存在对于人类更好的控制结构；`goto` 是用于机器生成的代码的。
+
+##### 例外
+
+跳出嵌套循环。
+这种情况下应当总是向前跳出。
+
+    for (int i = 0; i < imax; ++i)
+        for (int j = 0; j < jmax; ++j) {
+            if (a[i][j] > elem_max) goto finished;
+            // ...
+        }
+    finished:
+    // ...
+
+##### 示例，不好
+
+有相当数量的代码采用 C 风格的 goto-exit 惯用法：
+
+    void f()
+    {
+        // ...
+            goto exit;
+        // ...
+            goto exit;
+        // ...
+    exit:
+        // ... 公共的清理代码 ...
+    }
+
+这是对析构函数的一种专门模仿。
+应当将资源声明为带有清理的析构函数的包装类。
+如果你由于某种原因无法用析构函数来处理所使用的各个变量的清理工作，
+请考虑用 `gsl::finally()` 作为 `goto exit` 的一种简洁且更加可靠的替代方案。
+
+##### 强制实施
+
+* 标记 `goto`。更好的做法是标记出除了从嵌套内层循环中跳出到紧跟一组嵌套循环之后的语句的 `goto` 以外的所有 `goto`。
+
+### <a name="Res-continue"></a>ES.77: 尽量减少循环中使用的 `break` 和 `continue`
+
+##### 理由
+
+在不平凡的循环体中，容易忽略掉 `break` 或 `continue`。
+
+循环中的 `break` 和 `switch` 语句中的 `break` 的含义有很大的区别，
+（而且循环中可以有 `switch` 语句，`switch` 的 `case` 中也可以有循环）。
+
+##### 示例
+
+    ???
+
+##### 替代方案
+
+通常，需要 `break` 的循环都是作为一个函数（算法）的良好候选者，其 `break` 将会变为 `return`。
+
+    ???
+
+通常，使用 `continue` 的循环都可以等价且同样简洁地用 `if` 语句来表达。
+
+    ???
+
+##### 注解
+
+如果你确实要打断一个循环，使用 `break` 通常比使用诸如[修改循环变量](#Res-loop-counter)或 [`goto`](#Res-goto) 等其他方案更好：
+
+
+##### 强制实施
+
+???
+
+### <a name="Res-break"></a>ES.78: 总是让非空的 `case` 以 `break` 结尾
+
+##### 理由
+
+意外地遗漏 `break` 是一种相当常见的 BUG。
+蓄意的直落（fall through）是维护的噩梦。
+
+##### 示例
+
+    switch (eventType) {
+    case Information:
+        update_status_bar();
+        break;
+    case Warning:
+        write_event_log();
+    case Error:
+        display_error_window(); // 不好
+        break;
+    }
+
+很容易忽略掉这个直落。应当更明确：
+
+    switch (eventType) {
+    case Information:
+        update_status_bar();
+        break;
+    case Warning:
+        write_event_log();
+        // 直落 fallthrough
+    case Error:
+        display_error_window(); // 不好
+        break;
+    }
+
+在 C++17 中，可以使用 `[[fallthrough]]` 标注：
+
+    switch (eventType) {
+    case Information:
+        update_status_bar();
+        break;
+    case Warning:
+        write_event_log();
+        [[fallthrough]];        // C++17
+    case Error:
+        display_error_window(); // 不好
+        break;
+    }
+
+##### 注解
+
+单个语句带有多个 `case` 标签是可以的：
+
+    switch (x) {
+    case 'a':
+    case 'b':
+    case 'f':
+        do_something(x);
+        break;
+    }
+
+##### 强制实施
+
+对所有从非空的 `case` 发生的直落进行标记。
+
+### <a name="Res-default"></a>ES.79: `default`（仅）用于处理一般情况
+
+##### 理由
+
+代码清晰性。
+提升错误检测的机会。
+
+##### 示例
+
+    enum E { a, b, c , d };
+
+    void f1(E x)
+    {
+        switch (x) {
+        case a:
+            do_something();
+            break;
+        case b:
+            do_something_else();
+            break;
+        default:
+            take_the_default_action();
+            break;
+        }
+    }
+
+此处很明显有一种默认的动作，而情况 `a` 和 `b` 则是特殊情况。
+
+##### 示例
+
+不过当不存在默认动作而只想处理特殊情况时怎么办呢？
+这种情况下，应当使用空的 `default`，否则没办法知道你确实处理了所有情况：
+
+    void f2(E x)
+    {
+        switch (x) {
+        case a:
+            do_something();
+            break;
+        case b:
+            do_something_else();
+            break;
+        default:
+            // 其他情况无需动作
+            break;
+        }
+    }
+
+如果没有 `default` 的话，维护者以及编译器可能会合理地假定你有意处理了所有情况：
+
+    void f2(E x)
+    {
+        switch (x) {
+        case a:
+            do_something();
+            break;
+        case b:
+        case c:
+            do_something_else();
+            break;
+        }
+    }
+
+你是忘记了情况 `d` 还是故意遗漏了它？
+当有人向枚举中添加一种情况，而又未能对每个针对这些枚举符的 `switch` 中添加时，
+容易出现这种遗忘 `case` 的情况。
+
+##### 强制实施
+
+针对某个枚举的 `switch` 语句，若其未能处理其所有枚举符且没有 `default`，则对其进行标记。
+这样做对于某些代码库可能会产生大量误报；此时，可以仅标记那些处理了大多数情况而不是所有情况的 `switch` 语句
+（这正是第一个 C++ 编译器曾经的策略）。
+
+### <a name="Res-noname"></a>ES.84: 不要（试图）声明没有名字的局部变量
+
+##### 理由
+
+没有这种东西。
+人看起来像是个无名变量的东西，对于编译器来说是一条由一个将会立刻离开作用域的临时对象所组成的语句。
+这样可避免不愉快的意外。
+
+##### 示例，不好
+
+    void f()
+    {
+        lock<mutex>{mx};   // 不好
+        // ...
+    }
+
+这里声明了一个无名的 `lock` 对象，它将在分号处立刻离开作用域。
+这并不是一种少见的错误。
+特别是，这个特别的例子会导致很难发觉的竞争条件。
+这种“手法”确实有一些极端聪明的用法，但远远少于其错误。
+
+##### 注解
+
+无名函数实参是没问题的。
+
+##### 强制实施
+
+标记出仅有临时对象的语句。
+
+### <a name="Res-empty"></a>ES.85: 让空语句显著可见
+
+##### 理由
+
+可读性。
+
+##### 示例
+
+    for (i = 0; i < max; ++i);   // 不好: 空语句很容易被忽略
+    v[i] = f(v[i]);
+
+    for (auto x : v) {           // 好多了
+        // 空
+    }
+    v[i] = f(v[i]);
+
+##### 强制实施
+
+对并非块语句且不包含注释的空语句进行标记。
+
+### <a name="Res-loop-counter"></a>ES.86: 避免在原生的 `for` 循环中修改循环控制变量
+
+##### 理由
+
+循环控制的第一行应当允许对循环中所发生的事情进行正确的推理。同时在循环的重复表达式和循环体之中修改循环计数器，是发生意外和 BUG 的一种经常性来源。
+
+##### 示例
+
+    for (int i = 0; i < 10; ++i) {
+        // 未改动 i -- ok
+    }
+
+    for (int i = 0; i < 10; ++i) {
+        //
+        if (/* 某种情况 */) ++i; // 不好
+        //
+    }
+
+    bool skip = false;
+    for (int i = 0; i < 10; ++i) {
+        if (skip) { skip = false; continue; }
+        //
+        if (/* 某种情况 */) skip = true;  // 有改善: 为两个概念使用了两个变量。
+        //
+    }
+
+##### 强制实施
+
+如果变量在循环控制的重复表达式和循环体中都潜在地进行更新（存在非 `const` 使用），则进行标记。
+
+
+### <a name="Res-if"></a>ES.87: 请勿在条件上添加多余的 `==` 或 `!=`
+
+##### 理由
+
+这样可避免啰嗦，并消除了发生某些错误的机会。
+有助于使代码风格保持一致性和协调性。
+
+##### 示例
+
+根据定义，`if` 语句，`while` 语句，以及 `for` 语句中的条件，选择 `true` 或 `false` 的取值。
+数值与 `0` 相比较，指针值与 `nullptr` 相比较。
+
+    // 这些都表示“当 `p` 不是 `nullptr` 时”
+    if (p) { ... }            // 好
+    if (p != 0) { ... }       // `!=0` 是多余的；不好：不要对指针用 0
+    if (p != nullptr) { ... } // `!=nullptr` 是多余的，不建议如此
+
+通常，`if (p)` 可解读为“如果 `p` 有效”，这正是程序员意图的直接表达，
+而 `if (p != nullptr)` 则只是一种啰嗦的变通写法。
+
+##### 示例
+
+这条规则对于把声明式用作条件时尤其有用
+
+    if (auto pc = dynamic_cast<Circle>(ps)) { ... } // 执行是按照 ps 指向某种 Circle 来进行的，好
+
+    if (auto pc = dynamic_cast<Circle>(ps); pc != nullptr) { ... } // 不建议如此
+
+##### 示例
+
+要注意，条件中会实施向 `bool` 的隐式转换。
+例如：
+
+    for (string s; cin >> s; ) v.push_back(s);
+
+这里会执行 `istream` 的 `operator bool()`。
+
+##### 示例，不好
+
+众所周知，
+
+    if(strcmp(p1, p2)) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
+
+时一种常见的新手错误。
+如果使用 C 风格的字符串，那么就必须好好了解 `<cstring>` 中的函数。
+即便冗余地写为
+
+    if(strcmp(p1, p2) != 0) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
+
+也不会有效果
+
+##### 注解
+
+表达相反的条件的最简单的方式就是使用一次取反：
+
+    // 这些都表示“当 `p` 为 `nullptr` 时”
+    if (!p) { ... }           // 好
+    if (p == 0) { ... }       // `!=0` 是多余的；不好：不要对指针用 `0`
+    if (p == nullptr) { ... } // `==nullptr` 是多余的，不建议如此
+
+##### 强制实施
+
+容易，仅需检查条件中多余的 `!=` 和 `==` 的使用即可。
+
+
+
 ## <a name="SS-numbers"></a>算术
 
 ### <a name="Res-mix"></a>ES.100: 不要进行有符号和无符号混合运算
@@ -13403,7 +13405,8 @@ C++11 引入了许多核心并发原语，C++14 对它们进行了改进，
 
     void some_fun() {
         std::string  msg, msg2;
-        std::thread publisher([&] { msg = "Hello"; });       // 不好（表达性不足且更易错）
+        std::thread publisher([&] { msg = "Hello"; });       // 不好: 表达性不足
+                                                             //       且更易错
         auto pubtask = std::async([&] { msg2 = "Hello"; });  // OK
         // ...
         publisher.join();
@@ -19061,7 +19064,7 @@ C11 中，它们被替换为 `gets_s()`，`scanf_s()`，和 `printf_s()` 作为�
 
 ### <a name="Rio-endl"></a>SL.io.50: 避免使用 `endl`
 
-### 理由
+##### 理由
 
 `endl` 操纵符大致相当于 `'\n'` 和 `"\n"`；
 其最常用的情况只不过会以添加多余的 `flush()` 的方式拖慢程序。
