@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2017/10/23
+2018/1/1
 
 
 编辑：
@@ -86,7 +86,7 @@
 * `concept`：
 [规则](#SS-concepts) --
 [泛型编程中](#Rt-raise) --
-[模板实参](#RT-concepts) --
+[模板实参](#Rt-concepts) --
 [语义](#Rt-low)
 * 构造函数：
 [不变式](#Rc-struct) --
@@ -683,7 +683,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
     for (Int i = 1; i; i <<= 1)
         ++bits;
     if (bits < 32)
-        cerr << "Int too small\n"
+        cerr << "Int too small\n";
 
 这个例子并没有达成其所要达成的目的（因为溢出是未定义行为），应当被替换为简单的 `static_assert`：
 
@@ -1194,7 +1194,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 接口规则概览：
 
 * [I.1: 使接口明确](#Ri-explicit)
-* [I.2: 避免全局变量](#Ri-global)
+* [I.2: 避免非 `const` 全局变量](#Ri-global)
 * [I.3: 避免使用单例](#Ri-singleton)
 * [I.4: 使接口严格和强类型化](#Ri-typed)
 * [I.5: 说明前条件（如果有）](#Ri-pre)
@@ -1253,7 +1253,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
     // 请勿：printf 的返回值未进行检查
     fprintf(connection, "logging: %d %d %d\n", x, y, s);
 
-要是连接已经关闭而导致没有产生日志输出的话会怎么样？参见 I.??。
+要是连接已经关闭而导致没有产生日志输出的话会怎么样？参见 I.???。
 
 **替代方案**: 抛出异常。异常是无法被忽略的。
 
@@ -1268,7 +1268,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * 【简单】 函数不能基于声明于命名空间作用域的变量来作出影响控制流的决定。
 * 【简单】 函数不能对声明于命名空间作用域的变量进行写入操作。
 
-### <a name="Ri-global"></a>I.2: 避免全局变量
+### <a name="Ri-global"></a>I.2: 避免非 `const` 全局变量
 
 ##### 理由
 
@@ -2318,7 +2318,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * [F.54: 当俘获了 `this` 时，显式俘获所有的变量（不使用默认俘获）](#Rf-this-capture)
 * [F.55: 不要使用 `va_arg` 参数](#F-varargs)
 
-函数和 Lambda 表达式以及函数对象有很强的相似性，请参见章节 ???。
+函数和 Lambda 表达式以及函数对象有很强的相似性，请参见 [C.lambdas: 函数对象和 lambda](#SS-lambdas)。
 
 ## <a name="SS-fct-def"></a>F.def: 函数的定义式
 
@@ -3001,9 +3001,9 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
     vector<int> g(const vector<int>& vx)
     {
         // ...
-        f() = vx;   // 被 "const" 所禁止
+        fct() = vx;   // 被 "const" 所禁止
         // ...
-        return f(); // 昂贵的复制："const" 抑制掉了移动语义
+        return fct(); // 昂贵的复制："const" 抑制掉了移动语义
     }
 
 要求对返回值添加 `const` 的理由是可以防止（非常少见的）对临时对象的意外访问。
@@ -3569,7 +3569,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
         array<wheel, 4> w;
         // ...
     public:
-        wheel& get_wheel(size_t i) { Expects(i < 4); return w[i]; }
+        wheel& get_wheel(size_t i) { Expects(i < w.size()); return w[i]; }
         // ...
     };
 
@@ -5972,6 +5972,7 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 ##### 示例
 
     class B { // 好: 基类抑制了复制操作
+    public:
         B(const B&) = delete;
         B& operator=(const B&) = delete;
         virtual unique_ptr<B> clone() { return /* B 对象 */; }
@@ -6092,6 +6093,8 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
         auto pi2 {pi};      // 错误: 不存在从左值进行的移动构造函数
         auto pi3 {make()};  // OK，进行移动: make() 的结果为右值
     }
+
+注意，弃置的方法应当是公开的。
 
 ##### 强制实施
 
@@ -6534,6 +6537,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 ##### 示例
 
     struct Device {
+        virtual ~Device() = default;
         virtual void write(span<const char> outbuf) = 0;
         virtual void read(span<char> inbuf) = 0;
     };
@@ -6851,6 +6855,25 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
     Impl::Smiley -> Impl::Circle -> Impl::Shape
 
 我们曾经说过，这只是用来构造双类层次的一种方式。
+
+可以直接使用实现类层次，而不用通过抽象接口来进行。
+
+    void work_with_shape(Shape&);
+
+    int user()
+    {
+        Impl::Smiley my_smiley{ /* args */ };   // 创建具体的形状
+        // ...
+        my_smiley.some_member();        // 直接使用实现类
+        // ...
+        work_with_shape(my_smiley);     // 通过抽象接口使用实现
+        // ...
+    }
+
+这种做法在实现类带有并未由抽象接口提供的成员时，
+或者当直接使用某个成员具有优化机会（比如当实现成员函数为 `final`）时，比较有用。
+
+##### 注解
 
 分离接口和实现的另一个（相关的）技巧是 [Pimpl](#Ri-pimpl)。
 
@@ -10049,11 +10072,6 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 注意，对于带有默认构造函数的类型来说，试图延后初始化只会导致变为一次默认初始化之后跟着一次赋值的做法。
 这种例子的一种更加流行的理由是“效率”，不过可以检查出是否出现“设置前使用”错误的编译器，同样可以消除任何多余的双重初始化。
 
-以重复使用 `cond` 为代价，我们可以将其写为：
-
-    widget i = (cond) ? f1() : f3();
-    widget j = (cond) ? f2() : f4();
-
 假定 `i` 和 `j` 之间存在某种逻辑关联，则这种关联可能应当在函数中予以表达：
 
     pair<widget, widget> make_related_widgets(bool x)
@@ -10061,25 +10079,13 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
         return (x) ? {f1(), f2()} : {f3(), f4() };
     }
 
-    auto init = make_related_widgets(cond);
-    widget i = init.first;
-    widget j = init.second;
+    auto [i, j] = make_related_widgets(cond);    // C++17
 
-显然，我们其实最想要的是某种可以从一个 `tuple` 来对 n 个变量进行初始化的构造。比如：
+##### 注解
 
-    auto [i, j] = make_related_widgets(cond);    // C++17，并非 C++14
-
-如今，我们则可以近似地使用 `tie()`：
-
-    widget i;       // 不好: 未初始化的变量
-    widget j;
-    tie(i, j) = make_related_widgets(cond);
-
-这可能会被当成是下面所列的对于*立即从输入进行初始化*的一种例外。
-
-在现代 C++ 编译器的能力支持下，我们可以很好地创建所有这些例子的最简且等价的代码，
-（不过不要没有测量就作出性能评判；一个编译器很可能无法为每一个例子都能够很好地生成最精简的代码，
-而且也可能存在一些语言规则是你在某种特定情况下所喜欢的，但却会妨碍作出某种优化）。
+几十年来，精明的程序员中都流行进行复杂的初始化。
+这样做也是一种错误和复杂性的主要来源。
+而许多这样的错误都是在最初实现之后的多年之后的维护过程中所引入的。
 
 ##### 示例
 
@@ -10103,12 +10109,6 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 编译器能够标记 `cm3` 为未初始化（因其为 `const`），但它无法发觉 `m3` 缺少初始化。
 通常来说，以很少不恰当的成员初始化来消除错误，要比缺乏初始化更有价值，
 而且优化器是可以消除冗余的初始化的（比如紧跟在赋值之前的初始化）。
-
-##### 注解
-
-几十年来，精明的程序员中都流行进行复杂的初始化。
-这样做也是一种错误和复杂性的主要来源。
-而许多这样的错误都是在最初实现之后的多年之后的维护过程中所引入的。
 
 ##### 例外
 
@@ -12184,7 +12184,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 ##### 理由
 
 意外地遗漏 `break` 是一种相当常见的 BUG。
-蓄意的直落（fall through）是维护的噩梦。
+蓄意的控制直落（fall through）是维护的噩梦。
 
 ##### 示例
 
@@ -12194,8 +12194,9 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
         break;
     case Warning:
         write_event_log();
+        // 不好 - 隐式的控制直落
     case Error:
-        display_error_window(); // 不好
+        display_error_window();
         break;
     }
 
@@ -12209,7 +12210,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
         write_event_log();
         // 直落 fallthrough
     case Error:
-        display_error_window(); // 不好
+        display_error_window();
         break;
     }
 
@@ -12223,7 +12224,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
         write_event_log();
         [[fallthrough]];        // C++17
     case Error:
-        display_error_window(); // 不好
+        display_error_window();
         break;
     }
 
@@ -12433,19 +12434,36 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 这里会执行 `istream` 的 `operator bool()`。
 
+##### 注解
+
+明确地将整数和 `0` 进行比较通常并非是多余的。
+因为（与指针和布尔值相反），整数通常都具有超过两个的有效值。
+此外 `0`（零）还经常会用于代表成功。
+因此，最好明确地进行比较。
+
+    void f(int i)
+    {
+        if (i)            // 可疑
+        // ...
+        if (i == success) // 可能更好
+        // ...
+    }
+
+一定要记住整数可以有超过两个值。
+
 ##### 示例，不好
 
 众所周知，
 
     if(strcmp(p1, p2)) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
 
-时一种常见的新手错误。
+是一种常见的新手错误。
 如果使用 C 风格的字符串，那么就必须好好了解 `<cstring>` 中的函数。
 即便冗余地写为
 
     if(strcmp(p1, p2) != 0) { ... }   // 这两个 C 风格的字符串相等吗？（错误！）
 
-也不会有效果
+也不会有效果。
 
 ##### 注解
 
@@ -13097,7 +13115,81 @@ href="#Rper-Knuth">Per.2</a>。）
 
 ### <a name="Rper-Comp"></a>Per.11: 把计算从运行时转移到编译期
 
-???
+##### 理由
+
+减少代码大小和运行时间。
+通过使用常量来避免数据竞争。
+编译时捕获错误（并因而消除错误处理代码）。
+
+##### 示例
+
+    double square(double d) { return d*d; }
+    static double s2 = square(2);    // 旧式代码：动态初始化
+
+    constexpr double ntimes(double d, int n)   // 假定 0 <= n
+    {
+            double m = 1;
+            while (n--) m *= d;
+            return m;
+    }
+    constexpr double s3 {ntimes(2, 3)};  // 现代代码：编译期初始化
+
+像 `s2` 的初始化这样的代码并不少见，尤其是比 `square()` 更复杂一些的初始化更是如此。
+不过，与 `s3` 的初始化相比，它有两个问题：
+
+* 我们得忍受运行时的一次函数调用的开销
+* `s2` 在初始化开始前可能就被某个别的线程访问了。
+
+注意：常量是不可能发生数据竞争的。
+
+##### 示例
+
+考虑一种流行的提供包装类的技术，在包装类自身之中存储小型对象，而把大型对象保存到堆上。
+
+    constexpr int on_stack_max = 20;
+
+    template<typename T>
+    struct Scoped {     // 在 Scoped 中存储一个 T
+            // ...
+        T obj;
+    };
+
+    template<typename T>
+    struct On_heap {    // 在自由存储中存储一个 T
+            // ...
+            T* objp;
+    };
+
+    template<typename T>
+    using Handle = typename std::conditional<(sizeof(T) <= on_stack_max),
+                        Scoped<T>,      // 第一种候选
+                        On_heap<T>      // 第二种候选
+                   >::type;
+
+    void f()
+    {
+        Handle<double> v1;                   // double 在栈中
+        Handle<std::array<double, 200>> v2;  // array 保存到自由存储里
+        // ...
+    }
+
+假定 `Scoped` 和 `On_heap` 均提供了兼容的用户接口。
+这里我们在编译时计算出了最优的类型。
+对于选择所要调用的最优函数，也有类似的技术。
+
+##### 注解
+
+理想情况是，{不}试图在编译期执行所有的代码。
+显然，大多数的运算都依赖于输入，因而它们没办法挪到编译期进行，
+而除了这种逻辑限制外，复杂的编译期运算会严重增加编译时间，并使调试变得复杂。
+甚至编译期运算也可能使得代码变慢。
+这种情况确实罕见，但当把一种通用运算分解为一组优化的子运算时，可能会导致指令高速缓存的效率变差。
+
+##### 强制实施
+
+* 找出可以（但尚不）是 constexpr 的简单函数。
+* 找出调用时其全部实参均为常量表达式的函数。
+* 找出可以为 constexpr 的宏。
 
 ### <a name="Rper-alias"></a>Per.12: 消除多余的别名
 
@@ -13387,6 +13479,7 @@ C++11 引入了许多核心并发原语，C++14 对它们进行了改进，
 
 不可变数据可以安全并高效地共享。
 无须对其进行锁定：不可能在常量上发生数据竞争。
+另请参见[CP.mess: 消息传递](#SScp-mess)和[CP.31: 优先采用按值传递](#C#Rconc-data-by-value)。
 
 ##### 强制实施
 
@@ -16290,7 +16383,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
                      && has_multiply<T>
                      && has_divide<T>;
 
-    template<Number N> auto algo(const N& a, const N& b) // 使用两个数值
+    template<Number N> auto algo(const N& a, const N& b)
     {
         // ...
         return a + b;
@@ -16298,7 +16391,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
     int x = 7;
     int y = 9;
-    auto z = algo(x, y);   // z = 18
+    auto z = algo(x, y);   // z = 16
 
     string xx = "7";
     string yy = "9";
@@ -16314,7 +16407,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 * 对表现为模拟单操作 `concept` 的 `enable_if` 的使用进行标记。
 
 
-### <a name="RT-operations"></a>T.21: 为概念提出一组完整的操作要求
+### <a name="Rt-complete"></a>T.21: 为概念提出一组完整的操作要求
 
 ##### 理由
 
@@ -17868,6 +17961,7 @@ C++ 是不支持这样做的。
 ##### 示例
 
     class X {
+    public:
         X() = delete;
         X(const X&) = default;
         X(X&&) = default;
@@ -18555,6 +18649,13 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 ##### 注解
 
 在不拥有而引用容器中的元素时使用 `gsl::span`。
+
+##### 注解
+
+在栈上分配的固定大小的数组和把元素都放在自由存储上的 `vector` 之间比较性能是没什么意义的。
+你同样也可以在栈上的 `std::array` 和通过指针访问 `malloc()` 的结果之间进行这样的比较。
+对于大多数代码来说，即便是栈上分配和自由存储分配之间的差异也没那么重要，但 `vector` 带来的便利和安全性却是重要的。
+如果有人编写的代码中这种差异确实重要，那么他显然可以在 `array` 和 `vector` 之间做出选择。
 
 ##### 强制实施
 
@@ -20288,10 +20389,6 @@ CamelCase：多词标识符的每个词首字母大写：
 
 采用先是 `public`，然后是 `protected`，之后是 `private` 的次序。
 
-私有类型和函数可以和私有数据放在一起。
-
-避免让具有某一种访问（如 `public`）的多个声明块被具有不同访问（如 `private`）的其他声明块分隔开。
-
 ##### 示例
 
     class X {
@@ -20303,9 +20400,33 @@ CamelCase：多词标识符的每个词首字母大写：
         // 实现细节
     };
 
-##### 注解
+##### 示例
 
-用宏来声明成员组的做法通常会违反所有的次序规则。
+有时候，成员的默认顺序，与将公开接口从实现细节中分离出来的需求之间有冲突。
+这种情况下，私有类型和函数可以和私有数据放在一起。
+
+    class X {
+    public:
+        // 接口
+    protected:
+        // 供派生类实现使用的不带检查的函数
+    private:
+        // 实现细节（类型，函数和数据）
+    };
+
+##### 示例，不好
+
+避免让具有某一种访问（如 `public`）的多个声明块被具有不同访问（如 `private`）的其他声明块分隔开。
+
+    class X {
+    public:
+        void f();
+    public:
+        int g();
+        // ...
+    };
+
+用宏来声明成员组的做法通常会导致违反所有的次序规则。
 不过，宏的使用掩盖了其所表达的东西。
 
 ##### 强制实施
