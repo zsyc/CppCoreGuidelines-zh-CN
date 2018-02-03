@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2018/1/1
+2018/1/22
 
 
 编辑：
@@ -484,14 +484,16 @@
 `month` 的第一个声明式，显然是要返回一个 `Month`，而且不会修改 `Date` 对象的状态。
 而第二个版本则需要读者进行猜测，同时带来了更多的出现难于发现 BUG 的可能性。
 
-##### 示例
+##### 示例；不好
+
+这个循环是 `std::find` 的一种能力有限的形式：
 
     void f(vector<string>& v)
     {
         string val;
         cin >> val;
         // ...
-        int index = -1;                    // 不好
+        int index = -1;                    // 不好，而且应该使用 gsl::index
         for (int i = 0; i < v.size(); ++i) {
             if (v[i] == val) {
                 index = i;
@@ -501,7 +503,8 @@
         // ...
     }
 
-这个循环是 `std::find` 的一种能力有限的形式。
+##### 示例；好
+
 要清晰得多地表达其设计意图，可以这样：
 
     void f(vector<string>& v)
@@ -583,7 +586,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 ##### 示例
 
-    int i = 0;
+    gsl::index i = 0;
     while (i < v.size()) {
         // ... 在 v[i] 上做一些事 ...
     }
@@ -1024,7 +1027,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
         X x;
         x.ch = 'a';
         x.s = string(n);    // 在 x.s 上预留 *p 的空间
-        for (int i = 0; i < x.s.size(); ++i) x.s[i] = buf[i];  // 把 buf 复制给 x.s
+        for (gsl::index i = 0; i < x.s.size(); ++i) x.s[i] = buf[i];  // 把 buf 复制给 x.s
         delete[] buf;
         return x;
     }
@@ -1701,7 +1704,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 ##### 注解
 
 很快（可能是 2018 年），大多数编译器就有能力检查删除了 `//` 之后的 `requires` 子句了。
-现在的话，只有 GCC 6.1 及其后版本支持 concept TS。
+GCC 6.1 及其后版本支持概念。
 
 **参见**: [泛型编程](#SS-GP)和[概念](#SS-t-concepts)。
 
@@ -3264,7 +3267,7 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
         for (int x : s) cout << x << '\n';
 
         // C 风格的遍历（可能带有检查）
-        for (int i = 0; i < s.size(); ++i) cout << s[i] << '\n';
+        for (gsl::index i = 0; i < s.size(); ++i) cout << s[i] << '\n';
 
         // 随机访问（可能带有检查）
         s[7] = 9;
@@ -3569,7 +3572,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
         array<wheel, 4> w;
         // ...
     public:
-        wheel& get_wheel(size_t i) { Expects(i < w.size()); return w[i]; }
+        wheel& get_wheel(int i) { Expects(i < w.size()); return w[i]; }
         // ...
     };
 
@@ -5691,9 +5694,9 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
     class X2 {  // OK: 指针语义
     public:
         X2();
-        X2(const X&) = default; // 浅拷贝
+        X2(const X2&) = default; // 浅拷贝
         ~X2() = default;
-        void modify();          // 改变 X 的值
+        void modify();          // 改变所指向的值
         // ...
     private:
         T* p;
@@ -9155,7 +9158,35 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 ##### 示例
 
-    ???
+    #include <memory>
+
+    class bar;
+
+    class foo
+    {
+    public:
+      explicit foo(const std::shared_ptr<bar>& forward_reference)
+        : forward_reference_(forward_reference)
+      { }
+    private:
+      std::shared_ptr<bar> forward_reference_;
+    };
+
+    class bar
+    {
+    public:
+      explicit bar(const std::weak_ptr<foo>& back_reference)
+        : back_reference_(back_reference)
+      { }
+      void do_something()
+      {
+        if (auto shared_back_reference = back_reference_.lock()) {
+          // 使用 *shared_back_reference
+        }
+      }
+    private:
+      std::weak_ptr<foo> back_reference_;
+    };
 
 ##### 注解
 
@@ -9502,7 +9533,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.104: 避免下溢出](#Res-underflow)
 * [ES.105: 避免除零](#Res-zero)
 * [ES.106: 不要试图用 `unsigned` 来防止负数值](#Res-nonnegative)
-* [ES.107: 不要对下标使用 `unsigned`](#Res-subscripts)
+* [ES.107: 不要对下标使用 `unsigned`，优先使用 `gsl::index`](#Res-subscripts)
 
 ### <a name="Res-lib"></a>ES.1: 优先采用标准库而不是其他的库或者“手工自制代码”
 
@@ -9698,7 +9729,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     template<typename T>    // 好
     void print(ostream& os, const vector<T>& v)
     {
-        for (int i = 0; i < v.size(); ++i)
+        for (gsl::index i = 0; i < v.size(); ++i)
             os << v[i] << '\n';
     }
 
@@ -9707,9 +9738,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     template<typename Element_type>   // 不好: 啰嗦，难于阅读
     void print(ostream& target_stream, const vector<Element_type>& current_vector)
     {
-        for (int current_element_index = 0;
-                current_element_index < current_vector.size();
-                ++current_element_index
+        for (gsl::index current_element_index = 0;
+             current_element_index < current_vector.size();
+             ++current_element_index
         )
         target_stream << current_vector[current_element_index] << '\n';
     }
@@ -9884,7 +9915,6 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 考虑：
 
     auto p = v.begin();   // vector<int>::iterator
-    auto s = v.size();
     auto h = t.future();
     auto q = make_unique<int[]>(s);
     auto f = [](int x){ return x + 10; };
@@ -11951,7 +11981,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 示例
 
-    for (int i = 0; i < v.size(); ++i)   // 不好
+    for (gsl::index i = 0; i < v.size(); ++i)   // 不好
             cout << v[i] << '\n';
 
     for (auto p = v.begin(); p != v.end(); ++p)   // 不好
@@ -11960,13 +11990,13 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     for (auto& x : v)    // OK
         cout << x << '\n';
 
-    for (int i = 1; i < v.size(); ++i) // 接触了两个元素：无法作为范围式的 for
+    for (gsl::index i = 1; i < v.size(); ++i) // 接触了两个元素：无法作为范围式的 for
         cout << v[i] + v[i - 1] << '\n';
 
-    for (int i = 0; i < v.size(); ++i) // 可能具有副作用：无法作为范围式的 for
+    for (gsl::index i = 0; i < v.size(); ++i) // 可能具有副作用：无法作为范围式的 for
         cout << f(v, &v[i]) << '\n';
 
-    for (int i = 0; i < v.size(); ++i) { // 循环体中混入了循环变量：无法作为范围式 for
+    for (gsl::index i = 0; i < v.size(); ++i) { // 循环体中混入了循环变量：无法作为范围式 for
         if (i % 2 == 0)
             continue;   // 跳过偶数元素
         else
@@ -12003,7 +12033,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 示例
 
-    for (int i = 0; i < vec.size(); i++) {
+    for (gsl::index i = 0; i < vec.size(); i++) {
         // 干活
     }
 
@@ -12502,11 +12532,13 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 ##### 注解
 
 不幸的是，C++ 使用有符号整数作为数组下标，而标准库使用无符号整数作为容器下标。
-这妨碍了一致性。
+这妨碍了一致性。使用 `gsl::index` 来作为下标类型；[参见 ES.107](#Res-subscripts)。
 
 ##### 强制实施
 
-编译器已知这种情况，有些时候会给出警告。
+* 编译器已知这种情况，有些时候会给出警告。
+* （避免噪声）有符号/无符号的混合比较，若其一个实参是 `sizeof` 或调用容器的 `.size()` 而另一个是 `ptrdiff_t`，则不要进行标记。
+
 
 ### <a name="Res-unsigned"></a>ES.101: 使用无符号类型进行位操作
 
@@ -12579,19 +12611,23 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     int a[10];
     for (int i = 0; i < 10; ++i) a[i] = i;
     vector<int> v(10);
-    // 比较有符号和无符号数；有些编译器会警告
-    for (int i = 0; v.size() < 10; ++i) v[i] = i;
+    // 比较有符号和无符号数；有些编译器会警告，但我们不能警告
+    for (gsl::index i = 0; v.size() < 10; ++i) v[i] = i;
 
     int a2[-2];         // 错误：负的大小
 
     // OK，但 int 的数值（4294967294）过大，应当会造成一个异常
     vector<int> v2(-2);
 
+使用 `gsl::index` 作为下标类型；[参见 ES.107](#Res-subscripts)。
+
 ##### 强制实施
 
 * 对混合有符号和无符号算术进行标记。
 * 对将无符号算术的结果作为有符号数赋值或打印进行标记。
 * 对无符号字面量（比如 `-2`）用作容器下标进行标记。
+* （避免噪声）有符号/无符号的混合比较，若其一个实参是 `sizeof` 或调用容器的 `.size()` 而另一个是 `ptrdiff_t`，则不要进行标记。
+
 
 ### <a name="Res-overflow"></a>ES.103: 避免上溢出
 
@@ -12755,33 +12791,47 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 困难：有大量使用 `unsigned` 的代码，而我们又没给出一个实际的正数类型。
 
 
-### <a name="Res-subscripts"></a>ES.107: 不要对下标使用 `unsigned`
+### <a name="Res-subscripts"></a>ES.107: 不要对下标使用 `unsigned`，优先使用 `gsl::index`
 
 ##### 理由
 
 避免有符号和无符号混乱。
 允许更好的优化。
 允许更好的错误检测。
+避免 `auto` 和 `int` 有关的陷阱。
 
 ##### 示例，不好
 
-    vector<int> vec {1, 2, 3, 4, 5};
+    vector<int> vec = /*...*/;
 
-    for (int i = 0; i < vec.size(); i += 2)                    // 混用 int 和 unsigned
+    for (int i = 0; i < vec.size(); i += 2)                    // 可能不够大
         cout << vec[i] << '\n';
     for (unsigned i = 0; i < vec.size(); i += 2)               // 有风险的回绕
         cout << vec[i] << '\n';
+    for (auto i = 0; i < vec.size(); i += 2)                   // 可能不够大
+        cout << vec[i] << '\n';
     for (vector<int>::size_type i = 0; i < vec.size(); i += 2) // 啰嗦
         cout << vec[i] << '\n';
-    for (auto i = 0; i < vec.size(); i += 2)                   // 混用 int 和 unsigned
+    for (auto i = vec.size()-1; i >= 0; i -= 2)                // BUG
+        cout << vec[i] << '\n';
+    for (int i = vec.size()-1; i >= 0; i -= 2)                 // 可能不够大
+        cout << vec[i] << '\n';
+
+##### 示例，好
+
+    vector<int> vec = /*...*/;
+
+    for (gsl::index i = 0; i < vec.size(); i += 2)             // ok
+        cout << vec[i] << '\n';
+    for (gsl::index i = vec.size()-1; i >= 0; i -= 2)          // ok
         cout << vec[i] << '\n';
 
 ##### 注解
 
 内建数组使用有符号的下标。
 标准库容器使用无符号的下标。
-因此没有完美的兼容解决方案。
-鉴于无符号和混合符号方面的已知问题，最好坚持使用（有符号）整数。
+因此没有完美的兼容解决方案（除非将来某一天，标准库容器改为使用有符号下标了）。
+鉴于无符号和混合符号方面的已知问题，最好坚持使用（有符号）并且足够大的整数，而 `gsl::index` 保证了这点。
 
 ##### 示例
 
@@ -12789,7 +12839,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     struct My_container {
     public:
         // ...
-        T& operator[](int i);    // 不是 unsigned
+        T& operator[](gsl::index i);    // 不是 unsigned
         // ...
     };
 
@@ -12807,7 +12857,11 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 强制实施
 
-非常麻烦，因为标准库容器已经搞错了。
+* 非常麻烦，因为标准库容器已经搞错了。
+* （避免噪声）有符号/无符号的混合比较，若其一个实参是 `sizeof` 或调用容器的 `.size()` 而另一个是 `ptrdiff_t`，则不要进行标记。
+
+
+
 
 # <a name="S-performance"></a>Per: 性能
 
@@ -13181,7 +13235,8 @@ href="#Rper-Knuth">Per.2</a>。）
 
 理想情况是，{不}试图在编译期执行所有的代码。
 显然，大多数的运算都依赖于输入，因而它们没办法挪到编译期进行，
-而除了这种逻辑限制外，复杂的编译期运算会严重增加编译时间，并使调试变得复杂。
+而除了这种逻辑限制外，实际情况是，复杂的编译期运算会严重增加编译时间，
+并使调试变得复杂。
 甚至编译期运算也可能使得代码变慢。
 这种情况确实罕见，但当把一种通用运算分解为一组优化的子运算时，可能会导致指令高速缓存的效率变差。
 
@@ -14783,7 +14838,7 @@ C++ 实现都倾向于基于假定异常的稀有而进行优化。
     int find_index(vector<string>& vec, const string& x)
     {
         try {
-            for (int i = 0; i < vec.size(); ++i)
+            for (gsl::index i = 0; i < vec.size(); ++i)
                 if (vec[i] == x) throw i;  // 找到了 x
         } catch (int i) {
             return i;
@@ -15866,9 +15921,9 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 泛型编程的中心是“概念”；亦即以编译时谓词表现的对于模板参数的要求。
 “概念”是在一份 ISO 技术规范中定义的：[concepts](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf)。
 而一组标准库概念的草案则可以在另一份 ISO TS 中找到：[ranges](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4569.pdf)。
-当前（2016 年 7 月），只有 GCC 6.1 支持了概念。
+GCC 6.1 及其后版本支持概念。
 因此，我们在例子中将概念注释掉了；就是说我们仅把它们当成形式化的注释。
-如果你使用 GCC 6.1，那么你就可以取消它们的注释。
+如果你使用 GCC 6.1 或更新版本，那么你就可以取消它们的注释。
 
 模板使用的规则概览：
 
@@ -16023,9 +16078,9 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 代码注释中的 `requires` 是 `concept` 的用法。
 “概念”是在一份 ISO 技术规范中定义的：[concepts](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf)。
-当前（2016 年 7 月），只有 GCC 6.1 支持了概念。
+GCC 6.1 及其后版本支持概念。
 因此，我们在例子中将概念注释掉了；就是说我们仅把它们当成形式化的注释。
-如果你使用 GCC 6.1，那么你就可以取消它们的注释。
+如果你使用 GCC 6.1 或更新版本，那么你就可以取消它们的注释。
 
 ##### 强制实施
 
@@ -16216,9 +16271,9 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 “概念”是在一份 ISO 技术规范中定义的：[concepts](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf)。
 而一组标准库概念的草案则可以在另一份 ISO TS 中找到：[ranges](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4569.pdf)。
-当前（2016 年 7 月），只有 GCC 6.1 支持了概念。
+GCC 6.1 及其后版本支持概念。
 因此，我们在例子中将概念注释掉了；就是说我们仅把它们当成形式化的注释。
-如果你使用 GCC 6.1，那么你就可以取消它们的注释。
+如果你使用 GCC 6.1 或更新版本，那么你就可以取消它们的注释。
 
     template<typename Iter, typename Val>
         requires Input_iterator<Iter>
@@ -16321,9 +16376,9 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 
 “概念”是在一份 ISO 技术规范中定义的：[concepts](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2015/n4553.pdf)。
 而一组标准库概念的草案则可以在另一份 ISO TS 中找到：[ranges](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4569.pdf)。
-当前（2016 年 7 月），只有 GCC 6.1 支持了概念。
+GCC 6.1 及其后版本支持概念。
 因此，我们在例子中将概念注释掉了；就是说我们仅把它们当成形式化的注释。
-如果你使用支持概念的编译器（比如 GCC 6.1），那么你就可以删掉 `//`。
+如果你使用支持概念的编译器（比如 GCC 6.1 或更新版本），那么你就可以删掉 `//`。
 
 ##### 强制实施
 
@@ -16337,7 +16392,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 只是把用在某个具体的类或算法的参数上的一组语法约束聚在一起，并不是概念所设计的用法，
 也无法获得这个机制的全部好处。
 
-显然，定义概念对于那些可以使用某个实现（比如 GCC 6.1）的代码是最有用的，
+显然，定义概念对于那些可以使用某个实现（比如 GCC 6.1 或更新版本）的代码是最有用的，
 不过定义概念本身就是一种有益的设计技巧，有助于发现概念上的错误并清理实现中的各种概念。
 
 ### <a name="Rt-low"></a>T.20: 避免没有有意义的语义的“概念”
@@ -19971,12 +20026,13 @@ GSL 组件概览：
 
 ## <a name="SS-utilities"></a>GSL.util: 工具
 
-* `finally`       // `finally(f)` 创建一个 `final_action{f}`，其析构函数将执行 `f`
-* `narrow_cast`   // `narrow_cast<T>(x)` 就是 `static_cast<T>(x)`
-* `narrow`        // `narrow<T>(x)` 在满足 `static_cast<T>(x) == x` 时为 `static_cast<T>(x)`，否则抛出 `narrowing_error`
-* `[[implicit]]`  // 放在单参数构造函数上的“记号”，以明确说明它们并非显式构造函数。
-* `move_owner`    // `p = move_owner(q)` 含义为 `p = q` 但 ???
+* `finally`        // `finally(f)` 创建一个 `final_action{f}`，其析构函数将执行 `f`
+* `narrow_cast`    // `narrow_cast<T>(x)` 就是 `static_cast<T>(x)`
+* `narrow`         // `narrow<T>(x)` 在满足 `static_cast<T>(x) == x` 时为 `static_cast<T>(x)`，否则抛出 `narrowing_error`
+* `[[implicit]]`   // 放在单参数构造函数上的“记号”，以明确说明它们并非显式构造函数。
+* `move_owner`     // `p = move_owner(q)` 含义为 `p = q` 但 ???
 * `joining_thread` // RAII 风格版本的进行联结的 `std::thread`
+* `index`          // 用于进行所有的容器和数组索引的类型（当前是 `ptrdiff_t` 的别名）
 
 ## <a name="SS-gsl-concepts"></a>GSL.concept: 概念
 
@@ -20029,7 +20085,7 @@ IDE 和工具可以提供辅助（当然也可能造成妨碍）。
 * [NL.2: 在代码注释中说明意图](#Rl-comments-intent)
 * [NL.3: 保持代码注释简明干脆](#Rl-comments-crisp)
 * [NL.4: 保持一种统一的缩进风格](#Rl-indent)
-* [NL.5: 请勿在名字中编码类型信息](#Rl-name-type)
+* [NL.5: 避免在名字中编码类型信息](#Rl-name-type)
 * [NL.7: 使名字的长度大约正比于其作用域的长度](#Rl-name-length)
 * [NL.8: 使用一种统一的命名风格](#Rl-name)
 * [NL.9: 将 `ALL_CAPS` 仅用于宏的名字](#Rl-all-caps)
@@ -20136,7 +20192,7 @@ IDE 也都会提供某些默认方案和一组替代方案。
 
 使用一种工具。
 
-### <a name="Rl-name-type"></a>NL.5: 请勿在名字中编码类型信息
+### <a name="Rl-name-type"></a>NL.5: 避免在名字中编码类型信息
 
 ##### 原理
 
@@ -20149,8 +20205,16 @@ IDE 也都会提供某些默认方案和一组替代方案。
     void print_int(int i);
     void print_string(const char*);
 
-    print_int(1);   // OK
-    print_int(x);   // 若 x 是 double 则会转换为 int
+    print_int(1);          // 重复，人工进行类型匹配
+    print_string("xyzzy"); // 重复，人工进行类型匹配
+
+##### 示例，好
+
+    void print(int i);
+    void print(string_view);    // 对任意字符串式的序列都能工作
+
+    print(1);              // 简洁，自动类型匹配
+    print("xyzzy");        // 简洁，自动类型匹配
 
 ##### 注解
 
@@ -20160,7 +20224,22 @@ IDE 也都会提供某些默认方案和一组替代方案。
     prints  // 打印一个 C 风格字符串
     printi  // 打印一个 int
 
-PS. 匈牙利记法（至少在强静态类型语言中）是有害的。
+在 C 语言中需要像匈牙利记法这样的技巧来在名字中编码类型，但在像 C++ 这样的强静态类型语言中，这通常是不必要而且实际上是有害的，因为这些标注会过时（这些累赘和注释类似，而且和它们一样会烂掉），而且它们干扰了语言的恰当用法（应当代之以使用相同的名字和重载决议）。
+
+##### 注解
+
+一些代码风格会使用非常一般性的（而不是特定于类型的）前缀来代表变量的一般用法。
+
+    auto p = new User();
+    auto p = make_unique<User>();
+    // 注："p" 并非是说“User 类型的原始指针”，
+    //     而只是一般性的“这是一次间接访问”
+
+    auto cntHits = calc_total_of_hits(/*...*/);
+    // 注："cnt" 并非用于编码某个类型，
+    //     而只是一般性的“这是某种东西的一个计数”
+
+这样做是没有害处的，且并不属于本条指导方针，因为其并未编码类型信息。
 
 ##### 注解
 
@@ -20171,7 +20250,7 @@ PS. 匈牙利记法（至少在强静态类型语言中）是有害的。
         S(int m) :m_{abs(m)} { }
     };
 
-这样做是没有害处的。
+这样做是没有害处的，且并不属于本条指导方针，因为其并未编码类型信息。
 
 ##### 注解
 
@@ -20179,13 +20258,13 @@ PS. 匈牙利记法（至少在强静态类型语言中）是有害的。
 例如，对类型名字首字母大写，而函数和变量名字则不这样做。
 
     typename<typename T>
-    class Hash_tbl {   // 将 string 映射为 T
+    class HashTable {   // 将 string 映射为 T
         // ...
     };
 
-    Hash_tbl<int> index;
+    HashTable<int> index;
 
-这样做是没有害处的。
+这样做是没有害处的，且并不属于本条指导方针，因为其并未编码类型信息。
 
 ### <a name="Rl-name-length"></a>NL.7: 使名字的长度大约正比于其作用域的长度
 
