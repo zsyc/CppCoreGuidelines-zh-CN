@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2018/1/22
+2018/3/26
 
 
 编辑：
@@ -41,7 +41,7 @@
 * [R: 资源管理](#S-resource)
 * [ES: 表达式和语句](#S-expr)
 * [Per: 性能](#S-performance)
-* [CP: 并发](#S-concurrency)
+* [CP: 并发与并行](#S-concurrency)
 * [E: 错误处理](#S-errors)
 * [Con: 常量和不可变性](#S-const)
 * [T: 模板和泛型编程](#S-templates)
@@ -52,16 +52,16 @@
 配套章节：
 
 * [A: 架构相关理念](#S-A)
-* [N: 伪规则和错误的看法](#S-not)
+* [NR: 伪规则和错误的看法](#S-not)
 * [RF: 参考资料](#S-references)
 * [PRO: 剖面配置](#S-profile)
 * [GSL: 指导方针支持库](#S-gsl)
-* [NL: 命名和代码布局](#S-naming)
+* [NL: 命名和代码布局规则](#S-naming)
 * [FAQ: 常见问题的解答](#S-faq)
 * [附录 A: 程序库](#S-libraries)
 * [附录 B: 代码的现代化转换](#S-modernizing)
 * [附录 C: 相关讨论](#S-discussion)
-* [附录 D: 工具支持](#S-tools)
+* [附录 D: 支持工具](#S-tools)
 * [词汇表](#S-glossary)
 * [To-do: 未分类的规则原型](#S-unclassified)
 
@@ -191,7 +191,7 @@
 
 本文档是一组有关如何更好使用 C++ 的指导方针的集合。
 本文档的目标是帮助人们更有效地使用现代 C++。
-所谓“现代”的含义是指 C++11 和 C++14（以及即将到来的 C++17）。
+所谓“现代”的含义是指 C++17，C++14 和 C++11。
 换句话说，如果你从现在开始算起，五年后你的代码看起来是怎么样的？十年呢？
 
 这些指导方针所关注的是一些相对高层次的问题，比如接口，资源管理，内存管理，以及并发等等。
@@ -228,7 +228,7 @@
 
 # <a name="S-introduction"></a>In: 导言
 
-本文档是一组核心指导方针，针对现代 C++（C++14），还考虑到了语言将来有希望的增强，以及 ISO 技术规范（TSs）。
+本文档是一组核心指导方针，针对现代 C++（C++17，C++14 和 C++11），还考虑到了语言将来有希望的增强，以及 ISO 技术规范（TSs）。
 其目标是帮助 C++ 程序员编写更简单、更高效、更加可维护的代码。
 
 导言概览：
@@ -246,7 +246,7 @@
 
 ## <a name="SS-aims"></a>In.aims: 目标
 
-本文档的目标是帮助开发者采用现代 C++（C++11，C++14，以及不久后的 C++17），并在各个代码库之间达成更加统一的编码风格。
+本文档的目标是帮助开发者采用现代 C++（C++17，C++14 和 C++11），并在各个代码库之间达成更加统一的编码风格。
 
 我们并不妄想这些规则中的每一条都能有效地在任何代码库中进行实施。对老旧系统进行升级是很困难的。不过我们确实认为，采纳了一条规则的程序总会比不这样做的程序更加不易出错也更加便于维护。通常，采用规则也会带来更快速或更容易的初始开发活动。
 就我们所能说的，这些规则能够使得代码的性能，相对于更传统的技术来说同样好甚至更好；它们都是依照零开销原则设立的——“不使用就没有负担”（"what you don't use, you don't pay for"）或“当恰当地使用抽象机制时，所得的性能至少与使用低级语言构造手工编码的结果一样好”。
@@ -411,27 +411,28 @@
 * [Enum: 枚举](#S-enum)
 * [R: 资源管理](#S-resource)
 * [ES: 表达式和语句](#S-expr)
+* [Per: 性能](#S-performance)
+* [CP: 并发与并行](#S-concurrency)
 * [E: 错误处理](#S-errors)
 * [Con: 常量和不可变性](#S-const)
 * [T: 模板和泛型编程](#S-templates)
-* [CP: 并发](#S-concurrency)
-* [SL: 标准库](#S-stdlib)
-* [SF: 源文件](#S-source)
 * [CPL: C 风格的编程](#S-cpl)
-* [Pro: 剖面配置](#S-profile)
-* [GSL: 指导方针支持库](#S-gsl)
-* [FAQ: 常见问题的解答](#S-faq)
+* [SF: 源文件](#S-source)
+* [SL: 标准库](#S-stdlib)
 
 配套章节：
 
-* [NL: 命名和代码布局](#S-naming)
-* [Per: 性能](#S-performance)
-* [N: 伪规则和错误的看法](#S-not)
+* [A: 架构相关的理念](#S-A)
+* [NR: 伪规则和错误的看法](#S-not)
 * [RF: 参考资料](#S-references)
+* [Pro: 剖面配置](#S-profile)
+* [GSL: 指导方针支持库](#S-gsl)
+* [NL: 命名和代码布局](#S-naming)
+* [FAQ: 常见问题的解答](#S-faq)
 * [附录 A: 程序库](#S-libraries)
 * [附录 B: 代码的现代化转换](#S-modernizing)
 * [附录 C: 相关讨论](#S-discussion)
-* [附录 D: 工具支持](#S-tools)
+* [附录 D: 支持工具](#S-tools)
 * [词汇表](#S-glossary)
 * [To-do: 未分类的规则原型](#S-unclassified)
 
@@ -576,7 +577,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 ##### 强制实施
 
-使用最新版的 C++ 编译器（当前支持 C++11 或者 C++14），并打开禁用语言扩展的选项。
+使用最新版的 C++ 编译器（当前支持 C++17，C++14 或 C++11），并打开禁用语言扩展的选项。
 
 ### <a name="Rp-what"></a>P.3: 表达你的设计意图
 
@@ -700,7 +701,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
     void read(int* p, int n);   // 读取至多 n 个整数到 *p 之中
 
     int a[100];
-    read(a, 1000);    // 不好
+    read(a, 1000);    // 不好，超过末尾了
 
 更好的做法是
 
@@ -981,9 +982,9 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 ##### 注解
 
-强制实行[生存期剖面配置](#In.force)可以消除泄漏的发生。
+强制实行[生存期剖面配置](#SS-force)可以消除泄漏的发生。
 如果和 [RAII](#Rr-raii) 所提供的资源安全性组合到一起，也可以（通过不产生任何垃圾而）消除对“垃圾收集”的需要。
-如果将之和[类型和边界剖面配置](#In.force) 组合到一起强制实施的话，你将会得到完全的类型和资源安全性，这是通过使用工具来保证的。
+如果将之和[类型和边界剖面配置](#SS-force) 组合到一起强制实施的话，你将会得到完全的类型和资源安全性，这是通过使用工具来保证的。
 
 ##### 强制实施
 
@@ -1018,10 +1019,10 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
     X waste(const char* p)
     {
-        if (p == nullptr) throw Nullptr_error{};
+        if (!p) throw Nullptr_error{};
         int n = strlen(p);
         auto buf = new char[n];
-        if (buf == nullptr) throw Allocation_error{};
+        if (!buf) throw Allocation_error{};
         for (int i = 0; i < n; ++i) buf[i] = p[i];
         // ... 对缓冲区进行操作 ...
         X x;
@@ -1217,7 +1218,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 * [I.27: 对于稳定的程序库 ABI，考虑使用 Pimpl 手法](#Ri-pimpl)
 * [I.30: 将有违规则的部分封装](#Ri-encapsulate)
 
-参见
+**参见**
 
 * [F: 函数](#S-functions)
 * [C.concrete: 具体类型](#SS-concrete)
@@ -1502,7 +1503,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 ##### 注解
 
-优先使用正式的必要条件说明，比如 `Expects(p != nullptr);`。
+优先使用正式的必要条件说明，比如 `Expects(!p);`。
 如果这样不可行，就在注释中使用文字来说明，比如 `// 序列 [p:q) 根据 < 排序`。
 
 ##### 注解
@@ -1587,7 +1588,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
     {
         char buffer[MAX];
         // ...
-        memset(buffer, 0, MAX);
+        memset(buffer, 0, sizeof(buffer));
     }
 
 由于没有后条件来说明缓冲区应当被清零，优化器可能会将这个看似多余的 `memset()` 调用给清除掉：
@@ -1596,7 +1597,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
     {
         char buffer[MAX];
         // ...
-        memset(buffer, 0, MAX);
+        memset(buffer, 0, sizeof(buffer));
         Ensures(buffer[0] == 0);
     }
 
@@ -1706,7 +1707,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 很快（可能是 2018 年），大多数编译器就有能力检查删除了 `//` 之后的 `requires` 子句了。
 GCC 6.1 及其后版本支持概念。
 
-**参见**: [泛型编程](#SS-GP)和[概念](#SS-t-concepts)。
+**参见**: [泛型编程](#SS-GP)和[概念](#SS-concepts)。
 
 ##### 强制实施
 
@@ -1832,7 +1833,7 @@ GCC 6.1 及其后版本支持概念。
 传递所有权的 API 相对于传递指针的 API 来说比较少见，
 因此缺省情况就是“不传递所有权”。
 
-**参见**: [实参传递](#Rf-conventional)，[使用智能指针参数](#Rr-smartptrparam)，以及[返回值](#Rf-T-return)。
+**参见**: [实参传递](#Rf-conventional)，[使用智能指针参数](#Rr-smartptrparam)，以及[返回值](#Rf-value-return)。
 
 ##### 强制实施
 
@@ -2303,11 +2304,11 @@ GCC 6.1 及其后版本支持概念。
 * [F.26: 当需要指针时，用 `unique_ptr<T>` 来传递所有权](#Rf-unique_ptr)
 * [F.27: 用 `shared_ptr<T>` 来共享所有权](#Rf-shared_ptr)
 
-值返回语义的规则：
+<a name="Rf-value-return"></a>值返回语义的规则：
 
 * [F.42: 返回 `T*` 来（仅仅）给出一个位置](#Rf-return-ptr)
 * [F.43: 不要（直接或间接）返回指向局部对象的指针或引用](#Rf-dangle)
-* [F.44: 当不想进行复制，而“没有对象被返回”不是有效的选项时，返回 `T&`](#Rf-return-ref)
+* [F.44: 当不想进行复制，且不需要“没有对象被返回”时，返回 `T&`](#Rf-return-ref)
 * [F.45: 不要返回 `T&&`](#Rf-return-ref-ref)
 * [F.46: `int` 是 `main()` 的返回类型](#Rf-main)
 * [F.47: 赋值运算符返回 `T&`](#Rf-assignment-op)
@@ -2321,7 +2322,9 @@ GCC 6.1 及其后版本支持概念。
 * [F.54: 当俘获了 `this` 时，显式俘获所有的变量（不使用默认俘获）](#Rf-this-capture)
 * [F.55: 不要使用 `va_arg` 参数](#F-varargs)
 
-函数和 Lambda 表达式以及函数对象有很强的相似性，请参见 [C.lambdas: 函数对象和 lambda](#SS-lambdas)。
+函数和 Lambda 表达式以及函数对象有很强的相似性。
+
+**参见**：[C.lambdas: 函数对象和 lambda](#SS-lambdas)
 
 ## <a name="SS-fct-def"></a>F.def: 函数的定义式
 
@@ -2733,9 +2736,10 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
 
 悬挂指针是可以静态地找出来的，因此我们并不需要依靠资源管理功能来避免悬挂指针。
 
-**参见**: [何时应当采用 `T*`，何时应当采用 `T&`](#Rf-ptr-ref)。
+**参见**
 
-**参见**: [智能指针的使用](#Rr-summary-smartptrs)的相关讨论。
+* [当“无实参”是有效情形时，优先采用 `T*` 而不是 `T&`](#Rf-ptr-ref)
+* [智能指针规则概述](#Rr-summary-smartptrs)
 
 ##### 强制实施
 
@@ -3105,7 +3109,7 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
     pair<istream&, string> get_string(istream& is);  // 不建议这样做
     {
         string s;
-        cin >> s;
+        is >> s;
         return {is, s};
     }
 
@@ -3192,7 +3196,7 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
 
 **再者**: 应当假定从指向 `T` 的智能指针（比如 `unique_ptr<T>`）中获得的 `T*`是指向单个元素的。
 
-**参见**: [支持程序库](#S-gsl)。
+**参见**: [支持程序库](#S-gsl)
 
 ##### 强制实施
 
@@ -3214,7 +3218,7 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
 
     int length(Record* p);
 
-当调用 `length(p)` 时，我应该先测试 `p == nullptr` 吗？是不是应当由 `length()` 的实现来测试 `p == nullptr`？
+当调用 `length(p)` 时，我应该先检查 `p` 是否为 `nullptr` 吗？是不是应当由 `length()` 的实现来检查 `p` 是否为 `nullptr`？
 
     // 确保 p != nullptr 是调用者的任务
     int length(not_null<Record*> p);
@@ -3282,7 +3286,7 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
 
 把一个 `span` 对象作为参数传递的效率完全等同于传递一对儿指针参数或者传递一个指针和一个整数计数值。
 
-**参见**: [支持程序库](#S-gsl)。
+**参见**: [支持程序库](#S-gsl)
 
 ##### 强制实施
 
@@ -3301,7 +3305,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
     int length(const char* p);
 
-当调用 `length(s)` 时，我应该先测试 `s == nullptr` 吗？是不是应当由 `length()` 的实现来测试 `p == nullptr`？
+当调用 `length(p)` 时，我应该先检查 `p` 是否为 `nullptr` 吗？是不是应当由 `length()` 的实现来检查 `p` 是否为 `nullptr`？
 
     // length() 的实现者必须假定可能出现 p == nullptr
     int length(zstring p);
@@ -3313,7 +3317,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 `zstring` 不含有所有权。
 
-**参见**: [支持程序库](#S-gsl)。
+**参见**: [支持程序库](#S-gsl)
 
 ### <a name="Rf-unique_ptr"></a>F.26: 当需要指针时，用 `unique_ptr<T>` 来传递所有权
 
@@ -3321,7 +3325,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 使用 `unique_ptr` 是安全地传递指针的最廉价的方式。
 
-关于何时从一个工厂中返回 `shared_ptr`，另见 [C.50](#Rc-factory)。
+**参见**：[C.50](#Rc-factory)关于何时从一个工厂中返回 `shared_ptr`。
 
 ##### 示例
 
@@ -3389,7 +3393,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
     string zstring_to_string(zstring p) // zstring 就是 char*; 这是一个 C 风格的字符串
     {
-        if (p == nullptr) return string{};    // p 可能为 nullptr; 别忘了要检查
+        if (!p) return string{};    // p 可能为 nullptr; 别忘了要检查
         return string{p};
     }
 
@@ -3422,7 +3426,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
     Node* find(Node* t, const string& s)  // 在 Node 组成的二叉树中寻找 s
     {
-        if (t == nullptr || t->name == s) return t;
+        if (!t || t->name == s) return t;
         if ((auto p = find(t->left, s))) return p;
         if ((auto p = find(t->right, s))) return p;
         return nullptr;
@@ -3440,7 +3444,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 不要返回指向某个不在调用方的作用域中的东西的指针；参见 [F.43](#Rf-dangle)。
 
-**参见**: [有关如何避免悬挂指针的讨论](#???)。
+**参见**: [有关如何避免悬挂指针的讨论](#???)
 
 ##### 强制实施
 
@@ -3999,10 +4003,12 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 因此，类的定义者必然提供构造函数且必须明确其含义。
 这就相当于表示该定义者需要定义一种不变式。
 
-* 另见：[把带有私有数据的类定义为 `class`](#Rc-class)。
-* 另见：[优先将接口部分放在类的开头](#Rl-order)。
-* 另见：[使成员的暴露最小化](#Rc-private)。
-* 另见：[避免 `protected` 数据](#Rh-protected)。
+**参见**：
+
+* [把带有私有数据的类定义为 `class`](#Rc-class)
+* [优先将接口部分放在类的开头](#Rl-order)
+* [使成员的暴露最小化](#Rc-private)
+* [避免 `protected` 数据](#Rh-protected)
 
 ##### 强制实施
 
@@ -4079,8 +4085,9 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 一个重载集合中的一些成员可能不会直接访问 `private` 数据：
 
     class Foobar {
-        void foo(int x)    { /* 操作 private 数据 */ }
-        void foo(double x) { foo(std::round(x)); }
+    public:
+        void foo(long x)    { /* 操作 private 数据 */ }
+        void foo(double x) { foo(std::lround(x)); }
         // ...
     private:
         // ...
@@ -4407,7 +4414,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 * [C.40: 如果类具有不变式，请为其定义构造函数](#Rc-ctor)
 * [C.41: 构造函数应当创建经过完整初始化的对象](#Rc-complete)
 * [C.42: 当构造函数无法构造有效对象时，应当抛出异常](#Rc-throw)
-* [C.43: 保证值类型类带有默认构造函数](#Rc-default0)
+* [C.43: 保证可复制（值类型）类带有默认构造函数](#Rc-default0)
 * [C.44: 尽量让默认构造函数简单且不抛出异常](#Rc-default00)
 * [C.45: 不要定义仅对数据成员进行初始化的默认构造函数；应当使用成员初始化式](#Rc-default)
 * [C.46: 默认情况下，把单参数的构造函数声明为 `explicit`](#Rc-explicit)
@@ -4480,7 +4487,21 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 ##### 理由
 
-特殊函数的语义互相之间是紧密相关的，一旦其中一个不能采用预置定义，其他的就也需要进行修改。
+*特殊成员函数*包括默认构造函数、复制构造函数，
+复制赋值运算符，移动构造函数，移动赋值运算符，以及
+析构函数。
+
+特殊函数的语义互相之间是紧密相关的，一旦需要声明其中一个，麻烦的是其他的也需要予以考虑。
+
+声明除了默认构造函数之外的任何特殊成员函数，
+即便是声明为 `=default` 或 `=delete`，也将会抑制掉
+移动构造函数和移动赋值运算符的隐式声明。
+而声明移动构造函数或移动赋值运算符，
+即便是声明为 `=default` 或 `=delete`，也将会导致隐式生成的复制构造函数
+或隐式生成的复制赋值运算符被定义为弃置的。
+因此，只要声明了任何一个特殊函数，就应当将
+其他全部都予以声明，以避免出现预期外的效果，比如将所有潜在的移动
+都变成了更昂贵的复制操作，或者使类变为只能移动的。
 
 ##### 示例，不好
 
@@ -4512,6 +4533,39 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 如果想保持默认操作的缺省实现（当定义了别的默认操作时），请写下 `=default` 以表明对这个函数是特意这样做的。
 如果不想要一个默认操作，可以用 `=delete` 来抑制它。
+
+##### 示例，好
+
+如果要声明析构函数仅是为了使其为 `virtual` 的话，
+可将其定义为预置的。为避免抑制隐式的移动操作，
+它们也都要进行声明，而且为了避免类成为只能移动
+（而无法复制）的，其复制操作也都需要进行声明：
+
+    class AbstractBase {
+    public:
+      virtual ~AbstractBase() = default;
+      AbstractBase(const AbstractBase&) = default;
+      AbstractBase& operator=(const AbstractBase&) = default;
+      AbstractBase(AbstractBase&&) = default;
+      AbstractBase& operator=(AbstractBase&&) = default;
+    };
+
+另外，为避免发生如 [C.67](#Rc-copy-virtual) 所说的切片，
+其复制和移动操作可以都被弃置：
+
+    class ClonableBase {
+    public:
+      virtual unique_ptr<ClonableBase> clone() const;
+      virtual ~ClonableBase() = default;
+      ClonableBase(const ClonableBase&) = delete;
+      ClonableBase& operator=(const ClonableBase&) = delete;
+      ClonableBase(ClonableBase&&) = delete;
+      ClonableBase& operator=(ClonableBase&&) = delete;
+    };
+
+这里仅定义移动操作或者进定义复制操作也可以具有
+相同效果，但明确说明每个特殊成员的意图，
+可使其对读者更加易于理解。
 
 ##### 注解
 
@@ -5020,7 +5074,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         X2(const string& name)
             :f{fopen(name.c_str(), "r")}
         {
-            if (f == nullptr) throw runtime_error{"could not open" + name};
+            if (!f) throw runtime_error{"could not open" + name};
             // ...
         }
 
@@ -5094,17 +5148,16 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 ???
 
-### <a name="Rc-default0"></a>C.43: 保证值类型类带有默认构造函数
+### <a name="Rc-default0"></a>C.43: 保证可复制（值类型）类带有默认构造函数
 
 ##### 理由
 
 许多的语言和程序库设施都依赖于默认构造函数来初始化其各个元素，比如 `T a[10]` 和 `std::vector<T> v(10)`。
-默认构造函数通常会简化定义一个适当的[移动遗留状态](#???)的任务。
+对于同时是可复制的类型来说，默认构造函数通常会简化定义一个适当的[移动遗留状态](#???)的任务。
 
 ##### 注解
 
-我们（尚）未正式定义[值类型](#SS-concrete)，不过可将其看作一个与 `int` 行为非常相似的类：
-它可以用 `=` 进行复制，通常也可以用 `==` 进行比较。
+[值类型](#SS-concrete)，是可以复制（且通常也可以比较）的类型。
 这与 [EoP](http://elementsofprogramming.com/) 和 [Palo Alto TR](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3351.pdf) 中的正规（Regular）类型紧密相关。
 
 ##### 示例
@@ -5176,41 +5229,47 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         int i {};   // 默认初始化（为 0）
     };
 
-##### 示例
-
-许多类本来就没有合理的默认值。
-
-设计仅用于作为基类的类不需要默认构造函数，因为它自身是无法构造的：
-
-    struct Shape {  // 纯接口：所有成员都是纯虚函数
-            void draw() = 0;
-            void rotate(int) = 0;
-            // ...
-    };
-
-必须在构造过程中获取资源的类
-
-    lock_guard g {mx};  // 防卫 mutex mx
-    lock_guard g2;      // 错误：不防卫任何东西
-
 ##### 注解
 
-带有必须由其成员函数或者其用户进行特殊处理的“特殊状态”的类，会带来额外的工作量，
-（而且很可能有更多的错误）。例如
+缺乏合理的默认构造的类，通常也都不是可以复制的，因此它们并不受本条指导方针所限。
 
+例如，基类就不是值类型（基类不能进行复制），且因而并不需要一个默认构造函数：
+
+    // Shape 是个抽象基类，而不是可复制的值类型
+    // 它可以有也可以没有默认构造函数。
+    struct Shape {
+        virtual void draw() = 0;
+        virtual void rotate(int) = 0;
+        // =delete 复制/移动函数
+        // ...
+    };
+
+必须在构造过程中获取有调用方提供的资源的类，通常无法提供默认构造函数，但它们并不受本条指导方针所限，因为这样的类通常也不是可复制的：
+
+    // std::lock_guard 不是可复制的值类型。
+    // 它没有默认构造函数。
+    lock_guard g {mx};  // 护卫 mutex mx
+    lock_guard g2;      // 错误：不护卫任何东西
+
+带有必须由其成员函数或者其用户进行特殊处理的“特殊状态”的类，会带来额外的工作量，
+（而且很可能有更多的错误）。这样的类型物理其是否可以复制，都可以以这个特殊状态作为其默认构造的值：
+
+    // std::ofstream 不是可复制的值类型。
+    // 它刚好有一个默认构造函数，
+    // 并带来一种特殊的“未打开”状态。
     ofstream out {"Foobar"};
     // ...
     out << log(time, transaction);
 
-如果 `Foobar` 无法为写入打开，而 `out` 并未设置为错误时抛出异常，则输出操作将成为空操作。
-实现必须当心这种情况，而用户则必须记得测试成功状态。
+一些类似的可复制的具有特殊状态的类型，比如具有特殊状态“==nullptr”的可复制的智能指针，也应该以该特殊状态作为其默认构造的值。
 
-指针，即便是智能指针，可以不指向任何东西（空指针），也是这种情况的例子。
-提供默认构造函数并不是万灵药；理想情况下它应当为一个有意义的状态，比如 `std::string` 的 `""` 和 `std::vector` 的 `{}`。
+不过，为有意义的状态提供默认构造函数（比如 `std::string` 的 `""` 和 `std::vector` 的 `{}`），也是推荐的做法。
 
 ##### 强制实施
 
-* 对于可用 `=` 进行复制或可用 `==` 进行比较的类，若没有默认构造函数则对其进行标记。
+* 对于可用 `=` 进行复制的类，若没有默认构造函数则对其进行标记。
+* 对于可用 `==` 进行比较但不可复制的类进行标记。
+
 
 ### <a name="Rc-default00"></a>C.44: 尽量让默认构造函数简单且不抛出异常
 
@@ -5320,7 +5379,11 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
     Complex z = 10.7;   // 无意外的转换
 
-**参见**: [有关隐式转换的讨论](#Ro-conversion)。
+**参见**: [有关隐式转换的讨论](#Ro-conversion)
+
+##### 注解
+
+不应当将复制和移动构造函数作为显式的，因为它们并不进行转换。显式的复制/移动构造函数会把按值传递和返回变麻烦。
 
 ##### 强制实施
 
@@ -6709,7 +6772,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
         virtual void redraw();
 
         // ...
-    public:
+    private:
         Point cent;
         Color col;
     };
@@ -8656,7 +8719,7 @@ C++ 语言确保的构造函数/析构函数对称性，反映了资源的获取
 
 一旦发现一个“表现不良”的资源并未以带有析构函数的类来表示，就用一个类来包装它，或者使用 [`finally`](#Re-finally)。
 
-**参见**: [RAII](#Rr-raii)。
+**参见**: [RAII](#Rr-raii)
 
 ### <a name="Rr-use-ptr"></a>R.2: 接口中的原生指针（仅）代表个体对象
 
@@ -10171,7 +10234,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
     int i2 = 0;   // 更好
     // ...
-    cin >> i;
+    cin >> i2;
 
 优秀的优化器应当能够识别输入操作并消除这种多余的操作。
 
@@ -10506,7 +10569,7 @@ C++17 的规则多少会少些意外：
 ##### 示例，不好
 
     widget x;   // 应当为 const, 不过:
-    for (auto i = 2; i <= N; ++i) {             // 这是由 x 的
+    for (auto i = 2; i <= N; ++i) {          // 这是由 x 的
         x += some_obj.do_something_with(i);  // 初始化所需的
     }                                        // 一段任意长的代码
     // 自此开始，x 应当为 const，不过我们无法在这种风格的代码中做到这点
@@ -10642,7 +10705,7 @@ C++17 的规则多少会少些意外：
         for (;;) {
             // 将下一个变量看作 char*；没有检查：经过伪装的强制转换
             char* p = va_arg(ap, char*);
-            if (p == nullptr) break;
+            if (!p) break;
             cerr << p << ' ';
         }
 
@@ -10846,13 +10909,13 @@ C++17 收紧了有关求值顺序的规则
 
     void f(span<int> a) // 好多了：函数声明中使用了 span
     {
-        if (a.length() < 2) return;
+        if (a.size() < 2) return;
 
         int n = a[0];      // OK
 
         span<int> q = a.subspan(1); // OK
 
-        if (a.length() < 6) return;
+        if (a.size() < 6) return;
 
         a[4] = 1;          // OK
 
@@ -10989,8 +11052,8 @@ C++17 收紧了有关求值顺序的规则
         int a[5];
         span<int> av = a;
 
-        g(av.data(), av.length());   // OK, 如果没有其他选择的话
-        g1(a);                       // OK - 这里没有衰变，而是使用了隐式的 span 构造函数
+        g(av.data(), av.size());   // OK, 如果没有其他选择的话
+        g1(a);                     // OK - 这里没有衰变，而是使用了隐式的 span 构造函数
     }
 
 ##### 强制实施
@@ -11611,7 +11674,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 `...` 部分中的代码可能导致 `delete` 永远不会发生。
 
-**参见**: [R: 资源管理](#S-resource)。
+**参见**: [R: 资源管理](#S-resource)
 
 ##### 强制实施
 
@@ -11809,7 +11872,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 这需要良好的编码风格，程序库支持，以及静态分析来消除违反情况而不耗费大量开销。
 这正是[C++'s resource- and type-safety model](#Stroustrup15)中所讨论的主要部分。
 
-另请参见
+**参见**：
 
 * 使用 [RAII](#Rr-raii) 以避免生存期问题。
 * 使用 [unique_ptr](#Rf-unique_ptr) 以避免生存期问题。
@@ -11865,7 +11928,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
     void f1(int* p) // 处理 nullptr
     {
-        if (p == nullptr) {
+        if (!p) {
             // 处理 nullptr（分配，返回，抛出，使 p 指向什么，等等
         }
         int x = *p;
@@ -11880,7 +11943,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
     void f2(int* p) // 声称 p 不应当为 nullptr
     {
-        Assert(p != nullptr);
+        Assert(p);
         int x = *p;
     }
 
@@ -11888,7 +11951,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 当 C++ 出现契约的直接支持后，还可以做的更好：
 
     void f3(int* p) // 声称 p 不应当为 nullptr
-        [[expects: p != nullptr]]
+        [[expects: p]]
     {
         int x = *p;
     }
@@ -12501,7 +12564,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
     // 这些都表示“当 `p` 为 `nullptr` 时”
     if (!p) { ... }           // 好
-    if (p == 0) { ... }       // `!=0` 是多余的；不好：不要对指针用 `0`
+    if (p == 0) { ... }       // `==0` 是多余的；不好：不要对指针用 `0`
     if (p == nullptr) { ... } // `==nullptr` 是多余的，不建议如此
 
 ##### 强制实施
@@ -13031,7 +13094,7 @@ href="#Rper-Knuth">Per.2</a>。）
 
 这里，我们利用了编译器关于数组大小，元素类型，以及如何对 `double` 进行比较的知识。
 
-而以 C++11 加上[概念](#???)的话，我还可以做得更好：
+而以 C++11 加上[概念](#SS-concepts)的话，我还可以做得更好：
 
     // Sortable 指定了 c 必须是一个
     // 可以用 < 进行比较的元素的随机访问序列
@@ -13354,7 +13417,7 @@ C++11 引入了许多核心并发原语，C++14 对它们进行了改进，
 * [CP.8: 不要为同步而使用 `volatile`](#Rconc-volatile)
 * [CP.9: 只要可行，就使用工具对并发代码进行验证](#Rconc-tools)
 
-参见：
+**参见**：
 
 * [CP.con: 并发](#SScp-con)
 * [CP.par: 并行](#SScp-par)
@@ -13534,7 +13597,7 @@ C++11 引入了许多核心并发原语，C++14 对它们进行了改进，
 
 不可变数据可以安全并高效地共享。
 无须对其进行锁定：不可能在常量上发生数据竞争。
-另请参见[CP.mess: 消息传递](#SScp-mess)和[CP.31: 优先采用按值传递](#C#Rconc-data-by-value)。
+另请参见[CP.mess: 消息传递](#SScp-mess)和[CP.31: 优先采用按值传递](#Rconc-data-by-value)。
 
 ##### 强制实施
 
@@ -13685,7 +13748,7 @@ C++ 对此的机制是 `atomic` 类型：
 * [CP.42: 不要无条件地 `wait`](#Rconc-wait)
 * [CP.43: 最小化临界区的时间耗费](#Rconc-time)
 * [CP.44: 记得为 `lock_guard` 和 `unique_lock` 命名](#Rconc-name)
-* [CP.50: `mutex` 要和其所保护的数据一起定义](#Rconc-mutex)
+* [CP.50: `mutex` 要和其所护卫的数据一起定义。一旦可能就使用 `synchronized_value<T>`](#Rconc-mutex)
 * ??? 何时使用 spinlock
 * ??? 何时使用 `try_lock()`
 * ??? 何时应优先使用 `lock_guard` 而不是 `unique_lock`
@@ -14325,7 +14388,7 @@ C++ 对此的机制是 `atomic` 类型：
 
 
 
-### <a name="Rconc-mutex"></a>P.50: `mutex` 要和其所保护的数据一起定义，只要可能就使用 `synchronized_value<T>`
+### <a name="Rconc-mutex"></a>CP.50: `mutex` 要和其所保护的数据一起定义，只要可能就使用 `synchronized_value<T>`
 
 ##### 理由
 
@@ -15006,7 +15069,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 显然这样做增加了代码大小，不允许隐式的“异常”（`valid()` 检查）传播，而且 `valid()` 检查可能被忘掉。
 优先采用异常。
 
-**参见**: [`noexcept` 的用法](#Se-noexcept)。
+**参见**: [`noexcept` 的用法](#Se-noexcept)
 
 ##### 强制实施
 
@@ -15018,7 +15081,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
 避免接口错误。
 
-**参见**: [前条件规则](#Ri-pre)。
+**参见**: [前条件规则](#Ri-pre)
 
 ### <a name="Re-postcondition"></a>E.8: 明示后条件
 
@@ -15026,7 +15089,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
 避免接口错误。
 
-**参见**: [后条件规则](#Ri-post)。
+**参见**: [后条件规则](#Ri-post)
 
 ### <a name="Re-noexcept"></a>E.12: 当函数不可能或不能接受以 `throw` 来退出时，使用 `noexcept`
 
@@ -15129,7 +15192,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
             my_code();
             // ...
         }
-        catch(Bufferpool_exhausted) {
+        catch(const Bufferpool_exhausted&) {
             // ...
         }
     }
@@ -15175,7 +15238,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
             my_code();
             // ...
         }
-        catch(runtime_error) {   // runtime_error 的含义是“输入缓冲区太小”
+        catch(const runtime_error&) {   // runtime_error 的含义是“输入缓冲区太小”
             // ...
         }
     }
@@ -15213,6 +15276,10 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
     catch (const exception& e) { /* ... */ }
 
 大多数处理器并不会改动异常，一般情况下我们都会[建议使用 `const`](#Res-const)。
+
+##### 注解
+
+重新抛出已捕获的异常应当使用 `throw;` 而非 `throw e;`。使用 `throw e;` 将会抛出 `e` 的一个新副本（并切片成静态类型 `std::exception`），而并非重新抛出原来的 `std::runtime_error` 类型的异常。（但请关注[请勿试图在每个函数中捕获所有的异常](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Re-not-always)，以及[尽可能减少 `try`/`catch` 的显式使用](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Re-catch)。)
 
 ##### 强制实施
 
@@ -15416,7 +15483,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
 显然问题现在变成了调用者必须记得测试其返回值。
 
-**参见**: [讨论](#Sd-???)。
+**参见**: [讨论](#Sd-???)
 
 ##### 强制实施
 
@@ -15428,7 +15495,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
 如果你无法做好错误恢复的话，至少你可以在发生更多后续的损害之前拜托出来。
 
-参见 [模拟 RAII](#Re-no-throw-raii)。
+**参见**：[模拟 RAII](#Re-no-throw-raii)
 
 ##### 注解
 
@@ -15446,7 +15513,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
     {
         // ...
         p = static_cast<X*>(malloc(n, X));
-        if (p == nullptr) abort();     // 当内存耗尽时 abort
+        if (!p) abort();     // 当内存耗尽时 abort
         // ...
     }
 
@@ -15471,7 +15538,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
 系统化地使用任何错误处理策略都能最小化忘记处理错误的机会。
 
-参见 [模拟 RAII](#Re-no-throw-raii)。
+**参见**：[模拟 RAII](#Re-no-throw-raii)
 
 ##### 注解
 
@@ -15615,9 +15682,9 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
 我们[优先采用基于异常的错误处理](#Re-throw)，并建议[保持函数短小](#Rf-single)。
 
-**参见**: [讨论](#Sd-???)。
+**参见**: [讨论](#Sd-???)
 
-**参见**: [返回多个值](#Rf-out-multi)。
+**参见**: [返回多个值](#Rf-out-multi)
 
 ##### 强制实施
 
@@ -15630,7 +15697,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 全局状态难于管理，且易于忘记检查。
 你上次检查 `printf()` 的返回值是什么时候了？
 
-参见 [模拟 RAII](#Re-no-throw-raii)。
+**参见**：[模拟 RAII](#Re-no-throw-raii)
 
 ##### 示例，不好
 
@@ -15831,7 +15898,7 @@ C 风格的错误处理就是基于全局变量 `errno` 的，因此基本上不
 由类负责确保这样的改动仅当根据其语义（不变式）对于其用户有意义时
 才会发生。
 
-另见 [PImpl](#Ri-pimpl)。
+**参见**：[PImpl](#Ri-pimpl)
 
 ##### 强制实施
 
@@ -17153,7 +17220,8 @@ Lambda 会生成函数对象。
 让模板仅对其参数进行操作是一种把依赖减到最少的方式，但通常这是很难做到的。
 比如说，一个算法通常会使用其他的算法，并且调用一些并非仅在参数上做动作的一些操作。
 而且别再让我们从宏开始干活！
-参见 [T.69](#Rt-customization)。
+
+**参见**：[T.69](#Rt-customization)。
 
 ##### 强制实施
 
@@ -18044,7 +18112,7 @@ C 规则概览：
 
 * [CPL.1: 优先使用 C++ 而不是 C](#Rcpl-C)
 * [CPL.2: 当一定要用 C 时，应使用 C 和 C++ 的公共子集，并将 C 代码以 C++ 来编译](#Rcpl-subset)
-* [CPL.3: 当一定要用 C 来作为接口时，应在使用这些接口的代码中使用 C++](#Rcpl-interface)
+* [CPL.3: 当一定要用 C 来作为接口时，应在使用这些接口的调用方代码中使用 C++](#Rcpl-interface)
 
 ### <a name="Rcpl-C"></a>CPL.1: 优先使用 C++ 而不是 C
 
@@ -18293,9 +18361,12 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
 * 这只能对单个文件（在单个层次上）工作：如果采用这个技巧的头文件被别的头文件所包含，这个威胁就会再次出现。
 * 命名空间（一个“实现命名空间”）可以针对许多的上下文依赖进行保护。
-* 完全的保护和灵活性需要[模块](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4592.pdf)。
-[另见](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0141r0.pdf)。
+* 完全的保护和灵活性需要模块。
 
+**参见**：
+
+* [工作草案，C++ 的模块扩展](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/n4592.pdf)
+* [模块，组件化及其迁移](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0141r0.pdf)
 
 ##### 强制实施
 
@@ -18829,7 +18900,7 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 这一部分主要尝试澄清 `std::string` 和 `char*`、`zstring`、`string_view` 和 `gsl::string_span` 之间的关系。
 有关非 ASCII 字符集和编码的重要问题（比如 `wchar_t`，Unicode，以及 UTF-8 等）将在别处讨论。
 
-另见[正则表达式](#SS-regex)。
+**参见**：[正则表达式](#SS-regex)
 
 在这里，我们用“字符序列”或“字符串”来代表（终将）作为文本来读取的字符序列。
 We don't consider
@@ -18846,7 +18917,7 @@ We don't consider
 * [SL.str.11: 当需要改动字符串时，使用 `gsl::string_span` 而不是 `std::string_view`](#Rstr-span)
 * [SL.str.12: 为作为标准库的 `string` 类型的字符串字面量使用后缀 `s`](#Rstr-s)
 
-另见
+**参见**：
 
 * [F.24 span](#Rf-range)
 * [F.25 zstring](#Rf-zstring)
@@ -19429,7 +19500,7 @@ C 标准库规则概览：
 
     int index(const char* p)
     {
-        if (p == nullptr) return -1;  // 错误指标：替代方案是 "throw nullptr_error{}"
+        if (!p) return -1;  // 错误指标：替代方案是 "throw nullptr_error{}"
         // ... 进行查找以找出 p 的索引
         return i;
     }
@@ -19439,7 +19510,7 @@ C 标准库规则概览：
     int index2(const char* p)
     {
         int i;
-        if (p == nullptr)
+        if (!p)
             i = -1;  // 错误指标
         else {
             // ... 进行查找以找出 p 的索引
@@ -20022,7 +20093,7 @@ GSL 组件概览：
 现在这些断言还是宏（天呐！）而且必须（只）被用在函数定义式之内。
 等待标准委员会对于契约和断言语法的确定。
 参见使用属性语法的[契约提案](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0380r1.pdf)，
-比如说，`Expects(p != nullptr)` 将变为 `[[expects: p != nullptr]]`。
+比如说，`Expects(p)` 将变为 `[[expects: p]]`。
 
 ## <a name="SS-utilities"></a>GSL.util: 工具
 
@@ -21331,7 +21402,9 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 ##### 理由
 
-简化代码并消除一种进行显式内存管理的需要。将对象递交给外围作用域，由此扩展其生存期。参见 [F.20，有关“输出（Out）”值的一般条款](#Rf-out)。
+简化代码并消除一种进行显式内存管理的需要。将对象递交给外围作用域，由此扩展其生存期。
+
+**参见**：[F.20，有关“输出（Out）”值的一般条款](#Rf-out)
 
 ##### 示例
 
