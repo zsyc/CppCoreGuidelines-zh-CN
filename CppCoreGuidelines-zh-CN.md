@@ -5070,7 +5070,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 ##### 示例
 
     class X2 {
-        FILE* f;   // 在任何其他函数之前应当调用 init()
+        FILE* f;
         // ...
     public:
         X2(const string& name)
@@ -5094,7 +5094,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 ##### 示例，不好
 
     class X3 {     // 不好: 构造函数留下了无效的对象
-        FILE* f;   // 在任何其他函数之前应当调用 init()
+        FILE* f;   // 在任何其他函数之前应当调用 is_valid()
         bool valid;
         // ...
     public:
@@ -5296,7 +5296,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 这段代码很不错而且通用，不过在发生错误之后把一个 `Vector0` 进行置空会涉及一次分配，而它是可能失败的。
 而且把默认的 `Vector` 表示为 `{new T[0], 0, 0}` 也比较浪费。
-比如说，`Vector0 v(100)` 会耗费 100 次分配操作。
+比如说，`Vector0<int> v[100]` 会耗费 100 次分配操作。
 
 ##### 示例
 
@@ -12677,7 +12677,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     for (int i = 0; i < 10; ++i) a[i] = i;
     vector<int> v(10);
     // 比较有符号和无符号数；有些编译器会警告，但我们不能警告
-    for (gsl::index i = 0; v.size() < 10; ++i) v[i] = i;
+    for (gsl::index i = 0; i < v.size(); ++i) v[i] = i;
 
     int a2[-2];         // 错误：负的大小
 
@@ -19179,13 +19179,13 @@ C++17
 
     auto pp1 = make_pair("Tokyo", 9.00);         // {C 风格字符串,double} 有意如此？
     pair<string, double> pp2 = {"Tokyo", 9.00};  // 稍微啰嗦
-    auto pp3 = make_pair("Tokyo"s, 9.00);        // {std::string,double}    // C++17
+    auto pp3 = make_pair("Tokyo"s, 9.00);        // {std::string,double}    // C++14
     pair pp4 = {"Tokyo"s, 9.00};                 // {std::string,double}    // C++17
 
 
 ##### 注解
 
-C++17
+C++14
 
 ##### 强制实施
 
