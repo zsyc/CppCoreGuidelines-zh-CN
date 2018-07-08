@@ -13200,7 +13200,8 @@ href="#Rper-Knuth">Per.2</a>。）
     template <class ForwardIterator, class T>
     ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T& val);
 
-`lower_bound` 返回第一个匹配元素（如果有）的迭代器，否则为 `last`。
+`lower_bound` 返回第一个匹配元素（如果有）的迭代器，否则返回第一个大于 `val` 的元素的迭代器，
+找不到这样的元素时，返回 `last`。
 
 不过 `lower_bound` 还是无法为所有用法返回足够的信息，因此标准库还提供了
 
