@@ -2316,6 +2316,7 @@ GCC 6.1 及其后版本支持概念。
 * [F.45: 不要返回 `T&&`](#Rf-return-ref-ref)
 * [F.46: `int` 是 `main()` 的返回类型](#Rf-main)
 * [F.47: 赋值运算符返回 `T&`](#Rf-assignment-op)
+* [F.48: 不要用 `return std::move(local)`](#Rf-return-move-local)
 
 其他函数规则：
 
@@ -3690,6 +3691,34 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 应当通过工具对所有赋值运算符的返回类型（和返回值）进行检查
 来强制实施。
+
+
+### <a name="Rf-return-move-local"></a>F.48: 不要用 `return std::move(local)`
+
+##### 理由
+
+有了保证拷贝省略，现在返回语句中明确使用 `std::move` 几乎总是差的实践。
+
+##### 示例，不好
+
+    S f()
+    {
+      S result;
+      return std::move(result);
+    }
+
+##### 示例，好
+
+    S f()
+    {
+      S result;
+      return result;
+    }
+
+##### 强制实施
+
+应当通过工具对返回语句进行检查来强制实施。
+
 
 ### <a name="Rf-capture-vs-overload"></a>F.50: 当函数不适用时（不能俘获局部变量，或者不能编写局部函数），就使用 Lambda
 
