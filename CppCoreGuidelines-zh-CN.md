@@ -1316,6 +1316,10 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 **参见**: 另见[关于调用函数的规则](#SS-call)。
 
+#### 注解
+
+这条规则是“避免”，不是“不要用”。当然偶尔有例外，比如 `cin`、`cout`、和 `cerr`。
+
 ##### 强制实施
 
 【简单】 报告所有在命名空间作用域中声明的非 `const` 变量。
@@ -19936,7 +19940,7 @@ CppCon 的展示的幻灯片是可以获得的（其链接，还有上传的视�
 
 类型安全性剖面配置概览：
 
-* <a name="Pro-type-avoidcasts"></a>Type.1: [避免强制转换](#Res-casts)： 
+* <a name="Pro-type-avoidcasts"></a>Type.1: [避免强制转换](#Res-casts)：
 <a name="Pro-type-reinterpretcast">a. </a>请勿使用 `reinterpret_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。  
 <a name="Pro-type-arithmeticcast">b. </a>请勿在算术类型上使用 `static_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。  
 <a name="Pro-type-identitycast">c. </a>当源指针类型和目标类型相同时，请勿进行指针强制转换；此为[避免强制转换](#Res-casts)的严格的版本。  
