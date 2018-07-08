@@ -8600,9 +8600,9 @@ C++17 引入了一个独立类型 `std::byte` 以支持在原始对象表示上�
     enum class Direction : char { n, s, e, w,
                                   ne, nw, se, sw };  // 底层类型可以节省空间
 
-    enum class Web_color : int { red   = 0xFF0000,
-                                 green = 0x00FF00,
-                                 blue  = 0x0000FF };  // 底层类型是多余的
+    enum class Web_color : int32_t { red   = 0xFF0000,
+                                     green = 0x00FF00,
+                                     blue  = 0x0000FF };  // 底层类型是多余的
 
 ##### 注解
 
