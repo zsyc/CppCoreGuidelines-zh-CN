@@ -14171,12 +14171,12 @@ C++ 对此的机制是 `atomic` 类型：
 ##### 示例
 
     string modify1(string);
-    void modify2(shared_ptr<string>);
+    void modify2(string&);
 
     void fct(string& s)
     {
         auto res = async(modify1, s);
-        async(modify2, &s);
+        async(modify2, s);
     }
 
 `modify1` 的调用涉及两个 `string` 值的复制；而 `modify2` 的调用则不会。
