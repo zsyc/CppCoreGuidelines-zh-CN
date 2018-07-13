@@ -1316,6 +1316,10 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 **参见**: 另见[关于调用函数的规则](#SS-call)。
 
+#### 注解
+
+这条规则是“避免”，不是“不要用”。当然偶尔有例外，比如 `cin`、`cout`、和 `cerr`。
+
 ##### 强制实施
 
 【简单】 报告所有在命名空间作用域中声明的非 `const` 变量。
@@ -2125,6 +2129,8 @@ GCC 6.1 及其后版本支持概念。
         virtual void rotate(int) = 0;
         // ...
         // ... 没有数据成员 ...
+        // ...
+        virtual ~Shape() = default;        
     };
 
 ##### 强制实施
@@ -2292,7 +2298,7 @@ GCC 6.1 及其后版本支持概念。
 * [F.18: 对于“将被移动（will-move-from）”参数，按 `X&&` 进行传递并对参数 `std::move`](#Rf-consume)
 * [F.19: 对于“转发（forward）”参数，按 `TP&&` 进行传递并只对参数 `std::forward`](#Rf-forward)
 * [F.20: 对于“输出（out）”值，采用返回值优先于输出参数](#Rf-out)
-* [F.21: 要返回多个“输出”值，优先返回元组（tuple）或结构体](#Rf-out-multi)
+* [F.21: 要返回多个“输出”值，优先返回结构体或元组（tuple）](#Rf-out-multi)
 * [F.60: 当“没有参数”是有效的选项时，采用 `T*` 优先于 `T&`](#Rf-ptr-ref)
 
 参数传递语义的规则：
@@ -2312,6 +2318,7 @@ GCC 6.1 及其后版本支持概念。
 * [F.45: 不要返回 `T&&`](#Rf-return-ref-ref)
 * [F.46: `int` 是 `main()` 的返回类型](#Rf-main)
 * [F.47: 赋值运算符返回 `T&`](#Rf-assignment-op)
+* [F.48: 不要用 `return std::move(local)`](#Rf-return-move-local)
 
 其他函数规则：
 
@@ -3040,13 +3047,14 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
 * 对于指代非 `const` 的引用参数，如果其被写入之前未进行过读取，而且其类型能够廉价地返回，则标记它们；它们应当是“输入”的返回值。
 * 标记 `const` 返回值。修正方法：移除 `const` 使其变为返回非 `const` 值。
 
-### <a name="Rf-out-multi"></a>F.21: 要返回多个“输出”值，优先返回元组（tuple）或结构体
+### <a name="Rf-out-multi"></a>F.21: 要返回多个“输出”值，优先返回结构体或元组（tuple）
 
 ##### 理由
 
 返回值是自我说明为“仅输出”值的。
 注意，C++ 是支持多返回值的，按约定使用的是 `tuple`（包括 `pair`），
 并可以在调用点使用 `tie` 以带来更多的便利。
+优先使用命名的结构体,返回值有语义。否则，没有命名的 `tuple` 在通用代码中很有用。
 
 ##### 示例
 
@@ -3686,6 +3694,34 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 应当通过工具对所有赋值运算符的返回类型（和返回值）进行检查
 来强制实施。
+
+
+### <a name="Rf-return-move-local"></a>F.48: 不要用 `return std::move(local)`
+
+##### 理由
+
+有了保证拷贝省略，现在返回语句中明确使用 `std::move` 几乎总是差的实践。
+
+##### 示例，不好
+
+    S f()
+    {
+      S result;
+      return std::move(result);
+    }
+
+##### 示例，好
+
+    S f()
+    {
+      S result;
+      return result;
+    }
+
+##### 强制实施
+
+应当通过工具对返回语句进行检查来强制实施。
+
 
 ### <a name="Rf-capture-vs-overload"></a>F.50: 当函数不适用时（不能俘获局部变量，或者不能编写局部函数），就使用 Lambda
 
@@ -8567,9 +8603,9 @@ C++17 引入了一个独立类型 `std::byte` 以支持在原始对象表示上�
     enum class Direction : char { n, s, e, w,
                                   ne, nw, se, sw };  // 底层类型可以节省空间
 
-    enum class Web_color : int { red   = 0xFF0000,
-                                 green = 0x00FF00,
-                                 blue  = 0x0000FF };  // 底层类型是多余的
+    enum class Web_color : int32_t { red   = 0xFF0000,
+                                     green = 0x00FF00,
+                                     blue  = 0x0000FF };  // 底层类型是多余的
 
 ##### 注解
 
@@ -13164,7 +13200,8 @@ href="#Rper-Knuth">Per.2</a>。）
     template <class ForwardIterator, class T>
     ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last, const T& val);
 
-`lower_bound` 返回第一个匹配元素（如果有）的迭代器，否则为 `last`。
+`lower_bound` 返回第一个匹配元素（如果有）的迭代器，否则返回第一个大于 `val` 的元素的迭代器，
+找不到这样的元素时，返回 `last`。
 
 不过 `lower_bound` 还是无法为所有用法返回足够的信息，因此标准库还提供了
 
@@ -14134,12 +14171,12 @@ C++ 对此的机制是 `atomic` 类型：
 ##### 示例
 
     string modify1(string);
-    void modify2(shared_ptr<string>);
+    void modify2(string&);
 
     void fct(string& s)
     {
         auto res = async(modify1, s);
-        async(modify2, &s);
+        async(modify2, s);
     }
 
 `modify1` 的调用涉及两个 `string` 值的复制；而 `modify2` 的调用则不会。
@@ -14149,7 +14186,7 @@ C++ 对此的机制是 `atomic` 类型：
 基本上所有的代价都在 `thread` 的切换上。如果字符串很长（比如 1,000,000 个字符），对其两次复制
 可能并不是一个好主意。
 
-注意这个论点和 `sync` 并没有任何关系。它同等地适用于任何对采用消息传递
+注意这个论点和 `async` 并没有任何关系。它同等地适用于任何对采用消息传递
 还是共享内存的考虑之上。
 
 ##### 强制实施
@@ -19936,7 +19973,7 @@ CppCon 的展示的幻灯片是可以获得的（其链接，还有上传的视�
 
 类型安全性剖面配置概览：
 
-* <a name="Pro-type-avoidcasts"></a>Type.1: [避免强制转换](#Res-casts)： 
+* <a name="Pro-type-avoidcasts"></a>Type.1: [避免强制转换](#Res-casts)：
 <a name="Pro-type-reinterpretcast">a. </a>请勿使用 `reinterpret_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。  
 <a name="Pro-type-arithmeticcast">b. </a>请勿在算术类型上使用 `static_cast`；此为[避免强制转换](#Res-casts)和[优先使用具名的强制转换](#Res-casts-named)的严格的版本。  
 <a name="Pro-type-identitycast">c. </a>当源指针类型和目标类型相同时，请勿进行指针强制转换；此为[避免强制转换](#Res-casts)的严格的版本。  
@@ -20964,7 +21001,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
 **参考**：
 
-[\[Cline99\]](#Cline99) §22.03-11, [\[Dewhurst03\]](Dewhurst03) §52-53, [\[Koenig97\]](#Koenig97) §4, [\[Lakos96\]](#Lakos96) §10.3.5, [\[Meyers97\]](#Meyers97) §13, [\[Murray93\]](#Murray93) §2.1.3, [\[Sutter00\]](#Sutter00) §47
+[\[Cline99\]](#Cline99) §22.03-11, [\[#Dewhurst03\]](Dewhurst03) §52-53, [\[Koenig97\]](#Koenig97) §4, [\[Lakos96\]](#Lakos96) §10.3.5, [\[Meyers97\]](#Meyers97) §13, [\[Murray93\]](#Murray93) §2.1.3, [\[Sutter00\]](#Sutter00) §47
 
 ### <a name="Sd-init"></a>讨论：使用 `=`，`{}`，和 `()` 作为初始化式
 

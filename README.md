@@ -1,13 +1,13 @@
 #[C++ 核心指南](http://isocpp.github.io/CppCoreGuidelines)
 
->"Within C++ is a smaller, simpler, safer language struggling to get out." 
+>"Within C++ is a smaller, simpler, safer language struggling to get out."
 >-- <cite>Bjarne Stroustrup</cite>
 
 《C++ 核心指南》（The C++ Core Guidelines），与 C++ 语言本身一样，是由 Bjarne Stroustrup 领导的协作项目。
 该指南是许多组织和团体之间耗费了大量人年的探讨和设计的心血成果。它们的设计着眼于普遍的适用性并鼓励广泛采纳，
 但您也可以对其进行随意的复制和修改，以满足您的团体组织自身的需要。
 
-这个指南的目标是帮助人们更有效地利用现代 C++ 语言。所谓“现代”的含义是指 C++11 和 C++14（以及即将到来的 C++17）。
+这个指南的目标是帮助人们更有效地利用现代 C++ 语言。所谓“现代”的含义是指 C++11、C++14 和 C++17）。
 换句话说，如果你从现在开始算起，五年后你的代码看起来是怎么样的？十年呢？
 
 指南所关注的是一些相对比较高层次的问题，比如接口，资源管理，内存管理，以及并发等等。这样的规则会对应用的架构
