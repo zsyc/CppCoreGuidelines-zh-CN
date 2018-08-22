@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2018/4/16
+2018/8/13
 
 
 编辑：
@@ -70,8 +70,8 @@
 * 赋值：
 [正规类型](#Rc-regular) --
 [优先采用初始化](#Rc-initialize) --
-[复制](#Rc-copy-semantics) --
-[移动](#Rc-move-semantics) --
+[复制](#Rc-copy-semantic) --
+[移动](#Rc-move-semantic) --
 [以及其他操作](#Rc-matched) --
 [缺省操作](#Rc-eqdefault)
 * `class`：
@@ -4472,7 +4472,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 * [C.64: 移动操作应当进行移动，并使原对象处于有效状态](#Rc-move-semantic)
 * [C.65: 使移动赋值可以安全进行自赋值](#Rc-move-self)
 * [C.66: 使移动操作 `noexcept`](#Rc-move-noexcept)
-* [C.67: 基类应当抑制复制操作，并在需要复制能力时提供一个虚的 `clone` 函数](#Rc-copy-virtual)
+* [C.67: 多态类应当抑制复制操作](#Rc-copy-virtual)
 
 其他的默认操作规则：
 
@@ -6050,59 +6050,68 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 【简单】 移动操作应当被标为 `noexcept`。
 
-### <a name="Rc-copy-virtual"></a>C.67: 基类应当抑制复制操作，并在需要复制能力时提供一个虚的 `clone` 函数
+### <a name="Rc-copy-virtual"></a>C.67: 多态类应当抑制复制操作
 
 ##### 理由
 
-以防止发生切片，这是由于普通的复制操作只会复制派生类对象的基类部分。
+*多态类*是定义或继承了至少一个虚函数的类。它很可能要被用作其他具有多态行为的派生类的基类。如果不小心将其按值传递了，如果它带有隐式生成的复制构造函数和赋值的话，它就面临发生切片的风险：只会复制派生类对象的基类部分，但将损坏其多态行为。
 
 ##### 示例，不好
 
-    class B { // 不好: 基类并未抑制复制操作
-        int data;
+    class B { // 不好: 多态基类并未抑制复制操作
+    public:
+        virtual char m() { return 'B'; }
         // ... 没有提供复制操作，使用预置实现 ...
     };
 
     class D : public B {
-        string more_data; // 添加一个数据成员
+    public:
+        char m() override { return 'D'; }
         // ...
     };
 
-    auto d = make_unique<D>();
+    void f(B& b) {
+        auto b2 = b; // 啊呀，对象切片了；b2.m() 将返回 'B'
+    }
 
-    // 啊呀，对象切片了；仅获得了 d.data 而丢失了 d.more_data
-    auto b = make_unique<B>(d);
+    D d;
+    f(d);
 
 ##### 示例
 
-    class B { // 好: 基类抑制了复制操作
+    class B { // 好: 多态类抑制了复制操作
     public:
         B(const B&) = delete;
         B& operator=(const B&) = delete;
-        virtual unique_ptr<B> clone() { return /* B 对象 */; }
+        virtual char m() { return 'B'; }
         // ...
     };
 
     class D : public B {
-        string more_data; // 添加一个数据成员
-        unique_ptr<B> clone() override { return /* D 对象 */; }
+    public:
+        char m() override { return 'D'; }
         // ...
     };
 
-    auto d = make_unique<D>();
-    auto b = d.clone(); // ok, 深克隆
+    void f(B& b) {
+        auto b2 = b; // ok，编译器能够检测到不恰当的复制并给出警告
+    }
+
+    D d;
+    f(d);
 
 ##### 注解
 
-返回智能指针是一种好做法，不过和原始指针不同，这种返回类型无法协变（比如说，`D::clone` 不能返回 `unique_ptr<D>`）。请勿据此被诱骗为返回带所有权的原始指针；这相对于由带所有权的智能指针所提供的主要的健壮性优势来说，只不过是次要的小缺点。
+当需要创建多态对象的深拷贝副本时，应当使用 `clone()` 函数：参见 [C.130](#Rh-copy)。
 
 ##### 例外
 
-如果想要协变返回类型的话，请返回 `owner<derived*>`。参见 [C.130](#Rh-copy)。
+表示异常对象的类应当既是多态的，也可以进行复制构造。
 
 ##### 强制实施
 
-带有虚函数的类不应当带有复制构造函数或复制赋值运算符（无论是编译器生成的还是手写的）。
+* 对带有未弃置的复制操作的多态类进行标记。
+* 对多态类对象的赋值操作进行标记。
 
 ## C.other: 默认操作的其他规则
 
@@ -6500,7 +6509,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * [C.127: 带有虚函数的类应当带有虚的或受保护的析构函数](#Rh-dtor)
 * [C.128: 虚函数应当指明 `virtual`、`override`、`final` 三者之一](#Rh-override)
 * [C.129: 当设计类层次时，应区分实现继承和接口继承](#Rh-kind)
-* [C.130: 重新定义或禁止基类的复制操作；优先代之以一个虚 `clone` 函数](#Rh-copy)
+* [C.130: 多态类的深拷贝；优先采用虚函数 `clone` 来替代复制构造/赋值](#Rh-copy)
 * [C.131: 避免无价值的取值和设值函数](#Rh-get)
 * [C.132: 请勿无理由地使函数 `virtual`](#Rh-virtual)
 * [C.133: 避免 `protected` 数据](#Rh-protected)
@@ -6995,35 +7004,32 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * ???
 
 
-### <a name="Rh-copy"></a>C.130: 重新定义或禁止基类的复制操作；优先代之以一个虚 `clone` 函数
+### <a name="Rh-copy"></a>C.130: 多态类的深拷贝；优先采用虚函数 `clone` 来替代复制构造/赋值
 
 ##### 理由
 
-基类的复制通常会发生切片。如果确实需要复制语义的话，应当进行深复制：提供一个虚 `clone` 函数，它复制的是真正的最终派生类型，并返回指向新对象的具有所有权的指针，而且在派生类中它返回的也是派生类型（利用协变返回类型）。
+由于切片的问题，不鼓励多态类的复制操作，参见 [C.67](#Rc-copy-virtual)。如果确实需要复制语义的话，应当进行深复制：提供一个虚 `clone` 函数，它复制的是真正的最终派生类型，并返回指向新对象的具有所有权的指针，而且在派生类中它返回的也是派生类型（利用协变返回类型）。
 
 ##### 示例
 
-    class Base {
+    class B {
     public:
-        virtual owner<Base*> clone() = 0;
-        virtual ~Base() = 0;
+        virtual owner<B*> clone() = 0;
+        virtual ~B() = 0;
 
-        Base(const Base&) = delete;
-        Base& operator=(const Base&) = delete;
+        B(const B&) = delete;
+        B& operator=(const B&) = delete;
     };
 
-    class Derived : public Base {
+    class D : public B {
     public:
-        owner<Derived*> clone() override;
-        virtual ~Derived() override;
+        owner<D*> clone() override;
+        virtual ~D() override;
     };
 
-注意，根据语言规则，协变返回类型不能是智能指针。参见 [C.67](#Rc-copy-virtual)。
+通常来说，推荐使用智能指针来表示所有权（参见 [R.20](#Rr-owner)）。不过根据语言规则，协变返回类型不能是智能指针：当 `B::clone` 返回 `unique_ptr<B>` 时 `D::clone` 不能返回 `unique_ptr<D>`。因此，你得在所有覆盖函数中统一都返回 `unique_ptr<B>`，或者也可以使用[指导方针支持库](#SS-views)中的 `owner<>` 工具类。
 
-##### 强制实施
 
-* 对带有虚函数和非用户定义的复制操作的类进行标记。
-* 对基类对象（有派生类的类对象）的赋值操作进行标记。
 
 ### <a name="Rh-get"></a>C.131: 避免无价值的取值和设值函数
 
@@ -7370,7 +7376,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 标记出 `final` 的所有使用。
 
 
-## <a name="Rh-virtual-default-arg"></a>C.140: 不要在虚函数和其覆盖函数上提供不同的默认参数
+### <a name="Rh-virtual-default-arg"></a>C.140: 不要在虚函数和其覆盖函数上提供不同的默认参数
 
 ##### 理由
 
@@ -10957,7 +10963,7 @@ C++17 收紧了有关求值顺序的规则
 
         a[4] = 1;          // OK
 
-        a[count - 1] = 2;  // OK
+        a[a.size() - 1] = 2;  // OK
 
         use(a.data(), 3);  // OK
     }
@@ -11828,7 +11834,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
         int y1 = int(ch);     // OK，但多余
         int y2 = int(d);      // 不好：double->int 窄化；如果需要的话应使用强制转换
         int y3 = int(p);      // 不好：指针->int；如果确实需要的话应使用 reinterpret_cast
-        int y4 = int(lng);    // 不好：long->int 窄化；如果需要的话应使用强制转换
+        int y4 = int(lng);    // 不好：long long->int 窄化；如果需要的话应使用强制转换
 
         int z1 = (int)ch;     // OK，但多余
         int z2 = (int)d;      // 不好：double->int 窄化；如果需要的话应使用强制转换
@@ -12055,8 +12061,15 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     void use(int n)
     {
         switch (n) {   // 好
-        case 0:   // ...
-        case 7:   // ...
+        case 0:
+            // ...
+            break;
+        case 7:
+            // ...
+            break;
+        default:
+            // ...
+            break;
         }
     }
 
@@ -16249,7 +16262,7 @@ GCC 6.1 及其后版本支持概念。
     };
 
     Container c(10, sizeof(double));
-    ((double*) c.elem)[] = 9.9;
+    ((double*) c.elem)[7] = 9.9;
 
 这样做无法直接表现出程序员的意图，而且向类型系统和优化器隐藏了程序的结构。
 
