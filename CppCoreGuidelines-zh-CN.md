@@ -20125,11 +20125,11 @@ CppCon 的展示的幻灯片是可以获得的（其链接，还有上传的视�
 边界安全性剖面配置概览：
 
 * <a href="Pro-bounds-arithmetic"></a>Bounds.1: 请勿使用指针算术。请使用 `span` 代替：
-[（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-simple)。
+[（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-ptr)。
 * <a href="Pro-bounds-arrayindex"></a>Bounds.2: 仅使用常量表达式对数组进行索引操作：
-[（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-simple)。
+[（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-ptr)。
 * <a href="Pro-bounds-decay"></a>Bounds.3: 避免数组向指针的衰变：
-[（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-simple)。
+[（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-ptr)。
 * <a href="Pro-bounds-stdlib"></a>Bounds.4: 请勿使用不进行边界检查的标准库函数和类型：
 [以类型安全的方式使用标准库](#Rsl-bounds)
 
