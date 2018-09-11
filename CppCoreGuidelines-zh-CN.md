@@ -15800,7 +15800,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
     }
 
 模拟 RAII 可能不那么简单，尤其是在带有多个资源和多种可能错误的函数之中。
-一种较为常见的技巧是把清理都集中到函数末尾以避免重复：
+一种较为常见的技巧是把清理都集中到函数末尾以避免重复（注意 `g2` 的额外范围是不利的，但是编译 `goto` 版本却需要）：
 
     std::pair<int, error_indicator> user()
     {
@@ -15812,6 +15812,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
                 goto exit;
         }
 
+        {
         Gadget g2 = make_gadget(17);
         if (!g2.valid()) {
                 err = g2_error;
@@ -15823,6 +15824,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
             goto exit;
         }
         // ...
+       }
 
     exit:
       if (g1.valid()) cleanup(g1);
