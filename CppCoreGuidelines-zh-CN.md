@@ -7792,7 +7792,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 * [C.161: 对于对称的运算符应当采用非成员函数](#Ro-symmetric)
 * [C.162: 重载的操作之间应当大体上是等价的](#Ro-equivalent)
 * [C.163: 应当仅对大体上等价的操作进行重载](#Ro-equivalent-2)
-* [C.164: 避免转换运算符](#Ro-conversion)
+* [C.164: 避免隐式转换运算符](#Ro-conversion)
 * [C.165: 为定制点采用 `using`](#Ro-custom)
 * [C.166: 一元 `&` 的重载只能作为某个智能指针或引用系统的一部分而提供](#Ro-address-of)
 * [C.167: 应当为带有传统含义的操作提供运算符](#Ro-overload)
@@ -7901,7 +7901,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ???
 
-### <a name="Ro-conversion"></a>C.164: 避免转换运算符
+### <a name="Ro-conversion"></a>C.164: 避免隐式转换运算符
 
 ##### 理由
 
@@ -7914,27 +7914,37 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 并且经常需要用到。不要仅仅为了微小的便利就（通过转换运算符或非 `explicit` 构造函数）
 引入隐式的类型转换。
 
-##### 示例，不好
+##### 示例
 
-    class String {   // 处理所有权，并访问字符的序列
+    struct S1 {
+        string s;
         // ...
-        String(czstring p); // 从 *p 复制到 *(this->elem)
-        // ...
-        operator zstring() { return elem; }
-        // ...
-    };
-
-    void user(zstring p)
-    {
-        if (*p == "") {
-            String s {"Trouble ahead!"};
-            // ...
-            p = s;
-        }
-        // 使用 p
+        operator char*() { return s.data(); } // 不好，可能会引起以外
     }
 
-为 `s` 所分配的字符串被赋值给了 `p`，在其使用之前就被销毁了。
+    struct S2 {
+        string s;
+        // ...
+        explicit operator char*() { return s.data(); }  
+    };
+
+    void f(S1 s1, S2 s2)
+    {
+        char* x1 = s1;     // 可以，但在许多情况下会引起意外
+        char* x2 = s2;     // 错误，这通常是一件好事
+        char* x3 = static_cats<char*>(s2); // 我们可以明确（在你的头脑里）
+    }
+
+可能发生的令人惊讶且可能具有破坏性的隐式转换是任意的难以发现的上下文，例如，
+
+    S1 ff();
+
+    char* g()
+    {
+        return ff();
+    }
+
+由`ff（）返回的字符串在返回它的指针之前被销毁。    
 
 ##### 强制实施
 
