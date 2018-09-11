@@ -17412,9 +17412,8 @@ Lambda 会生成函数对象。
     List<int> lst1;
     List<int, My_allocator> lst2;
 
-    ???
-
-这个看起来没什么问题，不过 ???
+这看起来没什么问题，但现在 `Link` 形成依赖于分配器（尽管它不使用分配器）。 这迫使冗余的实例化在某些现实场景中可能造成出奇的高的成本。
+通常，解决方案是使用自己的最小模板参数集使嵌套类非局部化。
 
     template<typename T>
     struct Link {
@@ -17439,7 +17438,7 @@ Lambda 会生成函数对象。
     List<int> lst1;
     List<int, My_allocator> lst2;
 
-    ???
+人们发现 `Link` 不再隐藏在列表中很可怕，所以我们命名这个技术为 [SCARY]（http://www.open-std.org/jtc1/sc22/WG21/docs/papers/2009/n2911.pdf）。引自该学术论文：“首字母缩略词 SCARY 描述了看似错误的赋值和初始化（受冲突的通用参数的约束），但实际上使用了正确的实现（由于最小化的依赖而不受冲突的约束。”
 
 ##### 强制实施
 
