@@ -3611,7 +3611,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 返回的右值引用超出了返回的完整表达式结束的范围：
 
-    auto&& x = max(0,1);    // 到目前为止，没问题
+    auto&& x = max(0, 1);   // 到目前为止，没问题
     foo(x);                 // 未定义的行为
 
 这种用法是频繁产生 bug 的根源，经常错误地报告为编译器错误。
@@ -7943,14 +7943,14 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
     struct S2 {
         string s;
         // ...
-        explicit operator char*() { return s.data(); }  
+        explicit operator char*() { return s.data(); }
     };
 
     void f(S1 s1, S2 s2)
     {
         char* x1 = s1;     // 可以，但在许多情况下会引起意外
         char* x2 = s2;     // 错误，这通常是一件好事
-        char* x3 = static_cats<char*>(s2); // 我们可以明确（在你的头脑里）
+        char* x3 = static_cast<char*>(s2); // 我们可以明确（在你的头脑里）
     }
 
 可能发生的令人惊讶且可能具有破坏性的隐式转换是任意的难以发现的上下文，例如，
@@ -10729,14 +10729,14 @@ C++17 的规则多少会少些意外：
 照例，宏有一些“无害”的用途，但即使这些也会给工具带来麻烦，
 例如自动完成器、静态分析器和调试器。
 通常，使用花式宏的欲望是过于复杂的设计的标志。
-另外，`＃` 和 `##` 包含了宏的定义和用法：
+另外，`＃` 和 `##` 促进了宏的定义和使用：
 
-    #define CAT(a,b) a ## b
+    #define CAT(a, b) a ## b
     #define STRINGIFY(a) #a
 
     void f(int x, int y)
     {
-        string CAT(x,y) = "asdf";   // 不好: 工具难以处理（也很丑陋）
+        string CAT(x, y) = "asdf";   // 不好: 工具难以处理（也很丑陋）
         string sx2 = STRINGIFY(x);
         // ...
     }
@@ -10745,7 +10745,7 @@ C++17 的规则多少会少些意外：
 
     string s = "asdf" "lkjh";   // 普通的字符串文字连接
 
-    enum E { a,b };
+    enum E { a, b };
 
     template<int x>
     constexpr const char* stringify()
