@@ -2500,7 +2500,7 @@ GCC 6.1 及其后版本支持概念。
         // ???
     }
 
-    double funct1_tau(double val, int flag1, int flag2)
+    double func1_tau(double val, int flag1, int flag2)
     {
         // ???
     }
