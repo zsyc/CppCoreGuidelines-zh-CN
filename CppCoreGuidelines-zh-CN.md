@@ -4627,6 +4627,24 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 在带有析构函数的类中，依靠隐式生成的复制操作的做法已经被摒弃。
 
+##### 注解
+
+写这六个特殊成员函数可能容易出错。
+注意它们的参数类型：
+
+    class X {
+    public:
+        // ...
+        virtual ~X() = default;            // 析构函数 (如果 X 是基类，用 virtual)
+        X(const X&) = default;             // 复制构造函数
+        X& operator=(const X&) = default;  // 复制赋值
+        X(X&&) = default;                  // 移动构造函数
+        X& operator=(X&&) = default;       // 移动赋值
+    };
+
+一个小错误（例如拼写错误，遗漏 `const`，使用 `&` 而不是 '&&`，或遗漏一个特殊功能）可能导致错误或警告。
+为避免单调乏味和出错的可能性，请尝试遵循[零规则]（＃Rc-zero）。
+
 ##### 强制实施
 
 【简单】 类中应当要么为每个特殊函数都提供一个声明（即便是 `=delete`），要么都不这样做。
@@ -10717,7 +10735,7 @@ C++17 的规则多少会少些意外：
     #define CAT(a,b) a ## b
     #define STRINGIFY(a) #a
 
-    void f(int x, int y))
+    void f(int x, int y)
     {
         string CAT(x,y) = "asdf";   // 不好: 工具难以处理（也很丑陋）
         string sx2 = STRINGIFY(x);
@@ -10739,7 +10757,7 @@ C++17 的规则多少会少些意外：
         }
     }
 
-    void f(int x, int y))
+    void f(int x, int y)
     {
         string sx = stringify<x>();
         // ...
