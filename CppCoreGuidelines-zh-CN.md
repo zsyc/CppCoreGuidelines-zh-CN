@@ -21352,6 +21352,7 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
     T& T::operator=(const T& other) {
         auto temp = other;
         swap(temp);
+        return *this;
     }
 
 (另见条款 56。 ???)
