@@ -6551,11 +6551,166 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 * [C.102: 为容器提供移动操作](#Rcon-move)
 * [C.103: 为容器提供一个初始化式列表构造函数](#Rcon-init)
 * [C.104: 为容器提供一个将之置空的默认构造函数](#Rcon-empty)
-* [C.105: 提供构造函数和 `Extent` 构造函数](#Rcon-val)
 * ???
-* [C.109: 当资源包装类具有指针语义时，应提供 `*` 和 `->`](#rcon-ptr)
+* [C.109: 当资源包装类具有指针语义时，应提供 `*` 和 `->`](#Rcon-ptr)
 
 **参见**: [资源](#S-resource)
+
+
+### <a name="Rcon-stl"></a>C.100: 定义容器的时候要遵循 STL
+
+##### 理由
+
+大多数 C++ 程序员都熟悉 STL 容器，而且它们具有本质上十分健全的设计。
+
+##### 注解
+
+当然也存在其他的本质上健全的设计风格，有时候也存在不遵循
+标准程序库的设计风格的各种理由，但在没有非常坚实的理由的情况下，
+让实现者和用户都遵循标准，既简单又容易。
+
+尤其是，`std::vector` 和 `std::map` 都提供了相当简单的模型。
+
+##### 示例
+
+    // 简化版本（比如没有分配器）：
+
+    template<typename T>
+    class Sorted_vector {
+        using value_type = T;
+        // ... 各迭代器类型 ...
+
+        Sorted_vector() = default;
+        Sorted_vector(initializer_list<T>);    // 初始化式列表构造函数：进行排序并存储
+        Sorted_vector(const Sorted_vector&) = default;
+        Sorted_vector(Sorted_vector&&) = default;
+        Sorted_vector& operator=(const Sorted_vector&) = default;   // 复制赋值
+        Sorted_vector& operator=(Sorted_vector&&) = default;        // 移动赋值
+        ~Sorted_vector() = default;
+
+        Sorted_vector(const std::vector<T>& v);   // 存储并排序
+        Sorted_vector(std::vector<T>&& v);        // 排序并“窃取表示”
+
+        const T& operator[](int i) { return rep[i]; }
+        // 不提供非 const 的直接访问，以维持顺序
+
+        void push_back(const T&);   // 在正确位置插入（不一定在末尾）
+        void push_back(T&&);        // 在正确位置插入（不一定在末尾）
+
+        // ... cbegin(), cend() ...
+    private:
+        std::vector<T> rep;  // 用一个 std::vector 来持有各元素
+    };
+
+    template<typename T> bool operator==(const T&);
+    template<typename T> bool operator!=(const T&);
+    // ...
+
+这段代码遵循 STL 风格但并不完整。
+这种做法并不少见。
+仅仅为特定的容器提供足以使其有意义的功能即可。
+这里的关键在于，定义（对特定容器来说有意义的）符合约定的构造、赋值、析构函数和各迭代器
+并提供它们符合约定的语义。
+在此基础上，可以根据需要对这个容器进行扩展。
+这里添加了来自 `std::vector` 的一些特殊构造函数。
+
+##### 强制实施
+
+???
+
+### <a name="Rcon-val"></a>C.101: 为容器提供值语义
+
+##### 理由
+
+常规对象的理解和推理要比非常规对象更加简单。
+使人感觉熟悉。
+
+##### 注解
+
+如果有意义的话，要使容器满足 `Regular`（概念）。
+尤其是，确保对象与自身的副本比较时相等。
+
+##### 示例
+
+    void f(const Sorted_vector<string>& v)
+    {
+        Sorted_vector<string> v2 {v};
+        if (v!=v2)
+            cout << "insanity rules!\n";
+        // ...
+    }
+
+##### 强制实施
+
+???
+
+### <a name="Rcon-move"></a>C.102: 为容器提供移动操作
+
+##### 理由
+
+容器都有变大的趋势；没有移动构造函数和复制构造函数的对象
+进行到处移动可以很昂贵，因而趋使人们转而传递指向它的指针，
+从而带来资源管理方面的问题。
+
+##### 示例
+
+    Sorted_vector<int> read_sorted(istream& is)
+    {
+        vector<int> v;
+        cin >> v;   // 假定存在向量的读取操作
+        Sorted_vector<int> sv = v;  // 进行排序
+        return sv;
+    }
+
+用户可以合理地假设返回一个标准程序库风格的容器是廉价的。
+
+##### 强制实施
+
+???
+
+### <a name="Rcon-init"></a>C.103: 为容器提供一个初始化式列表构造函数
+
+##### 理由
+
+人们期望能够以一组值来初始化一个容器。
+使人感觉熟悉。
+
+##### 示例
+
+    Sotrted_vector<int> sv {1,3,-1,7,0,0};   // Sorted_vector 按需对其元素进行排序
+
+##### 强制实施
+
+???
+
+### <a name="Rcon-empty"></a>C.104: 为容器提供一个将之置空的默认构造函数
+
+##### 理由
+
+使其满足 `Regular`。
+
+##### 示例
+
+    vector<Sorted_sequence<string>> vs(100);    // 100 个 Sorted_sequence，值均为 ""
+
+##### 强制实施
+
+???
+
+### <a name="Rcon-ptr"></a>C.109: 当资源包装类具有指针语义时，应提供 `*` 和 `->`
+
+##### 理由
+
+这正是对指针所预期的行为，
+使人感觉熟悉。
+
+##### 示例
+
+    ???
+
+##### 强制实施
+
+???
 
 ## <a name="SS-lambdas"></a>C.lambdas: 函数对象和 lambda
 
