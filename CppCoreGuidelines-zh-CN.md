@@ -1395,18 +1395,21 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 ##### 理由
 
-类型是最简单和最好的文档，它们有定义明确的含义，并且保证在编译期进行检查。
+类型是最简单和最好的文档，它们有定义明确的含义并因而提高了易读性，并且是在编译期进行检查的。
 而且，严格类型化的代码通常也能更好地进行优化。
 
 ##### 示例，请勿这样做
 
 考虑：
 
-    void pass(void* data);    // void* 是有问题的
+    void pass(void* data);    // 使用弱的并且缺乏明确性的类型 void* 是有问题的
 
-被调用方必须得把数据指针强制转换（回）正确的类型以能使用它。这样做易于犯错，而且通常是多余的。
-请避免 `void*`，尤其是在接口中。
-请考虑使用 `variant` 或指向基类的指针来代替它。
+调用者无法确定它允许使用哪些类型，而且因为它并没有指定 `const`，
+也不确定其数据是否会被改动。注意，任何指针类型都可以隐式转换为 `void*`，
+因此调用者很容易提供这样的值给它。
+被调用放必须以 `static_cast` 将数据强制转换为某个无验证的类型以使用它。
+这样做易于犯错，而且啰嗦。
+应当仅在设计中无法以 C++ 来予以描述的数据的传递时才使用 `const void*`。请考虑使用 `variant` 或指向基类的指针来代替它。
 
 **替代方案**: 通常，利用模板形参可以把 `void*` 排除而改为 `T*` 或者 `T&`。
 对于泛型代码，这些个 `T` 可以是一般模板参数或者是概念约束的模板参数。
@@ -1415,12 +1418,12 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 考虑：
 
-    void draw_rect(int, int, int, int);   // 很大的犯错机会
+    draw_rect(100, 200, 100, 500); // 这些数值什么意思？
 
-    draw_rect(p.x, p.y, 10, 20);          // 10, 20 是什么意思？
+    draw_rect(p.x, p.y, 10, 20); // 10 和 20 的单位是什么？
 
-`int` 可以携带任何形式的信息，因此我们必须猜测这四个 `int` 的含义。
-前两个最可能的是坐标对 `x`,`y`，但后两个是什么呢？
+很明显调用者在描述一个矩形，不明确的是它们都和其哪些部分相关。而且 `int` 可以表示任何形式的信息，包括各种不同单位的值，因此我们必须得猜测这四个 `int` 的含义。前两个很可能代表坐标对偶 `x` 和 `y`，但后两个是什么呢？
+
 注释和参数的名字可以有所帮助，但我们可以直截了当：
 
     void draw_rectangle(Point top_left, Point bottom_right);
@@ -1431,6 +1434,26 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 显然，我们是无法利用静态类型系统识别所有的错误的，
 例如，假定第一个参数是左上角这一点就依赖于约定（命名或者注释）。
+
+##### 示例，不好
+
+考虑：
+
+    set_settings(true, false, 42); // 这些数值什么意思？
+
+各参数类型及其值并不能表明其所指定的设置项是什么以及它们的值所代表的含义。
+
+下面的设计则更加明确，安全且易读：
+
+    alarm_settings s{};
+    s.enabled = true;
+    s.displayMode = alarm_settings::mode::spinning_light;
+    s.frequency = alarm_settings::every_10_seconds;
+    set_settings(s);
+
+对于一组布尔值的情况，可以考虑使用某种标记枚举；这是一种用于表示一组布尔值的模式。
+
+    enable_lamp_options(lamp_option::on | lamp_option::animate_state_transitions);
 
 ##### 示例，不好
 
@@ -1484,8 +1507,8 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 ##### 强制实施
 
-* 【简单】 报告将 `void*` 用作参数或返回类型的情况
-* 【难于做好】 查找带有许多内建类型的参数的成员函数。
+* 【简单】 报告使用了多个 `bool` 参数的情况
+* 【难于做好】 查找使用了过多基础类型的参数的函数。
 
 ### <a name="Ri-pre"></a>I.5: 说明前条件（如果有）
 
@@ -4384,7 +4407,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
         Point1 p12 {p11};    // 一个副本
 
         auto p21 = make_unique<Point2>(1, 2);   // 在自由存储中创建一个对象
-        auto p22 = p21.clone();                 // 创建一个副本
+        auto p22 = p21->clone();                // 创建一个副本
         // ...
     }
 
@@ -5687,13 +5710,13 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         Month m;
         int y;
     public:
-        Date(int ii, Month mm, year yy)
-            :i{ii}, m{mm}, y{yy}
-            { if (!valid(i, m, y)) throw Bad_date{}; }
+        Date(int dd, Month mm, year yy)
+            :d{dd}, m{mm}, y{yy}
+            { if (!valid(d, m, y)) throw Bad_date{}; }
 
-        Date(int ii, Month mm)
-            :i{ii}, m{mm} y{current_year()}
-            { if (!valid(i, m, y)) throw Bad_date{}; }
+        Date(int dd, Month mm)
+            :d{dd}, m{mm} y{current_year()}
+            { if (!valid(d, m, y)) throw Bad_date{}; }
         // ...
     };
 
@@ -5706,12 +5729,12 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         Month m;
         int y;
     public:
-        Date2(int ii, Month mm, year yy)
-            :i{ii}, m{mm} y{yy}
-            { if (!valid(i, m, y)) throw Bad_date{}; }
+        Date2(int dd, Month mm, year yy)
+            :d{dd}, m{mm} y{yy}
+            { if (!valid(d, m, y)) throw Bad_date{}; }
 
-        Date2(int ii, Month mm)
-            :Date2{ii, mm, current_year()} {}
+        Date2(int dd, Month mm)
+            :Date2{dd, mm, current_year()} {}
         // ...
     };
 
