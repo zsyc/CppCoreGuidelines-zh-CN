@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2019/3/7
+2019/5/2
 
 
 编辑：
@@ -7093,7 +7093,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * 随着类层次的增长和向 `Shape` 添加更多的数据，构造函数会越发难于编写和维护。
 * 为什么要计算 `Triangle` 的中心点？我们从不用它。
 * 向 `Shape` 添加新的数据成员（比如绘制风格或者画布）
-将导致所有派生类和所有使用方都需要进行复审，可能需要修改，而且很可能需要重新编译。
+将导致所有派生于 `Shape` 的类和所有使用 `Shape` 的代码都需要进行复审，可能需要修改，而且很可能需要重新编译。
 
 `Shape::move()` 的实现就是实现继承的一个例子：
 我们为所有派生类一次性定义 `move()`。
@@ -9843,7 +9843,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.20: 坚持为对象进行初始化](#Res-always)
 * [ES.21: 不要在确实需要使用变量（或常量）之前就引入它](#Res-introduce)
 * [ES.22: 要等到获得了用以初始化变量的值之后才声明变量](#Res-init)
-* [ES.23: 优先使用 `{}` 初始化语法](#Res-list)
+* [ES.23: 优先使用 `{}` 初始化式语法](#Res-list)
 * [ES.24: 用 `unique_ptr<T>` 来保存指针](#Res-unique)
 * [ES.25: 应当将对象声明为 `const` 或 `constexpr`，除非后面需要修改其值](#Res-const)
 * [ES.26: 不要用一个变量来达成两个不相关的目的](#Res-recycle)
@@ -10651,15 +10651,20 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 * 如果具有默认初始化的声明在其首次被读取前就进行赋值，则对其进行标记。
 * 对于任何在未初始化变量之后且在其使用之前进行的复杂计算进行标记。
 
-### <a name="Res-list"></a>ES.23: 优先使用 `{}` 初始化语法
+### <a name="Res-list"></a>ES.23: 优先使用 `{}` 初始化式语法
 
 ##### 理由
 
-`{}` 初始化的规则比其他形式的初始化更简单，更通用，更少歧义，而且更安全。
+优先使用 `{}`。`{}` 初始化的规则比其他形式的初始化更简单，更通用，更少歧义，而且更安全。
+
+仅当你确定不存在窄化转换时才可使用 `=`。对于内建算术类型，`=` 仅和 `auto` 一起使用。
+
+避免 `()` 初始化，它会导致解析中的歧义。
 
 ##### 示例
 
     int x {f(99)};
+    int y = x;
     vector<int> v = {1, 2, 3, 4, 5, 6};
 
 ##### 例外
@@ -10667,11 +10672,14 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 对于容器来说，存在用 `{...}` 给出元素列表而用 `(...)` 给出大小的传统做法：
 
     vector<int> v1(10);    // vector 有 10 个具有默认值 0 的元素
-    vector<int> v2 {10};   // vector 有 1 个值为 10 的元素
+    vector<int> v2{10};    // vector 有 1 个值为 10 的元素
+
+    vector<int> v3(1, 2);  // vector 有 1 个值为 2 的元素
+    vector<int> v4{1, 2};  // vector 有 2 个值为 1 和 2 的元素
 
 ##### 注解
 
-`{}` 初始化式不允许进行窄化转换（这点通常都很不错）。
+`{}` 初始化式不允许进行窄化转换（这点通常都很不错），并允许使用显式构造函数（这没有问题，我们的意图就是初始化一个新变量）。
 
 ##### 示例
 
@@ -10681,7 +10689,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 注解
 
-`{}` 初始化可以用于所有的初始化；而其他的初始化则不行：
+`{}` 初始化可以用于几乎所有的初始化；而其他的初始化则不行：
 
     auto p = new vector<int> {1, 2, 3, 4, 5};   // 初始化 vector
     D::D(int a, int b) :m{a, b} {   // 成员初始化式（比如说 m 可能是 pair）
@@ -10702,7 +10710,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 C++17 的规则多少会少些意外：
 
     auto x1 {7};        // x1 是一个值为 7 的 int
-    auto x2 = {7};  // x2 是一个具有一个元素 7 的 initializer_list<int>
+    auto x2 = {7};      // x2 是一个具有一个元素 7 的 initializer_list<int>
 
     auto x11 {7, 8};    // 错误: 两个初始化式
     auto x22 = {7, 8};  // x22 是一个具有元素 7 和 8 的 initializer_list<int>
@@ -10724,10 +10732,6 @@ C++17 的规则多少会少些意外：
 
 除非特别要求禁止使用显式构造函数，否则都应当使用普通的 `{}` 初始化。
 
-##### 注解
-
-老习惯很难纠正，因此这条规则很难统一地进行实施，尤其是当有这么多情况下 `=` 没有问题的时候。
-
 ##### 示例
 
     template<typename T>
@@ -10745,10 +10749,8 @@ C++17 的规则多少会少些意外：
 
 ##### 强制实施
 
-很麻烦。
-
-* 不要对在简单初始化式上使用 `=` 进行标记。
-* 见到 `auto` 之后要寻找 `=`。
+* 当使用 `=` 初始化算术类型并发生窄化转换时予以标记。
+* 当使用 `()` 初始化语法但实际上是声明式时予以标记。（许多编译器已经可就此给出警告。）
 
 ### <a name="Res-unique"></a>ES.24: 用 `unique_ptr<T>` 来保存指针
 
@@ -11371,6 +11373,7 @@ C++17 收紧了有关求值顺序的规则
     void f2()
     {
         int arr[COUNT];
+        int i = 0;
         for (int i = 0; i < COUNT; ++i)
             at(arr, i) = i;
     }
@@ -11667,7 +11670,7 @@ C++17 收紧了有关求值顺序的规则，但函数实参求值顺序仍然�
 * `reinterpret_cast`
 * `dynamic_cast`
 * `std::move`         // `move(x)` 是指代 `x` 的右值引用
-* `std::forward`      // `forward(x)` 是指代 `x` 的右值引用
+* `std::forward`      // `forward<T>(x)` 是指代 `x` 的左值或右值引用（取决于 `T`）
 * `gsl::narrow_cast`  // `narrow_cast<T>(x)` 就是 `static_cast<T>(x)`
 * `gsl::narrow`       // `narrow<T>(x)` 在当 `static_cast<T>(x) == x` 时即为 `static_cast<T>(x)` 否则会抛出 `narrowing_error`
 
@@ -12661,7 +12664,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 ##### 理由
 
 意外地遗漏 `break` 是一种相当常见的 BUG。
-蓄意的控制直落（fall through）是维护的噩梦。
+蓄意的控制直落（fall through）是维护的噩梦，应该罕见并被明确标示出来。
 
 ##### 示例
 
@@ -12677,36 +12680,6 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
         break;
     }
 
-很容易忽略掉这个直落。应当更明确：
-
-    switch (eventType) {
-    case Information:
-        update_status_bar();
-        break;
-    case Warning:
-        write_event_log();
-        // 直落 fallthrough
-    case Error:
-        display_error_window();
-        break;
-    }
-
-在 C++17 中，可以使用 `[[fallthrough]]` 标注：
-
-    switch (eventType) {
-    case Information:
-        update_status_bar();
-        break;
-    case Warning:
-        write_event_log();
-        [[fallthrough]];        // C++17
-    case Error:
-        display_error_window();
-        break;
-    }
-
-##### 注解
-
 单个语句带有多个 `case` 标签是可以的：
 
     switch (x) {
@@ -12717,9 +12690,28 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
         break;
     }
 
+##### 例外
+
+在罕见的直落被视为合适行为的情况中。应当明确标示，并使用 `[[fallthrough]]` 标注：
+
+    switch (eventType) {
+    case Information:
+        update_status_bar();
+        break;
+    case Warning:
+        write_event_log();
+        [[fallthrough]];
+    case Error:
+        display_error_window();
+        break;
+    }
+
+##### 注解
+
 ##### 强制实施
 
-对所有从非空的 `case` 发生的直落进行标记。
+对所有从非空的 `case` 隐式发生的直落进行标记。
+
 
 ### <a name="Res-default"></a>ES.79: `default`（仅）用于处理一般情况
 
@@ -13813,14 +13805,15 @@ C++11 引入了许多核心并发原语，C++14 和 C++17 对它们进行了改�
 
 很难说现在或者未来什么时候会不会需要使用并发。
 代码是会被重用的。
-程序的其他部分可能会使用某个使用了线程的程序库。
-请注意这条对于程序库代码来说最紧迫，而对独立的应用程序来说则最不紧迫。
-不过，多亏复制粘贴的魔法，代码片段可能出现在意想不到的地方。
+程序的其他使用了线程的部分可能会使用某个未使用线程的程序库。
+请注意这条规则对于程序库代码来说最紧迫，而对独立的应用程序来说则最不紧迫。
+不过，久而久之，代码片段可能出现在意想不到的地方。
 
-##### 示例
+##### 示例，不好
 
     double cached_computation(double x)
     {
+        // 不好：这两个静态变量导致多线程的使用情况中的数据竞争
         static double cached_x = 0.0;
         static double cached_result = COMPUTATION_OF_ZERO;
         double result;
@@ -13888,15 +13881,15 @@ C++11 引入了许多核心并发原语，C++14 和 C++17 对它们进行了改�
 
 ##### 示例，不好
 
-    void f(fstream&  fs, regex pat)
+    void f(fstream&  fs, regex pattern)
     {
         array<double, max> buf;
         int sz = read_vec(fs, buf, max);            // 从 fs 读取到 buf 中
         gsl::span<double> s {buf};
         // ...
-        auto h1 = async([&]{ sort(par, s); });     // 产生一个进行排序的任务
+        auto h1 = async([&]{ sort(std::execution::par, s); });     // 产生一个进行排序的任务
         // ...
-        auto h2 = async([&]{ return find_all(buf, sz, pat); });   // 产生一个查找匹配的任务
+        auto h2 = async([&]{ return find_all(buf, sz, pattern); });   // 产生一个查找匹配的任务
         // ...
     }
 
@@ -19777,9 +19770,9 @@ C 标准库规则概览：
 
 架构性规则概览：
 
-* [A.1: 将代码中的稳定部分和不稳定的部分进行分离](#Ra-stable)
+* [A.1: 分离稳定的代码和不稳定的代码](#Ra-stable)
 * [A.2: 将潜在可复用的部分作为程序库](#Ra-lib)
-* [A.4: 程序库之间不能有循环依赖](#?Ra-dag)
+* [A.4: 程序库之间不能有循环依赖](#Ra-dag)
 * [???](#???)
 * [???](#???)
 * [???](#???)
@@ -19787,9 +19780,9 @@ C 标准库规则概览：
 * [???](#???)
 * [???](#???)
 
-### <a name="Ra-stable"></a>A.1: 将代码中的稳定部分和不稳定的部分进行分离
+### <a name="Ra-stable"></a>A.1: 分离稳定的代码和不稳定的代码
 
-???
+对较不稳定的代码进行隔离，有助于其单元测试，接口改进，重构，以及最终弃用。
 
 ### <a name="Ra-lib"></a>A.2: 将潜在可复用的部分作为程序库
 
@@ -19799,7 +19792,7 @@ C 标准库规则概览：
 
 程序库是一些共同进行维护，文档化，并发布的声明式和定义式的集合体。
 程序库可以是一组头文件（“仅有头文件的程序库”），或者一组头文件加上一组目标文件构成。
-程序库可以被静态或动态地连接到程序中，或者可以被 `#included` 入其中。
+你可以静态或动态地将程序库连接到程序中，或者你还可以 `#included` 仅头文件的库。
 
 
 ### <a name="Ra-dag"></a>A.4: 程序库之间不能有循环依赖
@@ -20044,9 +20037,88 @@ C 标准库规则概览：
 更复杂的代码（必须处理半构造对象），
 以及错误（当未能一致地正确处理半构造对象时）。
 
-##### 示例
+##### 示例，不好
 
-    ???
+    class Picture
+    {
+        int mx;
+        int my;
+        char * data;
+    public:
+        Picture(int x, int y)
+        {
+            mx = x,
+            my = y;
+            data = nullptr;
+        }
+
+        ~Picture()
+        {
+            Cleanup();
+        }
+
+        bool Init()
+        {
+            // 不变式检查
+            if (mx <= 0 || my <= 0) {
+                return false;
+            }
+            if (data) {
+                return false;
+            }
+            data = (char*) malloc(x*y*sizeof(int));
+            return data != nullptr;
+        }
+
+        void Cleanup()
+        {
+            if (data) free(data);
+            data = nullptr;
+        }
+    };
+
+    Picture picture(100, 0); // 此时 picture 尚未就绪可用
+    // 这里将失败
+    if (!picture.Init()) {
+        puts("Error, invalid picture");
+    }
+    // 现在有一个无效的 picture 对象实例。
+
+##### 示例，好
+
+    class Picture
+    {
+        size_t mx;
+        size_t my;
+        vector<char> data;
+
+        static size_t check_size(size_t s)
+        {
+            // 不变式检查
+            Expects(s > 0);
+            return s;
+        }
+
+    public:
+        // 更好的方式是以一个 2D 的 Size 类作为单个形参
+        Picture(size_t x, size_t y)
+            : mx(check_size(x))
+            , my(check_size(y))
+            // 现在已知 x 和 y 为有效的大小
+            , data(mx * my * sizeof(int)) // 出错时将抛出 std::bad_alloc
+        {
+            // 图片就绪可用
+        }
+        // 编译器生成的析构函数会完成工作。（另见 C.21）
+    };
+
+    Picture picture1(100, 100);
+    // picture 已就绪可用……
+
+    // y 并非有效大小值，
+    // 缺省的契约违规行为将会调用 std::terminate
+    Picture picture2(100, 0);
+    // 不会抵达这里……
 
 ##### 替代方案
 
@@ -20380,13 +20452,13 @@ CppCon 的展示的幻灯片是可以获得的（其链接，还有上传的视�
 
 边界安全性剖面配置概览：
 
-* <a href="Pro-bounds-arithmetic"></a>Bounds.1: 请勿使用指针算术。请使用 `span` 代替：
+* <a name="Pro-bounds-arithmetic"></a>Bounds.1: 请勿使用指针算术。请使用 `span` 代替：
 [（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-ptr)。
-* <a href="Pro-bounds-arrayindex"></a>Bounds.2: 仅使用常量表达式对数组进行索引操作：
+* <a name="Pro-bounds-arrayindex"></a>Bounds.2: 仅使用常量表达式对数组进行索引操作：
 [（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-ptr)。
-* <a href="Pro-bounds-decay"></a>Bounds.3: 避免数组向指针的衰变：
+* <a name="Pro-bounds-decay"></a>Bounds.3: 避免数组向指针的衰变：
 [（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-ptr)。
-* <a href="Pro-bounds-stdlib"></a>Bounds.4: 请勿使用不进行边界检查的标准库函数和类型：
+* <a name="Pro-bounds-stdlib"></a>Bounds.4: 请勿使用不进行边界检查的标准库函数和类型：
 [以类型安全的方式使用标准库](#Rsl-bounds)
 
 ##### 影响
@@ -20408,7 +20480,7 @@ CppCon 的展示的幻灯片是可以获得的（其链接，还有上传的视�
 
 生存期安全性剖面配置概览：
 
-* <a href="Pro-lifetime-invalid-deref"></a>Lifetime.1: 不要解引用无效指针：
+* <a name="Pro-lifetime-invalid-deref"></a>Lifetime.1: 不要解引用无效指针：
 [检测或避免](#Res-deref)。
 
 ##### 影响
