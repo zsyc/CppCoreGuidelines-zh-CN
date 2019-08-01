@@ -1060,7 +1060,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
     }
 
 这个其实是一个来自产品代码的例子。
-我们留给读者来找出这里浪费了什么东西。
+可以看到这里有一句 `i < strlen(s)`。这个表达式在循环的每次重复中都要求值，这意味着每次循环中 `strlen` 都必须走完字符串以确定其长度。我们假定在改动字符串内容过程中`toLower` 不会影响字符串的长度，因此最好在循环外面缓存长度值，而不是在每次重复中都承担其代价。
 
 ##### 注解
 
@@ -1794,7 +1794,7 @@ GCC 6.1 及其后版本支持概念。
     // ... 使用 val ...
 
 这种风格不幸地会导致未初始化的变量。
-一种解决这种问题的设施[结构化绑定](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0144r1.pdf)将会出现在 C++17 中。
+从 C++17 开始，可以使用 "结构化绑定" 功能特性来从返回值直接对多个变量初始化。
 
     auto [val, error_code] = do_something();
     if (error_code) {
@@ -1967,7 +1967,7 @@ GCC 6.1 及其后版本支持概念。
 ##### 例外
 
 使用 `zstring` 和 `czstring` 来表示 C 风格的以零终结字符串。
-但这样做时，应当使用 [GSL](#GSL) 中的 `string_span` 以避免范围错误。
+但这样做时，应当使用 `std::string_view` 或 [GSL](#GSL) 中的 `string_span` 以避免范围错误。
 
 ##### 强制实施
 
@@ -2177,10 +2177,6 @@ GCC 6.1 及其后版本支持概念。
 ##### 理由
 
 不同的编译器会实现不同的类的二进制布局，异常处理，函数名字，以及其他的实现细节。
-
-##### 例外
-
-你可以使用少量精心选择的高层次 C++ 类型来精心制造出一种接口。参见 ???。
 
 ##### 例外
 
@@ -3316,6 +3312,8 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
 C 风格的字符串非常普遍。它们是按一种约定方式定义的：就是以零结尾的字符数组。
 我们必须把 C 风格的字符串从指向单个字符的指针或者指向字符数组的老式的指针当中区分出来。
 
+当不需要零结尾时，请使用 'string_view'。
+
 ##### 示例
 
 考虑：
@@ -3750,7 +3748,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 ##### 理由
 
-函数是不能俘获局部变量或者在局部作用域中声明的；当想要这些能力时，如果可能就应当使用 lambda，不行的就用手写的函数对象。另一方面，lambda 和函数对象是不能重载的；如果想要重载，就优先使用函数（让 lambda 重载的变通方案相当繁复）。如果两种方式都不行的话，就优先写一个函数；应当只使用所需的最简工具。
+函数不能俘获局部变量且不能在局部作用域中进行定义；当想要这些能力时，如果可能就应当使用 lambda，不行的就用手写的函数对象。另一方面，lambda 和函数对象是不能重载的；如果想要重载，就优先使用函数（让 lambda 重载的变通方案相当繁复）。如果两种方式都不行的话，就优先写一个函数；应当只使用所需的最简工具。
 
 ##### 示例
 
@@ -5812,11 +5810,11 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
     {
         if (a.sz > sz) {
             // ... 使用 swap 技巧，没有更好的方式了 ...
-            return *this
+            return *this;
         }
         // ... 从 *a.elem 复制 sz 个元素给 elem ...
         if (a.sz < sz) {
-            // ... 销毁 *this* 中过剩的元素并调整大小 ...
+            // ... 销毁 *this 中过剩的元素并调整大小 ...
         }
         return *this;
     }
@@ -6792,8 +6790,8 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
     };
 
     class PushButton : public AbstractButton {
-        virtual void render() const override;
-        virtual void onClick() override;
+        void render() const override;
+        void onClick() override;
         // ...
     };
 
@@ -7002,9 +7000,9 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 ##### 示例，好
 
     struct Better : B {
-        void f1(int) override;        // 错误（被发现）: D::f1() 隐藏了 B::f1()
+        void f1(int) override;        // 错误（被发现）: Better::f1() 隐藏了 B::f1()
         void f2(int) const override;
-        void f3(double) override;     // 错误（被发现）: D::f3() 隐藏了 B::f3()
+        void f3(double) override;     // 错误（被发现）: Better::f3() 隐藏了 B::f3()
         // ...
     };
 
@@ -7915,7 +7913,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 示例
 
-    unique_ptr<Foo> p {new<Foo>{7}};   // OK: 不过有重复
+    unique_ptr<Foo> p {new Foo{7}};    // OK: 不过有重复
 
     auto q = make_unique<Foo>(7);      // 有改善: 并未重复 Foo
 
@@ -7934,8 +7932,8 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 强制实施
 
-* 标记模板特化列表 `<Bar>` 的重复使用。
-* 标记声明为 `unique_ptr<Bar>` 的变量。
+* 标记模板特化列表 `<Foo>` 的重复使用。
+* 标记声明为 `unique_ptr<Foo>` 的变量。
 
 ### <a name="Rh-make_shared"></a>C.151: 用 `make_shared()` 来构建由 `shared_ptr` 所拥有的对象
 
@@ -7947,16 +7945,16 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 ##### 示例
 
     void test() {
-        // OK: 但出现重复；而且为这个 Foo 和 shared_ptr 的使用计数分别进行了分配
-        shared_ptr<Foo> p {new<Foo>{7}};
+        // OK: 但出现重复；而且为这个 Bar 和 shared_ptr 的使用计数分别进行了分配
+        shared_ptr<Bar> p {new Bar{7}};
 
-        auto q = make_shared<Foo>(7);   // 有改善: 并未重复 Foo；只有一个对象
+        auto q = make_shared<Bar>(7);   // 有改善: 并未重复 Bar；只有一个对象
     }
 
 ##### 强制实施
 
-* 标记模板特化列表 `<Foo>` 的重复使用。
-* 标记声明为 `shared_ptr<Foo>` 的变量。
+* 标记模板特化列表 `<Bar>` 的重复使用。
+* 标记声明为 `shared_ptr<Bar>` 的变量。
 
 ### <a name="Rh-array"></a>C.152: 禁止把指向派生类对象的数组的指针赋值给指向基类的指针
 
@@ -12003,7 +12001,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     void mover(X&& x) {
         call_something(std::move(x));         // ok
         call_something(std::forward<X>(x));   // 不好, 请勿对右值引用 std::forward
-        call_something(x);                    // 可疑, 为什么不用 std::move?
+        call_something(x);                    // 可疑  为什么不用std:: move?
     }
 
     template<class T>
@@ -13225,7 +13223,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 强制实施
 
-困难：有大量使用 `unsigned` 的代码，而我们又没给出一个实际的正数类型。
+参见 ES.100 的强制实施。
 
 
 ### <a name="Res-subscripts"></a>ES.107: 不要对下标使用 `unsigned`，优先使用 `gsl::index`
@@ -17532,7 +17530,19 @@ Lambda 会生成函数对象。
 
 ##### 示例
 
-    enable_if<???>
+    template <typename T>
+    enable_if_t<is_integral_v<T>>
+    f(T v)
+    {
+        // ...
+    }
+
+    // Equivalent to:
+    template <Integral T>
+    void f(T v)
+    {
+        // ...
+    }
 
 ##### 注解
 
@@ -18986,7 +18996,6 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
     // basic_std_lib.h:
 
-    #include <vector>
     #include <string>
     #include <map>
     #include <iostream>
