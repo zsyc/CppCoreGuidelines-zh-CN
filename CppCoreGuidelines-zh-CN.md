@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2018/9/11
+2019/6/16
 
 
 编辑：
@@ -481,7 +481,6 @@
 ##### 示例
 
     class Date {
-        // ...
     public:
         Month month() const;  // 好
         int month();          // 不好
@@ -491,7 +490,7 @@
 `month` 的第一个声明式，显然是要返回一个 `Month`，而且不会修改 `Date` 对象的状态。
 而第二个版本则需要读者进行猜测，同时带来了更多的出现难于发现 BUG 的可能性。
 
-##### 示例；不好
+##### 示例，不好
 
 这个循环是 `std::find` 的一种能力有限的形式：
 
@@ -510,7 +509,7 @@
         // ...
     }
 
-##### 示例；好
+##### 示例，好
 
 要清晰得多地表达其设计意图，可以这样：
 
@@ -1060,7 +1059,7 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
     }
 
 这个其实是一个来自产品代码的例子。
-我们留给读者来找出这里浪费了什么东西。
+可以看到这里有一句 `i < strlen(s)`。这个表达式在循环的每次重复中都要求值，这意味着每次循环中 `strlen` 都必须走完字符串以确定其长度。我们假定在改动字符串内容过程中`toLower` 不会影响字符串的长度，因此最好在循环外面缓存长度值，而不是在每次重复中都承担其代价。
 
 ##### 注解
 
@@ -1072,6 +1071,9 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 ##### 强制实施
 
 许多更加具体的规则都是针对追求简单性并清除无理由浪费的总体目标的。
+
+* 当用户定义的非预置后缀 `operator++` 或 `operator--` 函数的返回值未被使用时进行标记。优先代之以采用前缀形式。（注：使用“用户定义的非预置”是为了减弱噪声。若实践中噪声还是很显著则需要重新审视这条强制措施。）
+
 
 ### <a name="Rp-mutable"></a>P.10: 不可变数据优先于可变数据
 
@@ -1395,18 +1397,23 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 ##### 理由
 
-类型是最简单和最好的文档，它们有定义明确的含义，并且保证在编译期进行检查。
+类型是最简单和最好的文档，它们有定义明确的含义并因而提高了易读性，并且是在编译期进行检查的。
 而且，严格类型化的代码通常也能更好地进行优化。
 
 ##### 示例，请勿这样做
 
 考虑：
 
-    void pass(void* data);    // void* 是有问题的
+    void pass(void* data);    // 使用弱的并且缺乏明确性的类型 void* 是有问题的
 
-被调用方必须得把数据指针强制转换（回）正确的类型以能使用它。这样做易于犯错，而且通常是多余的。
-请避免 `void*`，尤其是在接口中。
-请考虑使用 `variant` 或指向基类的指针来代替它。
+调用者无法确定它允许使用哪些类型，而且因为它并没有指定 `const`，
+也不确定其数据是否会被改动。注意，任何指针类型都可以隐式转换为 `void*`，
+因此调用者很容易提供这样的值给它。
+
+被调用方必须以 `static_cast` 将数据强制转换为某个无验证的类型以使用它。
+这样做易于犯错，而且啰嗦。
+
+应当仅在设计中无法以 C++ 来予以描述的数据的传递时才使用 `const void*`。请考虑使用 `variant` 或指向基类的指针来代替它。
 
 **替代方案**: 通常，利用模板形参可以把 `void*` 排除而改为 `T*` 或者 `T&`。
 对于泛型代码，这些个 `T` 可以是一般模板参数或者是概念约束的模板参数。
@@ -1415,12 +1422,12 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 考虑：
 
-    void draw_rect(int, int, int, int);   // 很大的犯错机会
+    draw_rect(100, 200, 100, 500); // 这些数值什么意思？
 
-    draw_rect(p.x, p.y, 10, 20);          // 10, 20 是什么意思？
+    draw_rect(p.x, p.y, 10, 20); // 10 和 20 的单位是什么？
 
-`int` 可以携带任何形式的信息，因此我们必须猜测这四个 `int` 的含义。
-前两个最可能的是坐标对 `x`,`y`，但后两个是什么呢？
+很明显调用者在描述一个矩形，不明确的是它们都和其哪些部分相关。而且 `int` 可以表示任何形式的信息，包括各种不同单位的值，因此我们必须得猜测这四个 `int` 的含义。前两个很可能代表坐标对偶 `x` 和 `y`，但后两个是什么呢？
+
 注释和参数的名字可以有所帮助，但我们可以直截了当：
 
     void draw_rectangle(Point top_left, Point bottom_right);
@@ -1431,6 +1438,26 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 
 显然，我们是无法利用静态类型系统识别所有的错误的，
 例如，假定第一个参数是左上角这一点就依赖于约定（命名或者注释）。
+
+##### 示例，不好
+
+考虑：
+
+    set_settings(true, false, 42); // 这些数值什么意思？
+
+各参数类型及其值并不能表明其所指定的设置项是什么以及它们的值所代表的含义。
+
+下面的设计则更加明确，安全且易读：
+
+    alarm_settings s{};
+    s.enabled = true;
+    s.displayMode = alarm_settings::mode::spinning_light;
+    s.frequency = alarm_settings::every_10_seconds;
+    set_settings(s);
+
+对于一组布尔值的情况，可以考虑使用某种标记枚举；这是一种用于表示一组布尔值的模式。
+
+    enable_lamp_options(lamp_option::on | lamp_option::animate_state_transitions);
 
 ##### 示例，不好
 
@@ -1485,7 +1512,8 @@ C++ 程序员应当熟知标准库的基本知识，并在适当的时候加以�
 ##### 强制实施
 
 * 【简单】 报告将 `void*` 用作参数或返回类型的情况
-* 【难于做好】 查找带有许多内建类型的参数的成员函数。
+* 【简单】 报告使用了多个 `bool` 参数的情况
+* 【难于做好】 查找使用了过多基础类型的参数的函数。
 
 ### <a name="Ri-pre"></a>I.5: 说明前条件（如果有）
 
@@ -1765,7 +1793,7 @@ GCC 6.1 及其后版本支持概念。
     // ... 使用 val ...
 
 这种风格不幸地会导致未初始化的变量。
-一种解决这种问题的设施[结构化绑定](http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2016/p0144r1.pdf)将会出现在 C++17 中。
+从 C++17 开始，可以使用 "结构化绑定" 功能特性来从返回值直接对多个变量初始化。
 
     auto [val, error_code] = do_something();
     if (error_code) {
@@ -1938,7 +1966,7 @@ GCC 6.1 及其后版本支持概念。
 ##### 例外
 
 使用 `zstring` 和 `czstring` 来表示 C 风格的以零终结字符串。
-但这样做时，应当使用 [GSL](#GSL) 中的 `string_span` 以避免范围错误。
+但这样做时，应当使用 `std::string_view` 或 [GSL](#GSL) 中的 `string_span` 以避免范围错误。
 
 ##### 强制实施
 
@@ -2148,10 +2176,6 @@ GCC 6.1 及其后版本支持概念。
 ##### 理由
 
 不同的编译器会实现不同的类的二进制布局，异常处理，函数名字，以及其他的实现细节。
-
-##### 例外
-
-你可以使用少量精心选择的高层次 C++ 类型来精心制造出一种接口。参见 ???。
 
 ##### 例外
 
@@ -2579,25 +2603,6 @@ GCC 6.1 及其后版本支持概念。
 
 ##### 注解
 
-`constexpr` 函数都是纯函数：它们不能有副作用。
-
-    int dcount = 0;
-    constexpr int double(int v)
-    {
-        ++dcount;   // 错误：试图在 constexpr 函数中产生副作用
-        return v + v;
-    }
-
-通常这样是很棒的。
-
-当提供非常量的参数时，`constexpr` 函数是可以抛出异常的。
-如果你认为通过抛出异常而退出算作是一种副作用的话，`constexpr` 函数就并不是完全的纯函数；
-如果你这样认为的话，这就不是个问题。
-??? 给委员会的问题：`constexpr` 函数所抛出的异常的构造函数可以改变其状态吗？
-“不”可能是更符合大多数实践的更好的答案。
-
-##### 注解
-
 不要试图让所有函数都变成 `constexpr`。
 大多数计算都最好在运行时进行。
 
@@ -2702,6 +2707,7 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
 ##### 注解
 
 析构函数，`swap` 函数，移动操作，以及默认构造函数不应当抛出异常。
+另请参见 [C.44](#Rc-default00)。
 
 ##### 强制实施
 
@@ -2772,16 +2778,6 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
 
     template<class T>
     auto square(T t) { return t * t; }
-
-##### 注解
-
-`constexpr` 函数就是纯函数。
-
-当提供非常量的参数时，`constexpr` 函数是可以抛出异常的。
-如果你认为通过抛出异常而退出算作是一种副作用的话，`constexpr` 函数就并不是完全的纯函数；
-如果你这样认为的话，这就不是个问题。
-??? 给委员会的问题：`constexpr` 函数所抛出的异常的构造函数可以改变其状态吗？
-“不”可能是更符合大多数实践的更好的答案。
 
 ##### 强制实施
 
@@ -2895,10 +2891,10 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
 
 ##### 强制实施
 
-* 【简单】〔基础〕 当按值传递的参数的大小大于 `4 * sizeof(int)` 时给出警告。
-  建议代之以指向 `const` 的引用。
-* 【简单】〔基础〕 当按引用传递的 `const` 参数的大小小于 `3 * sizeof(int)` 时给出警告。建议代之以按值传递。
-* 【简单】〔基础〕 当按引用传递的 `const` 参数被 `move` 时给出警告。
+* 【简单】〔基础〕 当按值传递的参数的大小大于 `2 * sizeof(void*)` 时给出警告。
+  建议代之以 `const` 的引用。
+* 【简单】〔基础〕 当按 `const` 引用传递的参数的大小小于 `2 * sizeof(void*)` 时给出警告。建议代之以按值传递。
+* 【简单】〔基础〕 当按 `const` 引用传递的参数被 `move` 时给出警告。
 
 ### <a name="Rf-inout"></a>F.17: 对于“输入/输出（in-out）”参数，按非 `const` 引用进行传递
 
@@ -3314,6 +3310,8 @@ C++98 的标准库已经使用这种风格了，因为 `pair` 就像一种两个
 
 C 风格的字符串非常普遍。它们是按一种约定方式定义的：就是以零结尾的字符数组。
 我们必须把 C 风格的字符串从指向单个字符的指针或者指向字符数组的老式的指针当中区分出来。
+
+当不需要零结尾时，请使用 'string_view'。
 
 ##### 示例
 
@@ -3749,7 +3747,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 ##### 理由
 
-函数是不能俘获局部变量或者在局部作用域中声明的；当想要这些能力时，如果可能就应当使用 lambda，不行的就用手写的函数对象。另一方面，lambda 和函数对象是不能重载的；如果想要重载，就优先使用函数（让 lambda 重载的变通方案相当繁复）。如果两种方式都不行的话，就优先写一个函数；应当只使用所需的最简工具。
+函数不能俘获局部变量且不能在局部作用域中进行定义；当想要这些能力时，如果可能就应当使用 lambda，不行的就用手写的函数对象。另一方面，lambda 和函数对象是不能重载的；如果想要重载，就优先使用函数（让 lambda 重载的变通方案相当繁复）。如果两种方式都不行的话，就优先写一个函数；应当只使用所需的最简工具。
 
 ##### 示例
 
@@ -3813,7 +3811,7 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 
 ##### 强制实施
 
-    ???
+* 如果某个重载集合中的各个重载具有一个共同的形参前缀（例如 `f(int)`，`f(int, const string&)`，`f(int, const string&, double)`），则为其给出警告。（注意：如果这条强制措施实践中产生太多消息，请对此进行复查。）
 
 ### <a name="Rf-reference-capture"></a>F.52: 对于局部使用的（也包括传递给算法的）lambda，优先采用按引用俘获
 
@@ -4083,7 +4081,6 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
 ##### 示例
 
     class Date {
-        // ... 一些内部表示 ...
     public:
         Date();
         // 验证 {yy, mm, dd} 是有效的日期并进行初始化
@@ -4092,6 +4089,8 @@ C 风格的字符串非常普遍。它们是按一种约定方式定义的：就
         int day() const;
         Month month() const;
         // ...
+    private:
+        // ... 一些内部表示 ...
     };
 
 比如说，我们现在可以改变 `Date` 的表示而不对其使用者造成影响（虽然很可能需要重新编译）。
@@ -4384,7 +4383,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
         Point1 p12 {p11};    // 一个副本
 
         auto p21 = make_unique<Point2>(1, 2);   // 在自由存储中创建一个对象
-        auto p22 = p21.clone();                 // 创建一个副本
+        auto p22 = p21->clone();                // 创建一个副本
         // ...
     }
 
@@ -4475,7 +4474,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 * [C.31: 类所获取的所有资源，必须都在类的析构函数中进行释放](#Rc-dtor-release)
 * [C.32: 如果类中带有原始指针（`T*`）或者引用（`T&`），请考虑它是否是所有者](#Rc-dtor-ptr)
 * [C.33: 如果类中带有所有权的指针成员，请定义析构函数或使之为 `=delete`](#Rc-dtor-ptr2)
-* [C.35: 带有虚函数的基类应当有虚析构函数](#Rc-dtor-virtual)
+* [C.35: 基类的析构函数应当要么是 public 和 virtual，要么是 protected 且非 virtual](#Rc-dtor-virtual)
 * [C.36: 析构函数不能失败](#Rc-dtor-fail)
 * [C.37: 使析构函数 `noexcept`](#Rc-dtor-noexcept)
 
@@ -4930,7 +4929,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 
 ##### 示例，不好
 
-    struct Base {  // 不好: 没有虚析构函数
+    struct Base {  // 不好: 隐含带有 public 的非 virtual 析构函数
         virtual void f();
     };
 
@@ -4969,6 +4968,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 ##### 例外
 
 可以构想出一种可能需要受保护虚析构函数的情形：派生类型（且仅限于这种类型）的对象允许通过基类指针来销毁*另一个*对象（而不是其自身）。不过我们在实际中从未见到过这种情况。
+
 
 ##### 强制实施
 
@@ -5463,7 +5463,6 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 ##### 示例，不好
 
     class String {
-        // ...
     public:
         String(int);   // 不好
         // ...
@@ -5476,7 +5475,6 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 如果确实想要从构造函数参数类型隐式转换为类类型的话，就不使用 `explicit`：
 
     class Complex {
-        // ...
     public:
         Complex(double d);   // OK: 希望进行从 d 向 {d, 0} 的转换
         // ...
@@ -5624,49 +5622,55 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
     class B {
     public:
-        B()
-        {
-            // ...
-            f();   // 不好: 构造函数中的虚函数调用
-            // ...
+        B() {
+            /* ... */
+            f(); // 不好: C.82：不要在构造函数和析构函数中调用虚函数
+            /* ... */
         }
 
         virtual void f() = 0;
-
-        // ...
     };
 
 ##### 示例
 
     class B {
     protected:
-        B() { /* ... */ }              // 创建不完全初始化的对象
-
-        virtual void PostInitialize()  // 构造之后立即调用
-        {
-            // ...
-            f();    // 好: 虚函数分派是安全的
-            // ...
-        }
+        class Token {};
 
     public:
+        explicit B(Token) { /* ... */ }  // 创建不完全初始化的对象
         virtual void f() = 0;
 
         template<class T>
-        static shared_ptr<T> Create()  // 创建共享对象的接口
+        static shared_ptr<T> create()    // 创建共享对象的接口
         {
-            auto p = make_shared<T>();
-            p->PostInitialize();
+            auto p = make_shared<T>(typename T::Token{});
+            p->post_initialize();
             return p;
         }
+
+    protected:
+        virtual void post_initialize()   // 构造之后立即调用
+            { /* ... */ f(); /* ... */ } // 好: 虚函数分派是安全的
     };
 
-    class D : public B { /* ... */ };  // 某个派生类
+    class D : public B {                 // 某个派生类
+    protected:
+        class Token {};
 
-    shared_ptr<D> p = D::Create<D>();  // 创建一个 D 的对象
+    public:
+        explicit D(Token) : B( B::Token{} ) {}
+        void f() override { /* ... */ };
 
-通过使构造函数为 `protected`，避免不完全构造的对象泄漏出去。
-通过提供工厂函数 `Create()`，（在自由存储上）构造对象变得简便。
+    protected:
+        template<class T>
+        friend shared_ptr<T> B::create();
+    };
+
+    shared_ptr<D> p = D::create<D>();  // 创建一个 D 的对象
+
+`make_shared` 要求公开的构造函数。构造函数通过要求一个受保护的 `Token` 而无法再被公开调用，从而避免不完全构造的对象泄漏出去。
+通过提供工厂函数 `create()`，（在自由存储上）构造对象变得简便。
 
 ##### 注解
 
@@ -5687,13 +5691,13 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         Month m;
         int y;
     public:
-        Date(int ii, Month mm, year yy)
-            :i{ii}, m{mm}, y{yy}
-            { if (!valid(i, m, y)) throw Bad_date{}; }
+        Date(int dd, Month mm, year yy)
+            :d{dd}, m{mm}, y{yy}
+            { if (!valid(d, m, y)) throw Bad_date{}; }
 
-        Date(int ii, Month mm)
-            :i{ii}, m{mm} y{current_year()}
-            { if (!valid(i, m, y)) throw Bad_date{}; }
+        Date(int dd, Month mm)
+            :d{dd}, m{mm} y{current_year()}
+            { if (!valid(d, m, y)) throw Bad_date{}; }
         // ...
     };
 
@@ -5706,12 +5710,12 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         Month m;
         int y;
     public:
-        Date2(int ii, Month mm, year yy)
-            :i{ii}, m{mm} y{yy}
-            { if (!valid(i, m, y)) throw Bad_date{}; }
+        Date2(int dd, Month mm, year yy)
+            :d{dd}, m{mm} y{yy}
+            { if (!valid(d, m, y)) throw Bad_date{}; }
 
-        Date2(int ii, Month mm)
-            :Date2{ii, mm, current_year()} {}
+        Date2(int dd, Month mm)
+            :Date2{dd, mm, current_year()} {}
         // ...
     };
 
@@ -5775,7 +5779,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
         {
             // 好: 不需要检查自赋值的情况（除非为性能考虑）
             auto tmp = x;
-            std::swap(*this, tmp);
+            swap(tmp); // 参见 C.83
             return *this;
         }
         // ...
@@ -5810,11 +5814,11 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
     {
         if (a.sz > sz) {
             // ... 使用 swap 技巧，没有更好的方式了 ...
-            return *this
+            return *this;
         }
         // ... 从 *a.elem 复制 sz 个元素给 elem ...
         if (a.sz < sz) {
-            // ... 销毁 *this* 中过剩的元素并调整大小 ...
+            // ... 销毁 *this 中过剩的元素并调整大小 ...
         }
         return *this;
     }
@@ -5896,7 +5900,7 @@ C++11 的初始化式列表规则免除了对许多构造函数的需求。例�
 
 ##### 注解
 
-应当优先采用复制语义，除非你要构建某种“智能指针”。值语义是最容易进行推理的，而且也是被标准库设施所期望的。
+应当优先采用值语义，除非你要构建某种“智能指针”。值语义是最容易进行推理的，而且也是被标准库设施所期望的。
 
 ##### 强制实施
 
@@ -6099,11 +6103,11 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
     template<typename T>
     class Vector {
-        // ...
+    public:
         Vector(Vector&& a) noexcept :elem{a.elem}, sz{a.sz} { a.sz = 0; a.elem = nullptr; }
         Vector& operator=(Vector&& a) noexcept { elem = a.elem; sz = a.sz; a.sz = 0; a.elem = nullptr; }
         // ...
-    public:
+    private:
         T* elem;
         int sz;
     };
@@ -6114,11 +6118,11 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
     template<typename T>
     class Vector2 {
-        // ...
+    public:
         Vector2(Vector2&& a) { *this = a; }             // 直接利用复制操作
         Vector2& operator=(Vector2&& a) { *this = a; }  // 直接利用复制操作
         // ...
-    public:
+    private:
         T* elem;
         int sz;
     };
@@ -6307,6 +6311,7 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
         virtual void f() = 0;   // 未实现
         virtual void g();       // 有 Base 版本的实现
         virtual void h();       // 有 Base 版本的实现
+        virtual ~Base();        // 有 Base 版本的实现
     };
 
     class Derived : public Base {
@@ -6353,7 +6358,6 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 ##### 示例，好
 
     class Foo {
-        // ...
     public:
         void swap(Foo& rhs) noexcept
         {
@@ -6445,7 +6449,7 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 如果类带有比如 `double` 的 `NaN` 这样的故障状态的话，就诱惑人们让与故障状态之间的比较抛出异常。
 其替代方案是让两个故障状态的比较相等，而任何有效状态和故障状态的比较都不相等。
 
-#### 注解
+##### 注解
 
 本条规则适用于所有的常规比较运算符：`!=`，`<`，`<=`，`>`，以及 `>=`。
 
@@ -6494,11 +6498,11 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 显然有许多使 `==` 在类层次中可以工作的方式，但不成熟的方案是无法适应范围扩展的。
 
-#### 注解
+##### 注解
 
 本条规则适用于所有的常规比较运算符：`!=`，`<`，`<=`，`>`，以及 `>=`。
 
-##### Enforcement
+##### 强制实施
 
 * 对虚的 `operator==()` 进行标记；其他比较运算符也是如此：`!=`，`<`，`<=`，`>`，和 `>=`。
 
@@ -6602,8 +6606,8 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
         std::vector<T> rep;  // 用一个 std::vector 来持有各元素
     };
 
-    template<typename T> bool operator==(const T&);
-    template<typename T> bool operator!=(const T&);
+    template<typename T> bool operator==(const Sorted_vector<T>&, const Sorted_vector<T>&);
+    template<typename T> bool operator!=(const Sorted_vector<T>&, const Sorted_vector<T>&);
     // ...
 
 这段代码遵循 STL 风格但并不完整。
@@ -6790,8 +6794,8 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
     };
 
     class PushButton : public AbstractButton {
-        virtual void render() const override;
-        virtual void onClick() override;
+        void render() const override;
+        void onClick() override;
         // ...
     };
 
@@ -6979,8 +6983,6 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * `override` 刚好仅仅表明“这是一个非最终覆盖函数”。
 * `final` 刚好仅仅表明“这是一个最终覆盖函数”。
 
-当基类析构函数声明为 `virtual` 时，应当避免将派生类的析构函数声明为 `virtual` 或 `override`。一些代码库和工具可能会坚持要求析构函数为 `override`，但这里的指导方针并不建议如此。
-
 ##### 示例，不好
 
     struct B {
@@ -7000,9 +7002,9 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 ##### 示例，好
 
     struct Better : B {
-        void f1(int) override;        // 错误（被发现）: D::f1() 隐藏了 B::f1()
+        void f1(int) override;        // 错误（被发现）: Better::f1() 隐藏了 B::f1()
         void f2(int) const override;
-        void f3(double) override;     // 错误（被发现）: D::f3() 隐藏了 B::f3()
+        void f3(double) override;     // 错误（被发现）: Better::f3() 隐藏了 B::f3()
         // ...
     };
 
@@ -7015,7 +7017,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ##### 强制实施
 
-* 比较鸡肋和派生类中的名字，并对并未进行覆盖的相同名字的使用进行标记。
+* 比较基类和派生类中的虚函数的名字，并对并未进行覆盖的相同名字的使用进行标记。
 * 对既没有 `override` 也没有 `final` 的覆盖函数进行标记。
 * 对函数声明中使用 `virtual`、`override` 和 `final` 中超过一个的情况进行标记。
 
@@ -7091,7 +7093,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 * 随着类层次的增长和向 `Shape` 添加更多的数据，构造函数会越发难于编写和维护。
 * 为什么要计算 `Triangle` 的中心点？我们从不用它。
 * 向 `Shape` 添加新的数据成员（比如绘制风格或者画布）
-将导致所有派生类和所有使用方都需要进行复审，可能需要修改，而且很可能需要重新编译。
+将导致所有派生于 `Shape` 的类和所有使用 `Shape` 的代码都需要进行复审，可能需要修改，而且很可能需要重新编译。
 
 `Shape::move()` 的实现就是实现继承的一个例子：
 我们为所有派生类一次性定义 `move()`。
@@ -7262,7 +7264,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
     class B {
     public:
         virtual owner<B*> clone() = 0;
-        virtual ~B() = 0;
+        virtual ~B() = default;
 
         B(const B&) = delete;
         B& operator=(const B&) = delete;
@@ -7271,7 +7273,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
     class D : public B {
     public:
         owner<D*> clone() override;
-        virtual ~D() override;
+        ~D() override;
     };
 
 通常来说，推荐使用智能指针来表示所有权（参见 [R.20](#Rr-owner)）。不过根据语言规则，协变返回类型不能是智能指针：当 `B::clone` 返回 `unique_ptr<B>` 时 `D::clone` 不能返回 `unique_ptr<D>`。因此，你得在所有覆盖函数中统一都返回 `unique_ptr<B>`，或者也可以使用[指导方针支持库](#SS-views)中的 `owner<>` 工具类。
@@ -7547,6 +7549,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
     public:
         virtual int f(int i) { std::cout << "f(int): "; return i; }
         virtual double f(double d) { std::cout << "f(double): "; return d; }
+        virtual ~B() = default;
     };
     class D: public B {
     public:
@@ -7634,6 +7637,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
     class Base {
     public:
         virtual int multiply(int value, int factor = 2) = 0;
+        virtual ~Base() = default;
     };
 
     class Derived : public Base {
@@ -7661,7 +7665,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 示例
 
-    struct B { int a; virtual int f(); };
+    struct B { int a; virtual int f(); virtual ~B() = default };
     struct D : B { int b; int f() override; };
 
     void use(B b)
@@ -7689,6 +7693,10 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
         d.f();   // OK
     }
 
+##### 另见
+
+[多态类应当抑制复制操作](#Rc-copy-virtual)
+
 ##### 强制实施
 
 对所有切片都进行标记。
@@ -7704,6 +7712,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
     struct B {   // 接口
         virtual void f();
         virtual void g();
+        virtual ~B();
     };
 
     struct D : B {   // 更宽的接口
@@ -7913,7 +7922,7 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 示例
 
-    unique_ptr<Foo> p {new<Foo>{7}};   // OK: 不过有重复
+    unique_ptr<Foo> p {new Foo{7}};    // OK: 不过有重复
 
     auto q = make_unique<Foo>(7);      // 有改善: 并未重复 Foo
 
@@ -7932,8 +7941,8 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 
 ##### 强制实施
 
-* 标记模板特化列表 `<Bar>` 的重复使用。
-* 标记声明为 `unique_ptr<Bar>` 的变量。
+* 标记模板特化列表 `<Foo>` 的重复使用。
+* 标记声明为 `unique_ptr<Foo>` 的变量。
 
 ### <a name="Rh-make_shared"></a>C.151: 用 `make_shared()` 来构建由 `shared_ptr` 所拥有的对象
 
@@ -7945,16 +7954,16 @@ B 类别中的数据成员应当为 `private` 或 `const`。这是因为封装�
 ##### 示例
 
     void test() {
-        // OK: 但出现重复；而且为这个 Foo 和 shared_ptr 的使用计数分别进行了分配
-        shared_ptr<Foo> p {new<Foo>{7}};
+        // OK: 但出现重复；而且为这个 Bar 和 shared_ptr 的使用计数分别进行了分配
+        shared_ptr<Bar> p {new Bar{7}};
 
-        auto q = make_shared<Foo>(7);   // 有改善: 并未重复 Foo；只有一个对象
+        auto q = make_shared<Bar>(7);   // 有改善: 并未重复 Bar；只有一个对象
     }
 
 ##### 强制实施
 
-* 标记模板特化列表 `<Foo>` 的重复使用。
-* 标记声明为 `shared_ptr<Foo>` 的变量。
+* 标记模板特化列表 `<Bar>` 的重复使用。
+* 标记声明为 `shared_ptr<Bar>` 的变量。
 
 ### <a name="Rh-array"></a>C.152: 禁止把指向派生类对象的数组的指针赋值给指向基类的指针
 
@@ -8489,7 +8498,7 @@ C++ 语义中的很多部分都假定了其默认的含义。
 
 将它们和一个类型字段一起包装到类之中。
 
-可以使用即将标准化的 `variant` 类型（在 `<variant>` 中可以找到）：
+可以使用 C++17 的 `variant` 类型（在 `<variant>` 中可以找到）：
 
     variant<int, double> v;
     v = 123;        // v 持有一个 int
@@ -8586,10 +8595,10 @@ C++ 语义中的很多部分都假定了其默认的含义。
             i = e.i;
             break;
         case Tag::text:
-            new(&s)(e.s);   // 放置式 new: 显式构造
-            type = e.type;
+            new(&s) string(e.s);   // 放置式 new: 显式构造
         }
 
+        type = e.type;
         return *this;
     }
 
@@ -8941,7 +8950,7 @@ C++17 引入了一个独立类型 `std::byte` 以支持在原始对象表示上�
   * [R.11: 避免显式调用 `new` 和 `delete`](#Rr-newdelete)
   * [R.12: 显式资源分配的结果应当立即交给一个管理对象](#Rr-immediate-alloc)
   * [R.13: 单个表达式语句中至多进行一次显式资源分配](#Rr-single-alloc)
-  * [R.14: ??? 数组 vs. 指针参数](#Rr-ap)
+  * [R.14: 避免使用 `[]` 形参，优先使用 `span`](#Rr-ap)
   * [R.15: 总是同时重载相匹配的分配、回收函数对](#Rr-pair)
 
 * <a name="Rr-summary-smartptrs"></a>智能指针规则概览：
@@ -9086,20 +9095,20 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
     template<typename T>
     class X {
-        // ...
     public:
         T* p;   // 不好: 不清楚 p 是不是带有所有权
         T* q;   // 不好: 不清楚 q 是不是带有所有权
+        // ...
     };
 
 可以通过明确所有权来修正这个问题：
 
     template<typename T>
     class X2 {
-        // ...
     public:
         owner<T*> p;  // OK: p 具有所有权
         T* q;         // OK: q 没有所有权
+        // ...
     };
 
 ##### 例外
@@ -9221,7 +9230,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 ##### 强制实施
 
 * 【中级】 如果分配了某个对象，又在函数内的所有路径中都进行了回收，则给出警告。建议它应当被代之以一个局部的 `auto` 栈对象。
-* 【简单】 当局部的 `unique_ptr` 或 `shared_ptr` 在其生存期结束前未被移动、复制、赋值或 `reset`，则给出警告。
+* 【简单】 当局部的 `Unique_pointer` 或 `Shared_pointer` 在其生存期结束前未被移动、复制、赋值或 `reset`，则给出警告。
 
 ### <a name="Rr-global"></a>R.6: 避免非 `const` 的全局变量
 
@@ -9382,21 +9391,25 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 * 将包含多次显式资源分配的表达式标记出来。（问题：我们能识别出多少直接资源分配呢？）
 
-### <a name="Rr-ap"></a>R.14: ??? 数组 vs. 指针参数
+### <a name="Rr-ap"></a>R.14: 避免使用 `[]` 形参，优先使用 `span`
 
 ##### 理由
 
 数组会退化为指针，因而丢失其大小信息，并留下了发生范围错误的机会。
+使用 `span` 来保留大小信息。
 
 ##### 示例
 
-    ??? 我们建议怎么办，f(int*[]) 还是 f(int**) ???
+    void f(int[]);          // 不建议的做法
 
-**替代方案**: 使用 `span` 来保留大小信息。
+    void f(int*);           // 对多个对象不建议的做法
+                            // （指针应当指向单个对象，不要进行下标运算）
+
+    void f(gsl::span<int>); // 好，建议的做法
 
 ##### 强制实施
 
-标记出 `[]` 参数。
+标记出 `[]` 参数。代之以使用 `span`。
 
 ### <a name="Rr-pair"></a>R.15: 总是同时重载相匹配的分配、回收函数对
 
@@ -9478,7 +9491,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 ##### 强制实施
 
-【简单】 如果函数所使用的 `shared_ptr` 的对象是函数之内所分配的，而且既不会将这个 `shared_ptr` 返回，也不会将其传递给其他接受 `shared_ptr&` 的函数的话，就给出警告。建议代之以 `unique_ptr`。
+【简单】 如果函数所使用的 `Shared_pointer` 的对象是函数之内所分配的，而且既不会将这个 `Shared_pointer` 返回，也不会将其传递给其他接受 `Shared_pointer&` 的函数的话，就给出警告。建议代之以 `unique_ptr`。
 
 ### <a name="Rr-make_shared"></a>R.22: 使用 `make_shared()` 创建 `shared_ptr`
 
@@ -9640,9 +9653,9 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
     }
 
 上面两段根据 [`sharedptrparam` 指导方针](#Rr-smartptrparam)来说都是错误的：
-`p` 是一个 `Shared_ptr`，但其共享性质完全没有被用到，而对其进行按值传递则是一种暗含的劣化；
+`p` 是一个 `Shared_pointer`，但其共享性质完全没有被用到，而对其进行按值传递则是一种暗含的劣化；
 这两个函数应当仅当它们需要参与 `widget` 的生存期管理时才接受智能指针。否则当可以为 `nullptr` 时它们就应当接受 `widget*`，否则，理想情况下，函数应当接受 `widget&`。
-这些智能指针都符合 `Shared_ptr` 的概念，因此这些强制实施指导方针的规则可以直接应用，并使得这种一般性的劣化情况暴露出来。
+这些智能指针都符合 `Shared_pointer` 的概念，因此这些强制实施指导方针的规则可以直接应用，并使得这种一般性的劣化情况暴露出来。
 
 ### <a name="Rr-uniqueptrparam"></a>R.32: `unique_ptr<widget>` 参数用以表达函数假定获得 `widget` 的所有权
 
@@ -9662,8 +9675,8 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 ##### 强制实施
 
-* 【简单】 如果函数以左值引用接受 `Unique_ptr<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
-* 【简单】〔基础〕 如果函数以 `const` 引用接受 `Unique_ptr<T>` 参数，则给出警告。建议代之以接受 `const T*` 或 `const T&`。
+* 【简单】 如果函数以左值引用接受 `Unique_pointer<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
+* 【简单】〔基础〕 如果函数以 `const` 引用接受 `Unique_pointer<T>` 参数，则给出警告。建议代之以接受 `const T*` 或 `const T&`。
 
 ### <a name="Rr-reseat"></a>R.33: `unique_ptr<widget>&` 参数用以表达函数对该 `widget` 重新置位
 
@@ -9685,8 +9698,8 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 ##### 强制实施
 
-* 【简单】 如果函数以左值引用接受 `Unique_ptr<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
-* 【简单】〔基础〕 如果函数以 `const` 引用接受 `Unique_ptr<T>` 参数，则给出警告。建议代之以接受 `const T*` 或 `const T&`。
+* 【简单】 如果函数以左值引用接受 `Unique_pointer<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
+* 【简单】〔基础〕 如果函数以 `const` 引用接受 `Unique_pointer<T>` 参数，则给出警告。建议代之以接受 `const T*` 或 `const T&`。
 
 ### <a name="Rr-sharedptrparam-owner"></a>R.34: `shared_ptr<widget>` 参数用以表达函数是所有者的一份子
 
@@ -9704,9 +9717,9 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 ##### 强制实施
 
-* 【简单】 如果函数以左值引用接受 `Shared_ptr<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
-* 【简单】〔基础〕 如果函数按值或者以 `const` 引用接受 `Shared_ptr<T>` 参数，但并未在至少一个代码路径中将其复制或移动给另一个 `Shared_ptr`，则给出警告。建议代之以接受 `T*` 或 `T&`。
-* 【简单】〔基础〕 如果函数以右值引用接受 `Shared_ptr<T>` 参数，则给出警告。建议代之以按值传递。
+* 【简单】 如果函数以左值引用接受 `Shared_pointer<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
+* 【简单】〔基础〕 如果函数按值或者以 `const` 引用接受 `Shared_pointer<T>` 参数，但并未在至少一个代码路径中将其复制或移动给另一个 `Shared_pointer`，则给出警告。建议代之以接受 `T*` 或 `T&`。
+* 【简单】〔基础〕 如果函数以右值引用接受 `Shared_pointer<T>` 参数，则给出警告。建议代之以按值传递。
 
 ### <a name="Rr-sharedptrparam"></a>R.35: `shared_ptr<widget>&` 参数用以表达函数可能会对共享的指针重新置位
 
@@ -9728,9 +9741,9 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 ##### 强制实施
 
-* 【简单】 如果函数以左值引用接受 `Shared_ptr<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
-* 【简单】〔基础〕 如果函数按值或者以 `const` 引用接受 `Shared_ptr<T>` 参数，但并未在至少一个代码路径中将其复制或移动给另一个 `Shared_ptr`，则给出警告。建议代之以接受 `T*` 或 `T&`。
-* 【简单】〔基础〕 如果函数以右值引用接受 `Shared_ptr<T>` 参数，则给出警告。建议代之以按值传递。
+* 【简单】 如果函数以左值引用接受 `Shared_pointer<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
+* 【简单】〔基础〕 如果函数按值或者以 `const` 引用接受 `Shared_pointer<T>` 参数，但并未在至少一个代码路径中将其复制或移动给另一个 `Shared_pointer`，则给出警告。建议代之以接受 `T*` 或 `T&`。
+* 【简单】〔基础〕 如果函数以右值引用接受 `Shared_pointer<T>` 参数，则给出警告。建议代之以按值传递。
 
 ### <a name="Rr-sharedptrparam-const"></a>R.36: `const shared_ptr<widget>&` 参数用以表达它可能将保留一个对对象的引用 ???
 
@@ -9748,9 +9761,9 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 ##### 强制实施
 
-* 【简单】 如果函数以左值引用接受 `Shared_ptr<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
-* 【简单】〔基础〕 如果函数按值或者以 `const` 引用接受 `Shared_ptr<T>` 参数，但并未在至少一个代码路径中将其复制或移动给另一个 `Shared_ptr`，则给出警告。建议代之以接受 `T*` 或 `T&`。
-* 【简单】〔基础〕 如果函数以右值引用接受 `Shared_ptr<T>` 参数，则给出警告。建议代之以按值传递。
+* 【简单】 如果函数以左值引用接受 `Shared_pointer<T>` 参数，但并未在至少一个代码路径中向其赋值或者对其调用 `reset()`，则给出警告。建议代之以接受 `T*` 或 `T&`。
+* 【简单】〔基础〕 如果函数按值或者以 `const` 引用接受 `Shared_pointer<T>` 参数，但并未在至少一个代码路径中将其复制或移动给另一个 `Shared_pointer`，则给出警告。建议代之以接受 `T*` 或 `T&`。
+* 【简单】〔基础〕 如果函数以右值引用接受 `Shared_pointer<T>` 参数，则给出警告。建议代之以按值传递。
 
 ### <a name="Rr-smartptrget"></a>R.37: 不要把来自某个智能指针别名的指针或引用传递出去
 
@@ -9811,7 +9824,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 
 ##### 强制实施
 
-* 【简单】 如果从非局部或局部但潜在具有别名的智能指针变量（`Unique_ptr` 或 `Shared_ptr`）中所获取的指针或引用，被用于进行函数调用，则给出警告。如果智能指针是一个 `Shared_ptr`，则建议代之以获取该智能指针的一个局部副本并从中获取指针或引用。
+* 【简单】 如果从非局部或局部但潜在具有别名的智能指针变量（`Unique_pointer` 或 `Shared_pointer`）中所获取的指针或引用，被用于进行函数调用，则给出警告。如果智能指针是一个 `Shared_pointer`，则建议代之以获取该智能指针的一个局部副本并从中获取指针或引用。
 
 # <a name="S-expr"></a>ES: 表达式和语句
 
@@ -9837,7 +9850,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.20: 坚持为对象进行初始化](#Res-always)
 * [ES.21: 不要在确实需要使用变量（或常量）之前就引入它](#Res-introduce)
 * [ES.22: 要等到获得了用以初始化变量的值之后才声明变量](#Res-init)
-* [ES.23: 优先使用 `{}` 初始化语法](#Res-list)
+* [ES.23: 优先使用 `{}` 初始化式语法](#Res-list)
 * [ES.24: 用 `unique_ptr<T>` 来保存指针](#Res-unique)
 * [ES.25: 应当将对象声明为 `const` 或 `constexpr`，除非后面需要修改其值](#Res-const)
 * [ES.26: 不要用一个变量来达成两个不相关的目的](#Res-recycle)
@@ -9883,7 +9896,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.77: 尽量减少循环中使用的 `break` 和 `continue`](#Res-continue)
 * [ES.78: 总是让非空的 `case` 以 `break` 结尾](#Res-break)
 * [ES.79: `default`（仅）用于处理一般情况](#Res-default)
-* [ES.84: 不要（试图）声明没有名字的局部变量](#Res-noname)
+* [ES.84: 不要试图声明没有名字的局部变量](#Res-noname)
 * [ES.85: 让空语句显著可见](#Res-empty)
 * [ES.86: 避免在原生的 `for` 循环中修改循环控制变量](#Res-loop-counter)
 * [ES.87: 请勿在条件上添加多余的 `==` 或 `!=`](#Res-if)
@@ -10061,9 +10074,9 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 * 对声明于循环之前，且在循环之后不再使用的循环变量进行标记。
 * 【困难】 对声明与循环之前，且在循环之后用于某个无关用途的循环变量进行标记。
 
-##### C++17 示例
+##### C++17 和 C++30 示例
 
-注：C++17 还增加了 `if` 和 `switch` 的初始化式语句。以下代码要求支持 C++17。
+注：C++17 和 C++20 还增加了 `if`、`switch` 和范围式 `for` 的初始化式语句。以下代码要求支持 C++17 和 C++20。
 
     map<int, string> mymap;
 
@@ -10073,7 +10086,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
         // ...
     } // result 在此处销毁
 
-##### C++17 强制实施（当使用 C++17 编译器时）
+##### C++17 和 C++20 强制实施（当使用 C++17 或 C++20 编译器时）
 
 * 选择/循环变量，若其在选择或循环体之前声明而在其之后不再使用，则对其进行标记
 * 【困难】 选择/循环变量，若其在选择或循环体之前声明而在其之后用于某个无关目的，则对其进行标记
@@ -10377,7 +10390,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
         if (x) {
             int m = 9;
             // ...
-            m = 99; // 对成员赋值
+            m = 99; // 对局部变量赋值
             // ...
         }
     }
@@ -10645,15 +10658,20 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 * 如果具有默认初始化的声明在其首次被读取前就进行赋值，则对其进行标记。
 * 对于任何在未初始化变量之后且在其使用之前进行的复杂计算进行标记。
 
-### <a name="Res-list"></a>ES.23: 优先使用 `{}` 初始化语法
+### <a name="Res-list"></a>ES.23: 优先使用 `{}` 初始化式语法
 
 ##### 理由
 
-`{}` 初始化的规则比其他形式的初始化更简单，更通用，更少歧义，而且更安全。
+优先使用 `{}`。`{}` 初始化的规则比其他形式的初始化更简单，更通用，更少歧义，而且更安全。
+
+仅当你确定不存在窄化转换时才可使用 `=`。对于内建算术类型，`=` 仅和 `auto` 一起使用。
+
+避免 `()` 初始化，它会导致解析中的歧义。
 
 ##### 示例
 
     int x {f(99)};
+    int y = x;
     vector<int> v = {1, 2, 3, 4, 5, 6};
 
 ##### 例外
@@ -10661,11 +10679,14 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 对于容器来说，存在用 `{...}` 给出元素列表而用 `(...)` 给出大小的传统做法：
 
     vector<int> v1(10);    // vector 有 10 个具有默认值 0 的元素
-    vector<int> v2 {10};   // vector 有 1 个值为 10 的元素
+    vector<int> v2{10};    // vector 有 1 个值为 10 的元素
+
+    vector<int> v3(1, 2);  // vector 有 1 个值为 2 的元素
+    vector<int> v4{1, 2};  // vector 有 2 个值为 1 和 2 的元素
 
 ##### 注解
 
-`{}` 初始化式不允许进行窄化转换（这点通常都很不错）。
+`{}` 初始化式不允许进行窄化转换（这点通常都很不错），并允许使用显式构造函数（这没有问题，我们的意图就是初始化一个新变量）。
 
 ##### 示例
 
@@ -10675,7 +10696,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 ##### 注解
 
-`{}` 初始化可以用于所有的初始化；而其他的初始化则不行：
+`{}` 初始化可以用于几乎所有的初始化；而其他的初始化则不行：
 
     auto p = new vector<int> {1, 2, 3, 4, 5};   // 初始化 vector
     D::D(int a, int b) :m{a, b} {   // 成员初始化式（比如说 m 可能是 pair）
@@ -10696,7 +10717,7 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 C++17 的规则多少会少些意外：
 
     auto x1 {7};        // x1 是一个值为 7 的 int
-    auto x2 = {7};  // x2 是一个具有一个元素 7 的 initializer_list<int>
+    auto x2 = {7};      // x2 是一个具有一个元素 7 的 initializer_list<int>
 
     auto x11 {7, 8};    // 错误: 两个初始化式
     auto x22 = {7, 8};  // x22 是一个具有元素 7 和 8 的 initializer_list<int>
@@ -10718,10 +10739,6 @@ C++17 的规则多少会少些意外：
 
 除非特别要求禁止使用显式构造函数，否则都应当使用普通的 `{}` 初始化。
 
-##### 注解
-
-老习惯很难纠正，因此这条规则很难统一地进行实施，尤其是当有这么多情况下 `=` 没有问题的时候。
-
 ##### 示例
 
     template<typename T>
@@ -10739,10 +10756,8 @@ C++17 的规则多少会少些意外：
 
 ##### 强制实施
 
-很麻烦。
-
-* 不要对在简单初始化式上使用 `=` 进行标记。
-* 见到 `auto` 之后要寻找 `=`。
+* 当使用 `=` 初始化算术类型并发生窄化转换时予以标记。
+* 当使用 `()` 初始化语法但实际上是声明式时予以标记。（许多编译器已经可就此给出警告。）
 
 ### <a name="Res-unique"></a>ES.24: 用 `unique_ptr<T>` 来保存指针
 
@@ -10818,7 +10833,7 @@ C++17 的规则多少会少些意外：
         for (auto& o : objects)
         {
             // 第一部分工作。
-            generate_first_String(buffer, o);
+            generate_first_string(buffer, o);
             write_to_file(buffer);
 
             // 第二部分工作。
@@ -11088,6 +11103,7 @@ C++17 的规则多少会少些意外：
     }
 
 **替代方案**: 重载。模板。变参模板。
+
     #include <iostream>
 
     void error(int severity)
@@ -11315,7 +11331,7 @@ C++17 收紧了有关求值顺序的规则
 
     void f2(array<int, 10> arr, int pos) // A2: 增加局部的 span 并使用之
     {
-        span<int> a = {arr, pos};
+        span<int> a = {arr.data(), pos};
         a[pos / 2] = 1; // OK
         a[pos - 1] = 2; // OK
     }
@@ -11365,6 +11381,7 @@ C++17 收紧了有关求值顺序的规则
     void f2()
     {
         int arr[COUNT];
+        int i = 0;
         for (int i = 0; i < COUNT; ++i)
             at(arr, i) = i;
     }
@@ -11548,15 +11565,15 @@ C++17 收紧了有关求值顺序的规则，但函数实参求值顺序仍然�
     unsigned u = 0;
 
     u = d;                          // 不好
-    u = narrow_cast<unsigned>(d);   // OK (明确需要): u 变为了 0
+    u = narrow_cast<unsigned>(d);   // OK (明确需要): u 变为了 4294967289
     u = narrow<unsigned>(d);        // OK: 抛出 narrowing_error
 
 ##### 强制实施
 
 优良的分析器可以检测到所有的窄化转换。不过，对所有的窄化转换都进行标记将带来大量的误报。建议的做法是：
 
-* 标记出所有的浮点向整数转换。（可能只有 `float`->`char` 和 `double`->`int`。这里有问题！需要数据支持）
-* 标记出所有的 `long`->`char`。（我怀疑 `int`->`char` 非常常见。这里有问题！需要数据支持）
+* 标记出所有的浮点向整数转换（可能只有 `float`->`char` 和 `double`->`int`。这里有问题！需要数据支持）。
+* 标记出所有的 `long`->`char`（我怀疑 `int`->`char` 非常常见。这里有问题！需要数据支持）。
 * 在函数参数上发生的窄化转换特别值得怀疑。
 
 ### <a name="Res-nullptr"></a>ES.47: 使用 `nullptr` 而不是 `0` 或 `NULL`
@@ -11661,7 +11678,7 @@ C++17 收紧了有关求值顺序的规则，但函数实参求值顺序仍然�
 * `reinterpret_cast`
 * `dynamic_cast`
 * `std::move`         // `move(x)` 是指代 `x` 的右值引用
-* `std::forward`      // `forward(x)` 是指代 `x` 的右值引用
+* `std::forward`      // `forward<T>(x)` 是指代 `x` 的左值或右值引用（取决于 `T`）
 * `gsl::narrow_cast`  // `narrow_cast<T>(x)` 就是 `static_cast<T>(x)`
 * `gsl::narrow`       // `narrow<T>(x)` 在当 `static_cast<T>(x) == x` 时即为 `static_cast<T>(x)` 否则会抛出 `narrowing_error`
 
@@ -11718,9 +11735,9 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 示例，不好
 
-    void f(const int& i)
+    void f(const int& x)
     {
-        const_cast<int&>(i) = 42;   // 不好
+        const_cast<int&>(x) = 42;   // 不好
     }
 
     static int i = 0;
@@ -11994,7 +12011,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     void mover(X&& x) {
         call_something(std::move(x));         // ok
         call_something(std::forward<X>(x));   // 不好, 请勿对右值引用 std::forward
-        call_something(x);                    // 可疑, 为什么不用 std::move?
+        call_something(x);                    // 可疑  为什么不用std:: move?
     }
 
     template<class T>
@@ -12023,7 +12040,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 注解
 
-这也被称为“禁止裸 `new`！”
+通常也被称为“禁止裸 `new`！”规则。
 
 ##### 示例，不好
 
@@ -12074,7 +12091,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 示例，不好
 
-    void f(int n)
+    void f()
     {
         int a1[7];
         int a2[9];
@@ -12104,7 +12121,16 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     class Circle : public Shape { /* ... */ Point c; int r; };
 
     Circle c {{0, 0}, 42};
-    Shape s {c};    // 复制了 Circle 中的 Shape 部分
+    Shape s {c};    // 仅复制构造了 Circle 中的 Shape 部分
+    s = c;          // 仅复制赋值了 Circle 中的 Shape 部分
+
+    void assign(const Shape& src, Shape& dest) {
+        dest = src;
+    }
+    Circle c2 {{1, 1}, 43};
+    assign(c, c2);   // 噢，传递的并不是整个状态
+    assert(c == c2); // 如果提供复制操作，就也得提供比较操作，
+                     //   但这里很可能返回 false
 
 这样的结果是无意义的，因为不会把中心和半径从 `c` 复制给 `s`。
 针对这个的第一条防线是[将基类 `Shape` 定义为不允许这样做](#Rc-copy-virtual)。
@@ -12302,7 +12328,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 * 其测试可能多余并且相对比较昂贵
 * 这个测试是为了保护某种违例还是所需逻辑的一部分并不明显
 
-
+<!-- comment needed for code block after list -->
     void f2(int* p) // 声称 p 不应当为 nullptr
     {
         Assert(p);
@@ -12646,7 +12672,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 ##### 理由
 
 意外地遗漏 `break` 是一种相当常见的 BUG。
-蓄意的控制直落（fall through）是维护的噩梦。
+蓄意的控制直落（fall through）是维护的噩梦，应该罕见并被明确标示出来。
 
 ##### 示例
 
@@ -12662,36 +12688,6 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
         break;
     }
 
-很容易忽略掉这个直落。应当更明确：
-
-    switch (eventType) {
-    case Information:
-        update_status_bar();
-        break;
-    case Warning:
-        write_event_log();
-        // 直落 fallthrough
-    case Error:
-        display_error_window();
-        break;
-    }
-
-在 C++17 中，可以使用 `[[fallthrough]]` 标注：
-
-    switch (eventType) {
-    case Information:
-        update_status_bar();
-        break;
-    case Warning:
-        write_event_log();
-        [[fallthrough]];        // C++17
-    case Error:
-        display_error_window();
-        break;
-    }
-
-##### 注解
-
 单个语句带有多个 `case` 标签是可以的：
 
     switch (x) {
@@ -12702,9 +12698,28 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
         break;
     }
 
+##### 例外
+
+在罕见的直落被视为合适行为的情况中。应当明确标示，并使用 `[[fallthrough]]` 标注：
+
+    switch (eventType) {
+    case Information:
+        update_status_bar();
+        break;
+    case Warning:
+        write_event_log();
+        [[fallthrough]];
+    case Error:
+        display_error_window();
+        break;
+    }
+
+##### 注解
+
 ##### 强制实施
 
-对所有从非空的 `case` 发生的直落进行标记。
+对所有从非空的 `case` 隐式发生的直落进行标记。
+
 
 ### <a name="Res-default"></a>ES.79: `default`（仅）用于处理一般情况
 
@@ -12779,13 +12794,12 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 这样做对于某些代码库可能会产生大量误报；此时，可以仅标记那些处理了大多数情况而不是所有情况的 `switch` 语句
 （这正是第一个 C++ 编译器曾经的策略）。
 
-### <a name="Res-noname"></a>ES.84: 不要（试图）声明没有名字的局部变量
+### <a name="Res-noname"></a>ES.84: 不要试图声明没有名字的局部变量
 
 ##### 理由
 
 没有这种东西。
 我们眼里看起来像是个无名变量的东西，对于编译器来说是一条由一个将会立刻离开作用域的临时对象所组成的语句。
-这样可避免不愉快的意外。
 
 ##### 示例，不好
 
@@ -12798,7 +12812,6 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 这里声明了一个无名的 `lock` 对象，它将在分号处立刻离开作用域。
 这并不是一种少见的错误。
 特别是，这个特别的例子会导致很难发觉的竞争条件。
-这种“手法”确实有一些极端聪明的用法，但远远少于其错误。
 
 ##### 注解
 
@@ -13057,7 +13070,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 * 对混合有符号和无符号算术进行标记。
 * 对将无符号算术的结果作为有符号数赋值或打印进行标记。
-* 对无符号字面量（比如 `-2`）用作容器下标进行标记。
+* 对负数字面量（比如 `-2`）用作容器下标进行标记。
 * （避免噪声）有符号/无符号的混合比较，若其一个实参是 `sizeof` 或调用容器的 `.size()` 而另一个是 `ptrdiff_t`，则不要进行标记。
 
 
@@ -13220,7 +13233,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ##### 强制实施
 
-困难：有大量使用 `unsigned` 的代码，而我们又没给出一个实际的正数类型。
+参见 ES.100 的强制实施。
 
 
 ### <a name="Res-subscripts"></a>ES.107: 不要对下标使用 `unsigned`，优先使用 `gsl::index`
@@ -13378,7 +13391,7 @@ href="#Rper-Knuth">Per.2</a>。）
 
 ##### 示例，不好
 
-    // 试图更快，但其实更慢
+    // 试图更快，但通常会更慢
 
     vector<uint8_t> v(100000);
 
@@ -13542,7 +13555,7 @@ href="#Rper-Knuth">Per.2</a>。）
 `equal_range` 返回迭代器的 `pair`，指定匹配的第一个和最后一个之后的元素。
 
     auto r = equal_range(begin(c), end(c), 7);
-    for (auto p = r.first(); p != r.second(), ++p)
+    for (auto p = r.first; p != r.second; ++p)
         cout << *p << '\n';
 
 显然，这三个接口都是以相同的基本代码实现的。
@@ -13743,16 +13756,15 @@ href="#Rper-Knuth">Per.2</a>。）
 我们经常想要我们的计算机同时运行许多任务（或者至少表现为同时运行它们）。
 这有许多不同的原因（例如，需要仅用一个处理器等待许多事件，同时处理许多数据流，或者利用大量的硬件设施）
 因此也由许多不同的用以表现并发和并行的基本设施。
-我们这里将说明几个一般原则和使用 ISO 标准 C++ 中用以表现基本并发和并行的设施的规则。
+我们这里将说明使用 ISO 标准 C++ 中用以表现基本并发和并行的设施的原则和规则。
 
-机器对并发和并行编程的核心支持就是线程。
-使用线程允许你互不相关地运行你的程序的多个实例，
-同时共享相同的内存。许多原因都造成并发编程很麻烦，
-最重要的是，如果没有在线程之间进行适当同步的话，
-在一个线程写入数据之后从另一个线程进行读取是
-未定义的行为。使现存的单线程代码可以并发执行，
-可以通过策略性地添加 `std::async` 或 `std::thread` 这样简单，
-也可能需要进行完全重新，这依赖于原始代码是否是以线程友好
+线程是对并发和并行编程支持的机器级别的基础。
+使用线程允许互不相关地运行程序的多个部分，
+同时共享相同的内存。并发编程很麻烦，
+因为在线程之间保护共享的数据说起来容易做起来难。
+使现存的单线程代码可以并发执行，
+可以通过策略性地添加 `std::async` 或 `std::thread` 这样简单做到，
+也可能需要进行完全的重写，这依赖于原始代码是否是以线程友好
 的方式编写的。
 
 本文档中的并发/并行规则的设计有三个
@@ -13762,12 +13774,12 @@ href="#Rper-Knuth">Per.2</a>。）
   的代码。
 * 展示使用标准库所提供的线程原语的简洁，
   安全的方式。
-* 对当并发和并行无法提供你所需要的性能增益时应当如何做
+* 对当并发和并行无法提供所需要的性能增益时应当如何做
   提供指导。
 
 同样重要的一点，是要注意 C++ 的并发仍然是未完成的工作。
 C++11 引入了许多核心并发原语，C++14 和 C++17 对它们进行了改进，
-而且看起来在使 C++ 编写并发程序更加简单的方面
+而且在使 C++ 编写并发程序更加简单的方面
 仍有许多关注。我们预计这里的一些与程序库相关
 的指导方针会随着时间有大量的改动。
 
@@ -13801,14 +13813,15 @@ C++11 引入了许多核心并发原语，C++14 和 C++17 对它们进行了改�
 
 很难说现在或者未来什么时候会不会需要使用并发。
 代码是会被重用的。
-程序的其他部分可能会使用某个使用了线程的程序库。
-请注意这条对于程序库代码来说最紧迫，而对独立的应用程序来说则最不紧迫。
-不过，多亏复制粘贴的魔法，代码片段可能出现在意想不到的地方。
+程序的其他使用了线程的部分可能会使用某个未使用线程的程序库。
+请注意这条规则对于程序库代码来说最紧迫，而对独立的应用程序来说则最不紧迫。
+不过，久而久之，代码片段可能出现在意想不到的地方。
 
-##### 示例
+##### 示例，不好
 
     double cached_computation(double x)
     {
+        // 不好：这两个静态变量导致多线程的使用情况中的数据竞争
         static double cached_x = 0.0;
         static double cached_result = COMPUTATION_OF_ZERO;
         double result;
@@ -13837,7 +13850,7 @@ C++11 引入了许多核心并发原语，C++14 和 C++17 对它们进行了改�
 永远不会在多线程环境中执行的代码。
 
 要小心的是：有许多例子，“认为”永远不会在多线程程序中执行的代码
-却真的在多线程程序中执行了。通常是在多年以后。
+却真的在多线程程序中执行了，通常是在多年以后。
 一般来说，这种程序将导致进行痛苦的移除数据竞争的工作。
 因此，确实有意不在多线程环境中执行的代码，应当清晰地进行标注，而且理想情况下应当利用编译或运行时的强制机制来提早检测到这种使用情况。
 
@@ -13876,15 +13889,15 @@ C++11 引入了许多核心并发原语，C++14 和 C++17 对它们进行了改�
 
 ##### 示例，不好
 
-    void f(fstream&  fs, regex pat)
+    void f(fstream&  fs, regex pattern)
     {
         array<double, max> buf;
         int sz = read_vec(fs, buf, max);            // 从 fs 读取到 buf 中
         gsl::span<double> s {buf};
         // ...
-        auto h1 = async([&]{ sort(par, s); });     // 产生一个进行排序的任务
+        auto h1 = async([&]{ sort(std::execution::par, s); });     // 产生一个进行排序的任务
         // ...
-        auto h2 = async([&]{ return find_all(buf, sz, pat); });   // 产生一个查找匹配的任务
+        auto h2 = async([&]{ return find_all(buf, sz, pattern); });   // 产生一个查找匹配的任务
         // ...
     }
 
@@ -13984,7 +13997,7 @@ C++11 引入了许多核心并发原语，C++14 和 C++17 对它们进行了改�
 ##### 理由
 
     void some_fun() {
-        std::string  msg, msg2;
+        std::string msg, msg2;
         std::thread publisher([&] { msg = "Hello"; });       // 不好: 表达性不足
                                                              //       且更易错
         auto pubtask = std::async([&] { msg2 = "Hello"; });  // OK
@@ -15142,7 +15155,7 @@ C++ 对此的机制是 `atomic` 类型：
 
 * 检测某个错误
 * 将有关错误的信息传递给某个处理代码
-* 维持程序的状态是某个有效状态
+* 维持程序的某个有效状态
 * 避免资源泄漏
 
 不可能做到从所有的错误中恢复。如果从某个错误进行恢复是不可能的话，以明确定义的方式迅速“脱离”则是很重要的。错误处理的策略必须简单，否则就会成为更糟糕错误的来源。未经测试和很少被执行的错误处理代码自身也是许多 BUG 的来源。
@@ -15640,7 +15653,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
     catch (exception& e) { /* ... */ }
 
-通常更好的是 `const` 引用：
+或者（通常更好的）`const` 引用：
 
     catch (const exception& e) { /* ... */ }
 
@@ -15777,7 +15790,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
     void f(int n)
     {
-        void* p = malloc(1, n);
+        void* p = malloc(n);
         auto _ = finally([p] { free(p); });
         // ...
     }
@@ -15881,7 +15894,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
     void f(int n)
     {
         // ...
-        p = static_cast<X*>(malloc(n, X));
+        p = static_cast<X*>(malloc(n * sizeof(X)));
         if (!p) abort();     // 当内存耗尽时 abort
         // ...
     }
@@ -16072,7 +16085,15 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
 ##### 示例，不好
 
-    ???
+    int last_err;
+
+    void f(int n)
+    {
+        // ...
+        p = static_cast<X*>(malloc(n * sizeof(X)));
+        if (!p) last_err = -1;     // 当内存耗尽时发生的错误
+        // ...
+    }
 
 ##### 注解
 
@@ -17434,7 +17455,6 @@ Lambda 会生成函数对象。
 ##### 示例
 
     class X {
-            // ...
     public:
         explicit X(int);
         X(const X&);            // 复制
@@ -17443,6 +17463,8 @@ Lambda 会生成函数对象。
         X& operator=(X&&) noexcept;
         ~X();
         // ... 没有别的构造函数了 ...
+
+        // ...
     };
 
     X x {1};    // 没问题
@@ -17519,7 +17541,19 @@ Lambda 会生成函数对象。
 
 ##### 示例
 
-    enable_if<???>
+    template <typename T>
+    enable_if_t<is_integral_v<T>>
+    f(T v)
+    {
+        // ...
+    }
+
+    // Equivalent to:
+    template <Integral T>
+    void f(T v)
+    {
+        // ...
+    }
 
 ##### 注解
 
@@ -17657,7 +17691,7 @@ Lambda 会生成函数对象。
 
 人们发现 `Link` 不再隐藏在列表中很可怕，所以我们命名这个技术为 [SCARY]（http://www.open-std.org/jtc1/sc22/WG21/docs/papers/2009/n2911.pdf）。
 引自该学术论文：“首字母缩略词 SCARY 描述了看似错误的赋值和初始化（受冲突的通用参数的约束），
-但实际上使用了正确的实现（由于最小化的依赖而不受冲突的约束。”
+但实际上使用了正确的实现（由于最小化的依赖而不受冲突的约束）。”
 
 ##### 强制实施
 
@@ -18862,6 +18896,12 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
         copy(/*...*/);    // now overloads local ::copy and std::copy, could be ambiguous
     }
 
+##### 注解
+
+一个例外是 `using namespace std::literals;`。若要在头文件中使用
+字符串字面量，则必须如此，而且根据[规则](http://eel.is/c++draft/over.literal)——用户必须以
+`operator""_x` 来命名他们自己的 UDL——它们并不会与标准库相冲突。
+
 ##### 强制实施
 
 标记头文件的全局作用域中的 `using namespace`。
@@ -18973,7 +19013,6 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 
     // basic_std_lib.h:
 
-    #include <vector>
     #include <string>
     #include <map>
     #include <iostream>
@@ -19007,6 +19046,10 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 ##### 注解
 
 不遵守这条规则将导致头文件的使用方难于诊断所出现的错误。
+
+##### 注解
+
+头文件应当包含其所有依赖项。请小心使用相对路径，各 C++ 实现对于它们的含义是有分歧的。
 
 ##### 强制实施
 
@@ -19185,7 +19228,12 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 
 ##### 理由
 
-`vector` 和 `array` 是仅有的能够提供最快的通用访问（随机访问，还包括对于向量化友好性），最快的默认访问模式（从头到尾或从尾到头方式是对预读器友好的），以及最少的空间耗费（连续布局没有每个元素的开销，而且是 cache 友好的）的标准容器。
+`vector` 和 `array` 是仅有的能够提供以下各项优势的标准容器：
+
+* 最快的通用访问（随机访问，还包括对于向量化友好性）；
+* 最快的默认访问模式（从头到尾或从尾到头方式是对预读器友好的）；
+* 最少的空间耗费（连续布局中没有每个元素的开销，而且是 cache 友好的）。
+
 通常你都需要对容器进行元素的添加和删除，因此默认应当采用 `vector`；如果并不需要改动容器的大小的话，则应采用 `array`。
 
 即便其他容器貌似更加合适，比如 `map` 的 O(log N) 查找性能，或者 `list` 的中部高效插入，对于几个 KB 以内大小的容器来说，`vector` 仍然经常性能更好。
@@ -19307,7 +19355,7 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 **参见**：[正则表达式](#SS-regex)
 
 在这里，我们用“字符序列”或“字符串”来代表（终将）作为文本来读取的字符序列。
-We don't consider
+We don't consider ???
 
 字符串概览：
 
@@ -19664,8 +19712,9 @@ I/O 流规则概览：
 
 如果需要 I/O 性能的话，你几乎总能做到比 `printf()` 更好。
 
-`gets()` `scanf()` 使用 `s`，而 `printf()` 使用 `%s` 是安全性的冒险（容易遭受缓冲区溢出问题而且通常很易错）。
-C11 中，它们被替换为 `gets_s()`，`scanf_s()`，和 `printf_s()` 作为更安全的替代方案，但它们仍然并非是类型安全的。
+`gets()`，使用 `%s` 的 `scanf()`，和使用 `%s` 的 `printf()` 在安全性方面冒风险（容易遭受缓冲区溢出问题而且通常很易错）。
+C11 定义了一些“可选扩展”，它们对其实参进行一些额外检查。
+如果您的 C 程序库中包含 `gets_s()`、`scanf_s()` 和 `printf_s()`，它们将会是更安全的替代方案，但仍然并非是类型安全的。
 
 ##### 强制实施
 
@@ -19752,9 +19801,9 @@ C 标准库规则概览：
 
 架构性规则概览：
 
-* [A.1: 将代码中的稳定部分和不稳定的部分进行分离](#Ra-stable)
+* [A.1: 分离稳定的代码和不稳定的代码](#Ra-stable)
 * [A.2: 将潜在可复用的部分作为程序库](#Ra-lib)
-* [A.4: 程序库之间不能有循环依赖](#?Ra-dag)
+* [A.4: 程序库之间不能有循环依赖](#Ra-dag)
 * [???](#???)
 * [???](#???)
 * [???](#???)
@@ -19762,9 +19811,9 @@ C 标准库规则概览：
 * [???](#???)
 * [???](#???)
 
-### <a name="Ra-stable"></a>A.1: 将代码中的稳定部分和不稳定的部分进行分离
+### <a name="Ra-stable"></a>A.1: 分离稳定的代码和不稳定的代码
 
-???
+对较不稳定的代码进行隔离，有助于其单元测试，接口改进，重构，以及最终弃用。
 
 ### <a name="Ra-lib"></a>A.2: 将潜在可复用的部分作为程序库
 
@@ -19774,7 +19823,7 @@ C 标准库规则概览：
 
 程序库是一些共同进行维护，文档化，并发布的声明式和定义式的集合体。
 程序库可以是一组头文件（“仅有头文件的程序库”），或者一组头文件加上一组目标文件构成。
-程序库可以被静态或动态地连接到程序中，或者可以被 `#included` 入其中。
+你可以静态或动态地将程序库连接到程序中，或者你还可以 `#included` 仅头文件的库。
 
 
 ### <a name="Ra-dag"></a>A.4: 程序库之间不能有循环依赖
@@ -20019,9 +20068,88 @@ C 标准库规则概览：
 更复杂的代码（必须处理半构造对象），
 以及错误（当未能一致地正确处理半构造对象时）。
 
-##### 示例
+##### 示例，不好
 
-    ???
+    class Picture
+    {
+        int mx;
+        int my;
+        char * data;
+    public:
+        Picture(int x, int y)
+        {
+            mx = x,
+            my = y;
+            data = nullptr;
+        }
+
+        ~Picture()
+        {
+            Cleanup();
+        }
+
+        bool Init()
+        {
+            // 不变式检查
+            if (mx <= 0 || my <= 0) {
+                return false;
+            }
+            if (data) {
+                return false;
+            }
+            data = (char*) malloc(mx*my*sizeof(int));
+            return data != nullptr;
+        }
+
+        void Cleanup()
+        {
+            if (data) free(data);
+            data = nullptr;
+        }
+    };
+
+    Picture picture(100, 0); // 此时 picture 尚未就绪可用
+    // 这里将失败
+    if (!picture.Init()) {
+        puts("Error, invalid picture");
+    }
+    // 现在有一个无效的 picture 对象实例。
+
+##### 示例，好
+
+    class Picture
+    {
+        size_t mx;
+        size_t my;
+        vector<char> data;
+
+        static size_t check_size(size_t s)
+        {
+            // 不变式检查
+            Expects(s > 0);
+            return s;
+        }
+
+    public:
+        // 更好的方式是以一个 2D 的 Size 类作为单个形参
+        Picture(size_t x, size_t y)
+            : mx(check_size(x))
+            , my(check_size(y))
+            // 现在已知 x 和 y 为有效的大小
+            , data(mx * my * sizeof(int)) // 出错时将抛出 std::bad_alloc
+        {
+            // 图片就绪可用
+        }
+        // 编译器生成的析构函数会完成工作。（另见 C.21）
+    };
+
+    Picture picture1(100, 100);
+    // picture 已就绪可用……
+
+    // y 并非有效大小值，
+    // 缺省的契约违规行为将会调用 std::terminate
+    Picture picture2(100, 0);
+    // 不会抵达这里……
 
 ##### 替代方案
 
@@ -20355,13 +20483,13 @@ CppCon 的展示的幻灯片是可以获得的（其链接，还有上传的视�
 
 边界安全性剖面配置概览：
 
-* <a href="Pro-bounds-arithmetic"></a>Bounds.1: 请勿使用指针算术。请使用 `span` 代替：
+* <a name="Pro-bounds-arithmetic"></a>Bounds.1: 请勿使用指针算术。请使用 `span` 代替：
 [（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-ptr)。
-* <a href="Pro-bounds-arrayindex"></a>Bounds.2: 仅使用常量表达式对数组进行索引操作：
+* <a name="Pro-bounds-arrayindex"></a>Bounds.2: 仅使用常量表达式对数组进行索引操作：
 [（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-ptr)。
-* <a href="Pro-bounds-decay"></a>Bounds.3: 避免数组向指针的衰变：
+* <a name="Pro-bounds-decay"></a>Bounds.3: 避免数组向指针的衰变：
 [（仅）传递单个对象的指针](#Ri-array)，并[保持指针算术的简单性](#Res-ptr)。
-* <a href="Pro-bounds-stdlib"></a>Bounds.4: 请勿使用不进行边界检查的标准库函数和类型：
+* <a name="Pro-bounds-stdlib"></a>Bounds.4: 请勿使用不进行边界检查的标准库函数和类型：
 [以类型安全的方式使用标准库](#Rsl-bounds)
 
 ##### 影响
@@ -20383,7 +20511,7 @@ CppCon 的展示的幻灯片是可以获得的（其链接，还有上传的视�
 
 生存期安全性剖面配置概览：
 
-* <a href="Pro-lifetime-invalid-deref"></a>Lifetime.1: 不要解引用无效指针：
+* <a name="Pro-lifetime-invalid-deref"></a>Lifetime.1: 不要解引用无效指针：
 [检测或避免](#Res-deref)。
 
 ##### 影响
@@ -20521,8 +20649,8 @@ Range 提案，
 * `Number`   // ???
 * `Sortable`
 * `Pointer`  // 带有 `*`，`->`，`==`，以及默认构造的类型（默认构造被假定为设值为唯一的“null”值）；参见[智能指针](#SS-gsl-smartptrconcepts)
-* `Unique_ptr`  // 符合 `Pointer` 的类型，具有移动（而不是复制）操作，并符合生存期剖面配置中针对 `unique` 所有者类型的准则；参见[智能指针](#SS-gsl-smartptrconcepts)
-* `Shared_ptr`   // 符合 `Pointer` 的类型，具有复制操作，并符合生存期剖面配置中针对 `shared` 所有者类型的准则；参见[智能指针](#SS-gsl-smartptrconcepts)
+* `Unique_pointer`  // 符合 `Pointer` 的类型，具有移动（而不是复制）操作，并符合生存期剖面配置中针对 `unique` 所有者类型的准则；参见[智能指针](#SS-gsl-smartptrconcepts)
+* `Shared_pointer`   // 符合 `Pointer` 的类型，具有复制操作，并符合生存期剖面配置中针对 `shared` 所有者类型的准则；参见[智能指针](#SS-gsl-smartptrconcepts)
 * `EqualityComparable`   // ???我们非得用 CaMelcAse 吗???
 * `Convertible`
 * `Common`
@@ -20696,7 +20824,7 @@ IDE 也都会提供某些默认方案和一组替代方案。
     prints  // 打印一个 C 风格字符串
     printi  // 打印一个 int
 
-在 C 语言中需要像匈牙利记法这样的技巧来在名字中编码类型，但在像 C++ 这样的强静态类型语言中，这通常是不必要而且实际上是有害的，因为这些标注会过时（这些累赘和注释类似，而且和它们一样会烂掉），而且它们干扰了语言的恰当用法（应当代之以使用相同的名字和重载决议）。
+在无类型语言中曾经采用过像匈牙利记法这样的技巧来在名字中编码类型，但在像 C++ 这样的强静态类型语言中，这通常是不必要而且实际上是有害的，因为这些标注会过时（这些累赘和注释类似，而且和它们一样会烂掉），而且它们干扰了语言的恰当用法（应当代之以使用相同的名字和重载决议）。
 
 ##### 注解
 
@@ -21380,51 +21508,63 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
     class B {
     public:
-        B() { /* ... */ f(); /* ... */ }   // 不好: 参见条款 49.1
+        B() {
+            /* ... */
+            f(); // 不好: C.82：不要在构造函数和析构函数中调用虚函数
+            /* ... */
+        }
 
         virtual void f() = 0;
-
-        // ...
     };
 
     class B {
     protected:
-        B() { /* ... */ }
-        virtual void post_initialize()    // 构造后立刻调用
-            { /* ... */ f(); /* ... */ }   // 好: 进行虚派发是安全的
+        class Token {};
+
     public:
+        // 需要公开构造函数以使 make_shared 可以访问它。
+        // 通过要求一个 Token 达成受保护访问等级。
+        explicit B(Token) { /* ... */ }  // 创建不完全初始化的对象
         virtual void f() = 0;
 
         template<class T>
-        static shared_ptr<T> create()    // 用于创建对象的接口
+        static shared_ptr<T> create()    // 创建共享对象的接口
         {
-            auto p = make_shared<T>();
+            auto p = make_shared<T>(typename T::Token{});
             p->post_initialize();
             return p;
         }
+
+    protected:
+        virtual void post_initialize()   // 构造之后立即调用
+            { /* ... */ f(); /* ... */ } // 好: 虚函数分派是安全的
     };
 
 
     class D : public B {                 // 某个派生类
+    protected:
+        class Token {};
+
     public:
-        void f() override { /* ...  */ };
+        // 需要公开构造函数以使 make_shared 可以访问它。
+        // 通过要求一个 Token 达成受保护访问等级。
+        explicit D(Token) : B( B::Token{} ) {}
+        void f() override { /* ... */ };
 
     protected:
-        D() {}
-
         template<class T>
-        friend shared_ptr<T> B::Create();
+        friend shared_ptr<T> B::create();
     };
 
     shared_ptr<D> p = D::Create<D>();    // 创建一个 D 对象
 
 这种设计需要遵守以下纪律：
 
-* 像 `D` 这样的派生类不能暴露公用的构造函数。否则的话，`D` 的使用者就能够创建 `D` 对象而不调用 `PostInitialize` 了。
-* 分配被限定为使用 `operator new`。不过，`B` 可以覆盖 `new`（参见条款 45 和 46）。
-* `D` 必须定义一个带有与 `B` 所选择的相同的参数的构造函数。不过，定义多个重载的 `Create` 可以缓和这个问题；而且还可以是这些重载对参数类型进行模板化。
+* 像 `D` 这样的派生类不能暴露可公开调用的构造函数。否则的话，`D` 的使用者就能够创建 `D` 对象而不调用 `post_initialize` 了。
+* 分配被限定为使用 `operator new`。不过，`B` 可以覆盖 `new`（参见 [SuttAlex05](#SuttAlex05) 条款 45 和 46）。
+* `D` 必须定义一个带有与 `B` 所选择的相同的参数的构造函数。不过，定义多个重载的 `create` 可以缓和这个问题；而且还可以是这些重载对参数类型进行模板化。
 
-一旦满足了上述要求，这个设计就可以保证对于任意完全构造的 `B` 的派生类对象，都将调用 `PostInitialize`。`PostInitialize` 不必是虚函数；它可以随意进行虚函数调用。
+一旦满足了上述要求，这个设计就可以保证对于任意完全构造的 `B` 的派生类对象，都将调用 `post_initialize`。`post_initialize` 不必是虚函数；它可以随意进行虚函数调用。
 
 总之，不存在完美的后构造技巧。最差的方式是完全回避问题而只是让调用方来人工调用后构造函数。即便是最佳方案也需要采用一种不同的对象构造语法（易于进行编译期检查）以及需要派生类的作者的协作（这无法进行编译期进行检查）。
 
@@ -21703,10 +21843,10 @@ GSL 是在指导方针中所指定的类型和别名的一个小集合。当写�
 
     template<class T>
     class Vector {
-    // ...
     private:
         T* elem;   // 自由存储中的 sz 个元素，由类对象所拥有
         int sz;
+        // ...
     };
 
 这个类是一个资源句柄。它管理各个 `T` 对象的生存期。为此，`Vector` 必然要对[一组特殊操作](???)（几个构造函数，析构函数，等等）进行定义或弃置。
