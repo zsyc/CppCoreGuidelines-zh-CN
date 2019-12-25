@@ -1,6 +1,6 @@
 # <a name="main"></a>C++ 核心指导方针
 
-2019/6/16
+2019/12/8
 
 
 编辑：
@@ -402,6 +402,13 @@
 如果您不理解或者反对一条规则，请您访问它的**探讨**部分。
 如果您觉得一份探讨有缺漏或不完整，请填写一条 [Issue](https://github.com/isocpp/CppCoreGuidelines/issues)
 来解释您的关切，亦或一条相应的问题报告。
+
+各个示例用于演示规则。
+* 这些示例并非意图具有产品级的质量，或覆盖所有的教学维度。
+例如，许多的例子都是语言技巧，并使用了诸如 `f`，`base`，和 `x` 这样的名字。
+* 我们尝试保证使下文中“好”的示例都遵守《核心指导方针》。
+* 注释通常用于演示规则，它们可能是不必要的，或者会干扰“真正的代码”。
+* 我们假设读者具有标准程序库的知识。例如我们使用普通的 `vector` 而不是 `std::vector`。
 
 本文档不是语言手册。
 它旨在能够对人有所帮助，而不是变得完整，在技术细节上完全准确，或对现存代码的指南。
@@ -2825,6 +2832,8 @@ C++ 标准库隐含地对 C 标准库中的所有函数做了这件事。
 
 只有在进行论证必要之后再使用高级技巧，并将其必要性注明在代码注释中。
 
+对于字符序列的传递，参见 [字符串](#SS-string)。
+
 ### <a name="Rf-in"></a>F.16: 对于“输入（in）”参数，把复制操作廉价的类型按值进行传递，把其他类型按 `const` 引用进行传递
 
 ##### 理由
@@ -4516,6 +4525,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 * [C.86: 使 `==` 对操作数的类型对称，并使之 `noexcept`](#Rc-eq)
 * [C.87: 请当心基类的 `==`](#Rc-eq-base)
 * [C.89: 使 `hash` 函数 `noexcept`](#Rc-hash)
+* [C.90: 依靠构造函数和赋值运算符，不要依靠 `memset` 和 `memcpy`](#Rc-memset)
 
 ## <a name="SS-defop"></a>C.defop: 默认操作
 
@@ -5002,7 +5012,7 @@ C++ 的内建类型都是正规的，标准库中的类，如 `string`，`vector
 但没有人得到过任何一种通用方案。
 这确实是真正的实际问题：比如说，怎么处理无法关闭的 socket？
 析构函数的编写者无法了解析构函数为什么会被调用，并且不能通过抛出异常来“拒绝执行”。
-参见[探讨](#Sd-dtor)段落。
+参见[探讨](#Sd-never-fail)段落。
 让问题更麻烦的是，许多的“关闭/释放”操作还都是不能重试的。
 如果确实可行的话，请把“关闭/清理”的失败作为一项基本设计错误并终止（terminate）程序。
 
@@ -6543,6 +6553,48 @@ ISO 标准中对标准库容器类仅仅保证了“有效但未指明”的状�
 
 * 标记可能抛出异常的 `hash`。
 
+### <a name="Rc-memset"></a>C.90: 依靠构造函数和赋值运算符，不要依靠 `memset` 和 `memcpy` 
+
+##### 理由
+
+构造某个类型的实例的标准 C++ 机制是调用其构造函数。如指导方针 [C.41](#Rc-complete) 所述：构造函数应当创建一个已完全初始化的对象。不应当需要进行如用 `memcpy` 来进行的额外初始化。
+为适当地做出一个类的副本并维持类型的不变式，类型将提供复制构造函数和/或复制赋值运算符。使用 `memcpy` 来复制一个非可平凡复制的类型具有未定义的行为。这经常会导致切片，或者数据损坏。
+
+##### 示例，好 
+
+    struct base 
+    { 
+        virtual void update() = 0; 
+        std::shared_ptr<int> sp; 
+    }; 
+
+    struct derived : public base 
+    { 
+        void update() override {} 
+    }; 
+
+##### 示例，不好 
+
+    void init(derived& a) 
+    { 
+        memset(&a, 0, sizeof(derived)); 
+    } 
+
+这样做类型不安全并且会覆写掉虚表。
+
+##### 示例，不好 
+
+    void copy(derived& a, derived& b) 
+    { 
+        memcpy(&a, &b, sizeof(derived)); 
+    } 
+
+这样做同样类型不安全并且会覆写掉虚表。
+
+##### 强制实施
+
+- 对将非可平凡复制类型传递给 `memset` 或 `memcpy` 进行标记。
+
 ## <a name="SS-containers"></a>C.con: 容器和其他资源包装类
 
 容器是一种持有某个类型的对象序列的对象；`std::vector` 就是一种典型的容器。
@@ -6877,7 +6929,7 @@ Lambda 表达式（通常通俗地简称为“lambda”）是一种产生函数�
 
 ##### 强制实施
 
-* 对任何含有数据成员同时带有可被覆盖（非 `final`）的虚函数的类给出警告。
+* 对任何含有数据成员同时带有并非从基类继承的可被覆盖（非 `final`）的虚函数的类给出警告。
 
 ### <a name="Rh-separation"></a>C.122: 当需要完全区分接口和实现时，应当用抽象类作为接口
 
@@ -9894,7 +9946,7 @@ C 风格的字符串是以单个指向以零结尾的字符序列的指针来传
 * [ES.75: 避免使用 `do` 语句](#Res-do)
 * [ES.76: 避免 `goto`](#Res-goto)
 * [ES.77: 尽量减少循环中使用的 `break` 和 `continue`](#Res-continue)
-* [ES.78: 总是让非空的 `case` 以 `break` 结尾](#Res-break)
+* [ES.78: 不要依靠 `switch` 语句中的隐含直落行为](#Res-break)
 * [ES.79: `default`（仅）用于处理一般情况](#Res-default)
 * [ES.84: 不要试图声明没有名字的局部变量](#Res-noname)
 * [ES.85: 让空语句显著可见](#Res-empty)
@@ -10488,6 +10540,31 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
     auto [i, j] = make_related_widgets(cond);    // C++17
 
+如果除此之外 `make_related_widgets` 函数是多余的，
+可以使用 lambda [ES.28](#Res-lambda-init) 来消除之：
+
+    auto [i, j] = [x]{ return (x) ? pair{f1(), f2()} : pair{f3(), f4()} }();    // C++17
+
+用一个值代表 `uninitialized` 只是一种问题的症状，而不是一种解决方案：
+
+    widget i = uninit;  // 不好
+    widget j = uninit;
+
+    // ...
+    use(i);         // 可能发生设值前使用
+    // ...
+
+    if (cond) {     // 不好: i 和 j 进行了“延迟”初始化
+        i = f1();
+        j = f2();
+    }
+    else {
+        i = f3();
+        j = f4();
+    }
+
+这样的话编译器甚至无法再简单地检测出“设值前使用”。而且我们也在 widget 的状态空间中引入了复杂性：哪些操作对 `uninit` 的 widget 是有效的，哪些不是？
+
 ##### 注解
 
 几十年来，精明的程序员中都流行进行复杂的初始化。
@@ -10526,6 +10603,8 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
     int buf[max];         // OK, 但是可疑: 未初始化
     f.read(buf, max);
 
+由于数组和 `std::array` 的有所限制的初始化规则，它们提供了对于需要这种例外的大多数有意义的例子。
+
 某些情况下，这个数组进行初始化的成本可能是显著的。
 但是，这样的例子确实倾向于留下可访问到的未初始化变量，因而应当严肃对待它们。
 
@@ -10552,27 +10631,6 @@ ISO C++ 标准库是最广为了解而且经过最好测试的程序库之一。
 
 优秀的优化器应当能够识别输入操作并消除这种多余的操作。
 
-##### 示例
-
-用一个值代表 `uninitialized` 只是一种问题的症状，而不是一种解决方案：
-
-    widget i = uninit;  // 不好
-    widget j = uninit;
-
-    // ...
-    use(i);         // 可能发生设值前使用
-    // ...
-
-    if (cond) {     // 不好: i 和 j 进行了“延迟”初始化
-        i = f1();
-        j = f2();
-    }
-    else {
-        i = f3();
-        j = f4();
-    }
-
-这样的话编译器甚至无法再简单地检测出“设值前使用”。而且我们也在 widget 的状态空间中引入了复杂性：哪些操作对 `uninit` 的 widget 是有效的，哪些不是？
 
 ##### 注解
 
@@ -11986,6 +12044,7 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 绝不要仅仅因为听说过“这样更加高效”就使用 `std::move()`。
 通常来说，请不要相信那些没有支持数据的有关“效率”的断言。(???).
 通常来说，请不要无理由地使代码复杂化。(??)
+绝不要在 const 对象上 `std::move()`，它只会暗中将其转变成一个副本（参见 [Meyers15](#Meyers15) 的条款 23)。
 
 ##### 示例，不好
 
@@ -12025,9 +12084,9 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 * 对于 `std::move(x)` 的使用，当 `x` 是右值，或者语言已经将其当做右值，这包括 `return std::move(local_variable);` 以及在按值返回的函数上的 `std::move(f())`，进行标记
 * 当没有接受 `const S&` 的函数重载来处理左值时，对接受 `S&&` 参数的函数进行标记。
-* 当将经过 `std::move` 的实参传递给某个形参时进行标记，除非形参的类型符合以下各项：`X&&` 右值引用；`T&&` 转发引用，其中 `T` 为模板参数类型；或者按值传递而其类型是只能移动的。
+* 当将经过 `std::move` 的实参传递给某个形参时进行标记，除非形参的类型为右值引用 `X&&`，或者类型是只能移动的而该形参为按值传递。
 * 当对转发引用（`T&&` 其中 `T` 为模板参数类型）使用 `std::move` 时进行标记。应当代之以使用 `std::forward`。
-* 当对并非右值引用使用 `std::move` 时进行标记。（这是前一条规则的更一般的情况，以覆盖非转发的情况。）
+* 当对并非非 const 右值引用的变量使用 `std::move` 时进行标记。（这是前一条规则的更一般的情况，以覆盖非转发的情况。）
 * 当对右值引用（`X&&` 其中 `X` 为独立类型）使用 `std::forward` 时进行标记。应当代之以使用 `std::move`。
 * 当对并非转发引用使用 `std::forward` 时进行标记。（这是前一条规则的更一般的情况，以覆盖非移动的情况。）
 * 如果对象潜在地被移动走之后的下一个操作是 `const` 操作的话，则进行标记；首先应当交错进行一个非 `const` 操作，最好是赋值，以首先对对象的值进行重置。
@@ -12667,11 +12726,11 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
 
 ???
 
-### <a name="Res-break"></a>ES.78: 总是让非空的 `case` 以 `break` 结尾
+### <a name="Res-break"></a>ES.78: 不要依靠 `switch` 语句中的隐含直落行为
 
 ##### 理由
 
-意外地遗漏 `break` 是一种相当常见的 BUG。
+总是以 `break` 来结束非空的 `case`。意外地遗漏 `break` 是一种相当常见的 BUG。
 蓄意的控制直落（fall through）是维护的噩梦，应该罕见并被明确标示出来。
 
 ##### 示例
@@ -12696,6 +12755,17 @@ C 风格的强制转换很危险，因为它可以进行任何种类的转换，
     case 'f':
         do_something(x);
         break;
+    }
+
+在 `case` 标签中使用返回语句也是可以的：
+
+    switch (x) {
+    case 'a':
+        return 1;
+    case 'b':
+        return 2;
+    case 'c':
+        return 3;
     }
 
 ##### 例外
@@ -15661,7 +15731,7 @@ RAII（Resource Acquisition Is Initialization，资源获取即初始化）是�
 
 ##### 注解
 
-重新抛出已捕获的异常应当使用 `throw;` 而非 `throw e;`。使用 `throw e;` 将会抛出 `e` 的一个新副本（并切片成静态类型 `std::exception`），而并非重新抛出原来的 `std::runtime_error` 类型的异常。（但请关注[请勿试图在每个函数中捕获所有的异常](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Re-not-always)，以及[尽可能减少 `try`/`catch` 的显式使用](https://github.com/isocpp/CppCoreGuidelines/blob/master/CppCoreGuidelines.md#Re-catch)。)
+重新抛出已捕获的异常应当使用 `throw;` 而非 `throw e;`。使用 `throw e;` 将会抛出 `e` 的一个新副本（并切片成静态类型 `std::exception`），而并非重新抛出原来的 `std::runtime_error` 类型的异常。（但请关注[请勿试图在每个函数中捕获所有的异常](#Re-not-always)，以及[尽可能减少 `try`/`catch` 的显式使用](#Re-catch)。)
 
 ##### 强制实施
 
@@ -17188,7 +17258,7 @@ GSL 中的概念都具有恰当定义的语义；请参见 Palo Alto TR 和 Rang
 ##### 注解
 
 有时候会（不正确地）把对单个要求的互补约束当做是可以接受的。
-不过，对于两个或更多的要求来说，所需要的定义的数量是按指数增长的（2，4，9，16，……）：
+不过，对于两个或更多的要求来说，所需要的定义的数量是按指数增长的（2，4，8，16，……）：
 
     C1<T> && C2<T>
     !C1<T> && C2<T>
@@ -18940,7 +19010,7 @@ C++ 比 C 的表达能力更强，而且为许多种类的编程都提供了更�
 ##### 理由
 
 循环会使理解变得困难，并拖慢编译速度。
-它还会使（当其可用时）向利用语言支持的模块进行转换工作变得复杂。
+它们还会使（当其可用时）向利用语言支持的模块进行转换工作变得复杂。
 
 ##### 注解
 
@@ -19185,7 +19255,7 @@ C++ 标准库组件概览：
 * [SL.con.1: 优先采用 STL 的 `array` 或 `vector` 而不是 C 数组](#Rsl-arrays)
 * [SL.con.2: 除非有理由使用别的容器，否则默认情况应优先采用 STL 的 `vector`](#Rsl-vector)
 * [SL.con.3: 避免边界错误](#Rsl-bounds)
-*  ???
+* [SL.con.4: 请勿对非可平凡复制的实参使用 `memset` 或 `memcpy`](#Rsl-copy)
 
 ### <a name="Rsl-arrays"></a>SL.con.1: 优先采用 STL 的 `array` 或 `vector` 而不是 C 数组
 
@@ -19336,6 +19406,48 @@ C 数组不那么安全，而且相对于 `array` 和 `vector` 也没有什么�
 ??? 在这里添加一组禁用函数的连接列表
 
 本条规则属于[边界剖面配置](#SS-bounds)。
+
+
+### <a name="Rsl-copy"></a>SL.con.4: 请勿对非可平凡复制的实参使用 `memset` 或 `memcpy`
+
+##### 理由
+
+这样做会破坏对象语义（例如，其会覆写掉 `vptr`）。
+
+##### 注解
+
+`(w)memset`，`(w)memcpy`，`(w)memmove`，以及 `(w)memcmp` 与此相似。
+
+##### 示例
+
+    struct base {
+        virtual void update() = 0;
+    };
+
+    struct derived : public base {
+        void update() override {}
+    };
+
+
+    void f (derived& a, derived& b) // 虚表再见！
+    {
+        memset(&a, 0, sizeof(derived));
+        memcpy(&a, &b, sizeof(derived));
+        memcmp(&a, &b, sizeof(derived));
+    }
+
+应当代之以定义适当的默认初始化，复制，以及比较函数
+
+    void g(derived& a, derived& b)
+    {
+        a = {};    // 默认初始化
+        b = a;     // 复制
+        if (a == b) do_something(a,b);
+    }
+
+##### 强制实施
+
+* 对在不可平凡复制的类型使用这些函数进行标记
 
 **TODO 注释**:
 
@@ -19859,20 +19971,20 @@ C 标准库规则概览：
 
 伪规则概览：
 
-* [NR.1: 请勿如此：声明都应当放在函数的最上面](#Rnr-top)
-* [NR.2: 请勿如此：函数中只保留一个 `return` 语句](#Rnr-single-return)
-* [NR.3: 请勿如此：不要使用异常](#Rnr-no-exceptions)
-* [NR.4: 请勿如此：把每个类声明放在其自己的源文件中](#Rnr-lots-of-files)
-* [NR.5: 请勿如此：不要在构造函数中进行实际工作；代之以采用两阶段初始化](#Rnr-two-phase-init)
-* [NR.6: 请勿如此：把所有清理操作放在函数末尾并使用 `goto exit`](#Rnr-goto-exit)
-* [NR.7: 请勿如此：使所有数据成员 `protected`](#Rnr-protected-data)
+* [NR.1: 请勿坚持认为声明都应当放在函数的最上面](#Rnr-top)
+* [NR.2: 请勿坚持使函数中只保留一个 `return` 语句](#Rnr-single-return)
+* [NR.3: 请勿避免使用异常](#Rnr-no-exceptions)
+* [NR.4: 请勿坚持把每个类声明放在其自己的源文件中](#Rnr-lots-of-files)
+* [NR.5: 请勿采用两阶段初始化](#Rnr-two-phase-init)
+* [NR.6: 请勿把所有清理操作放在函数末尾并使用 `goto exit`](#Rnr-goto-exit)
+* [NR.7: 请勿使所有数据成员 `protected`](#Rnr-protected-data)
 * ???
 
-### <a name="Rnr-top"></a>NR.1: 请勿如此：声明都应当放在函数的最上面
+### <a name="Rnr-top"></a>NR.1: 请勿坚持认为声明都应当放在函数的最上面
 
-##### 理由（请勿遵守本条规则）
+##### 理由
 
-这条规则是来自不允许在语句之后对变量和常量进行初始化的老编程语言的遗留物。
+“所有声明都在开头”的规则，是来自不允许在语句之后对变量和常量进行初始化的老编程语言的遗产。
 这样做会导致更长的程序，以及更多由于未初始化的或者错误初始化的变量所导致的错误。
 
 ##### 示例，不好
@@ -19906,9 +20018,9 @@ C 标准库规则概览：
 * [坚持为对象进行初始化](#Res-always)。
 * [ES.21: 不要在确实需要使用变量（或常量）之前就引入它](#Res-introduce)。
 
-### <a name="Rnr-single-return"></a>NR.2: 请勿如此：函数中只保留一个 `return` 语句
+### <a name="Rnr-single-return"></a>NR.2: 请勿坚持使函数中只保留一个 `return` 语句
 
-##### 理由（请勿遵守本条规则）
+##### 理由
 
 单返回规则会导致不必要地复杂的代码，并引入多余的状态变量。
 特别是，单返回规则导致更难在函数开头集中进行错误检查。
@@ -19976,15 +20088,16 @@ C 标准库规则概览：
 * 保持函数短小简单。
 * 随意使用多个 `return` 语句（以及抛出异常）。
 
-### <a name="Rnr-no-exceptions"></a>NR.3: 请勿如此：不要使用异常
+### <a name="Rnr-no-exceptions"></a>NR.3: 请勿避免使用异常
 
-##### 理由（请勿遵守本条规则）
+##### 理由
 
-对于这条伪规则一般有三种主要的理由：
+一般有四种主要的不用异常的理由：
 
 * 异常是低效的
 * 异常会导致泄漏和错误
 * 异常的性能无法预测
+* 异常处理的运行时支持耗费过多空间
 
 我们没有能够满足所有人的解决这个问题的办法。
 无论如何，针对异常的讨论已经持续了四十多年了。
@@ -20020,6 +20133,10 @@ C 标准库规则概览：
 如果你是在硬实时系统上，而你必须确保一个任务要在给定的时间内完成，
 你需要一些工具来支撑这样的保证。
 就我们所知，还没有出现这样的工具（至少对大多数程序员没有）。
+* 异常处理的运行时支持耗费过多空间
+小型（通常为嵌入式）系统中可能如此。
+不过在放弃异常之前，请考虑采用统一的利用错误码的错误处理将耗费的空间有多少，
+以及错误未被捕获将造成的损失由多少。
 
 许多（可能是大多数）的和异常有关的问题都源自于需要和杂乱的老代码进行交互的历史性原因。
 
@@ -20045,11 +20162,11 @@ C 标准库规则概览：
 * [RAII](#Re-raii)
 * 契约/断言：使用 GSL 的 `Expects` 和 `Ensures`（直到对契约的语言支持可以使用）
 
-### <a name="Rnr-lots-of-files"></a>NR.4: 请勿如此：把每个类声明放在其自己的源文件中
+### <a name="Rnr-lots-of-files"></a>NR.4: 请勿坚持把每个类声明放在其自己的源文件中
 
-##### 理由（请勿遵守本条规则）
+##### 理由
 
-这样导致文件数量难于管理，并会拖慢编译过程。
+将每个类都放进其自己的文件所导致的文件数量难于管理，并会拖慢编译过程。
 单个的类很少是一种良好的维护和发布的逻辑单位。
 
 ##### 示例
@@ -20060,11 +20177,11 @@ C 标准库规则概览：
 
 * 使用命名空间来包含逻辑上聚合的类和函数。
 
-### <a name="Rnr-two-phase-init"></a>NR.5: 请勿如此：不要在构造函数中进行实际工作；代之以采用两阶段初始化
+### <a name="Rnr-two-phase-init"></a>NR.5: 请勿采用两阶段初始化
 
-##### 理由（请勿遵守本条规则）
+##### 理由
 
-遵循这条规则会导致不变式的弱化，
+将初始化拆分为两步会导致不变式的弱化，
 更复杂的代码（必须处理半构造对象），
 以及错误（当未能一致地正确处理半构造对象时）。
 
@@ -20156,9 +20273,9 @@ C 标准库规则概览：
 * 始终在构造函数中建立类不变式。
 * 不要在需要对象之前就定义它。
 
-### <a name="Rnr-goto-exit"></a>NR.6: 请勿如此：把所有清理操作放在函数末尾并使用 `goto exit`
+### <a name="Rnr-goto-exit"></a>NR.6: 请勿把所有清理操作放在函数末尾并使用 `goto exit`
 
-##### 理由（请勿遵守本条规则）
+##### 理由
 
 `goto` 是易错的。
 这种技巧是进行 RAII 式的资源和错误处理的前异常时代的技巧。
@@ -20184,9 +20301,9 @@ C 标准库规则概览：
 * 使用异常和 [RAII](#Re-raii)
 * 对于非 RAII 资源，使用 [`finally`](#Re-finally)。
 
-### <a name="Rnr-protected-data"></a>NR.7: 请勿如此：使所有数据成员 `protected`
+### <a name="Rnr-protected-data"></a>NR.7: 请勿使所有数据成员 `protected`
 
-##### 理由（请勿遵守本条规则）
+##### 理由
 
 `protected` 数据是一种错误来源。
 `protected` 数据可以被各种地方的无界限数量的代码所操纵。
@@ -22291,7 +22408,7 @@ Clang-tidy 有一组专门用于强制实施 C++ 核心指导方针的规则。�
 * <a name="Stroustrup15></a>
   \[Stroustrup15]:    B. Stroustrup, Herb Sutter, and G. Dos Reis: [A brief introduction to C++'s model for type- and resource-safety](https://github.com/isocpp/CppCoreGuidelines/blob/master/docs/Introduction%20to%20type%20and%20resource%20safety.pdf).
 * <a name="SuttHysl04b"></a>
-  \[SuttHysl04b]:     H. Sutter and J. Hyslop. "Collecting Shared Objects" (C/C++ Users Journal, 22(8), August 2004).
+  \[SuttHysl04b]:     H. Sutter and J. Hyslop. [Collecting Shared Objects](https://web.archive.org/web/20120926011837/http://www.drdobbs.com/collecting-shared-objects/184401839) (C/C++ Users Journal, 22(8), August 2004).
 * <a name="SuttAlex05"></a>
   \[SuttAlex05]:      H. Sutter and  A. Alexandrescu. C++ Coding Standards. Addison-Wesley 2005.
 * <a name="Sutter00"></a>
